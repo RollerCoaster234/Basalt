@@ -1,3 +1,5 @@
+local XMLParser = require("xmlParser")
+
 return {
     VisualObject = function(base)
         local bgSymbol = false
@@ -26,12 +28,6 @@ return {
                 return bgSymbolColor
             end,
 
-            setValuesByXMLData = function(self, data)
-                base.setValuesByXMLData(self, data)
-                if(xmlValue("background-symbol", data)~=nil)then self:setBackgroundSymbol(xmlValue("background-symbol", data), xmlValue("background-symbol-color", data)) end
-                return self
-            end,
-
             draw = function(self)
                 base.draw(self)
                 self:addDraw("advanced-bg", function()
@@ -42,8 +38,8 @@ return {
                             self:addForegroundBox(1, 1, w, h, bgSymbolColor)
                         end
                     end
-            end, 2)
-            end,
+                end, 2)
+            end
         }
 
         return object

@@ -41,17 +41,20 @@ return function(name, basalt)
             return self
         end,
 
-        show = function(self)
-            base.show(self)
-            for k,v in pairs(colorTheme)do
-                if(type(v)=="number")then
-                    termObject.setPaletteColor(type(k)=="number" and k or colors[k], v)
-                else
-                    local r,g,b = table.unpack(v)
-                    termObject.setPaletteColor(type(k)=="number" and k or colors[k], r,g,b)
-                end
-            end
-            return self
+        getXOffset = function(self)
+            return xOffset
+        end,
+
+        setXOffset = function(self, newXOffset)
+            return self:setOffset(newXOffset, nil)
+        end,
+
+        getYOffset = function(self)
+            return yOffset
+        end,
+
+        setYOffset = function(self, newYOffset)
+            return self:setOffset(nil, newYOffset)
         end,
 
         setPalette = function(self, col, ...)            
@@ -117,10 +120,10 @@ return function(name, basalt)
                 if(self:isVisible())then
                     if(updateRender)then
                         base.render(self)
-                        local objects = self:getObjects()
-                        for _, obj in ipairs(objects) do
-                            if (obj.element.render ~= nil) then
-                                obj.element:render()
+                        local children = self:getChildren()
+                        for _, child in ipairs(children) do
+                            if (child.element.render ~= nil) then
+                                child.element:render()
                             end
                         end
                         updateRender = false
@@ -142,12 +145,18 @@ return function(name, basalt)
         end,
 
         updateTerm = function(self)
-            basaltDraw.update()
+            if(basaltDraw~=nil)then
+                basaltDraw.update()
+            end
         end,
 
         setTerm = function(self, newTerm)
             termObject = newTerm
-            basaltDraw = drawSystem(termObject)
+            if(newTerm==nil)then
+                basaltDraw = nil
+            else
+                basaltDraw = drawSystem(termObject)
+            end
             return self
         end,
 
@@ -168,12 +177,13 @@ return function(name, basalt)
 
         setCursor = function(self, _blink, _xCursor, _yCursor, color)
             local obx, oby = self:getAbsolutePosition()
+            local xO, yO = self:getOffset()
             cursorBlink = _blink or false
             if (_xCursor ~= nil) then
-                xCursor = obx + _xCursor - 1
+                xCursor = obx + _xCursor - 1 - xO
             end
             if (_yCursor ~= nil) then
-                yCursor = oby + _yCursor - 1
+                yCursor = oby + _yCursor - 1 - yO
             end
             cursorColor = color or cursorColor
             if (cursorBlink) then
@@ -186,6 +196,14 @@ return function(name, basalt)
             return self
         end,
     }
+
+    for k,v in pairs({mouse_click={"mouseHandler", true},mouse_up={"mouseUpHandler", false},mouse_drag={"dragHandler", false},mouse_scroll={"scrollHandler", true},mouse_hover={"hoverHandler", false}})do
+        object[v[1]] = function(self, btn, x, y, ...)
+            if(base[v[1]](self, btn, x, y, ...))then
+                basalt.setActiveFrame(self)
+            end
+        end
+    end
 
     for k,v in pairs({"drawBackgroundBox", "drawForegroundBox", "drawTextBox"})do
         object[v] = function(self, x, y, width, height, symbol)

@@ -13,6 +13,7 @@ return function(name, basalt)
     local isEnabled,initialized = true,false
 
     local eventSystem = basaltEvent()
+    local registeredEvents = {}
     local activeEvents = {}
 
     local parent
@@ -33,7 +34,21 @@ return function(name, basalt)
         isType = function(self, t)
             return objectType==t
         end,
-        
+
+        getProperty = function(self, name)
+            local get = self["get" .. name:gsub("^%l", string.upper)]
+            if (get ~= nil) then
+                return get(self)
+            end
+        end,
+
+        setProperty = function(self, name, ...)
+            local set = self["set" .. name:gsub("^%l", string.upper)]
+            if (set ~= nil) then
+                return set(self, ...)
+            end
+        end,
+
         getName = function(self)
             return name
         end,
@@ -46,7 +61,7 @@ return function(name, basalt)
             if(noRemove)then parent = newParent return self end
             if (newParent.getType ~= nil and newParent:isType("Container")) then
                 self:remove()
-                newParent:addObject(self)
+                newParent:addChild(self)
                 if (self.show) then
                     self:show()
                 end
@@ -98,7 +113,7 @@ return function(name, basalt)
 
         remove = function(self)
             if (parent ~= nil) then
-                parent:removeObject(self)
+                parent:removeChild(self)
             end
             self:updateDraw()
             return self
@@ -124,11 +139,19 @@ return function(name, basalt)
             return eventSystem
         end,
 
+        getRegisteredEvents = function(self)
+            return registeredEvents
+        end,
+
         registerEvent = function(self, event, func)
             if(parent~=nil)then
                 parent:addEvent(event, self)
             end
-            return eventSystem:registerEvent(event, func)
+            eventSystem:registerEvent(event, func)
+            if (registeredEvents[event] == nil) then
+                registeredEvents[event] = {}
+            end
+            table.insert(registeredEvents[event], func)
         end,
 
         removeEvent = function(self, event, index)
@@ -137,11 +160,31 @@ return function(name, basalt)
                     parent:removeEvent(event, self)
                 end
             end
-            return eventSystem:removeEvent(event, index)
+            eventSystem:removeEvent(event, index)
+            if (registeredEvents[event] ~= nil) then
+                table.remove(registeredEvents[event], index)
+                if (#registeredEvents[event] == 0) then
+                    registeredEvents[event] = nil
+                end
+            end
+        end,
+
+        eventHandler = function(self, event, ...)
+            local val = self:sendEvent("other_event", event, ...)
+            if(val~=nil)then return val end
+        end,
+
+        customEventHandler = function(self, event, ...)
+            local val = self:sendEvent("custom_event", event, ...)
+            if(val~=nil)then return val end
+            return true
         end,
 
         sendEvent = function(self, event, ...)
-            return eventSystem:sendEvent(event, self, ...)
+            if(event=="other_event")or(event=="custom_event")then
+                return eventSystem:sendEvent(event, self, ...)
+            end
+            return eventSystem:sendEvent(event, self, event, ...)
         end,
 
         onClick = function(self, ...)
@@ -233,7 +276,7 @@ return function(name, basalt)
             end
             return self
         end,
-        }
+    }
 
     object.__index = object
     return object

@@ -479,6 +479,10 @@ return function(name, basalt)
             return self
         end;
 
+        setExecute = function(self, path, ...)
+            return self:execute(path, ...)
+        end,
+
         stop = function(self)            
             local parent = self:getParent()
             if (curProcess ~= nil) then
@@ -498,7 +502,7 @@ return function(name, basalt)
             if (curProcess ~= nil) then
                 if not (curProcess:isDead()) then
                     if not (paused) then
-                        self:injectEvents(queuedEvent)
+                        self:injectEvents(table.unpack(queuedEvent))
                         queuedEvent = {}
                     end
                 end
@@ -653,6 +657,30 @@ return function(name, basalt)
             end
         end,
 
+        resizeHandler = function(self, ...)
+            base.resizeHandler(self, ...)
+            if (curProcess ~= nil) then
+                if not (curProcess:isDead()) then
+                    if not (paused) then
+                        pWindow.basalt_resize(self:getSize())
+                        resumeProcess(self, "term_resize", self:getSize())
+                    else
+                        pWindow.basalt_resize(self:getSize())
+                        table.insert(queuedEvent, { event = "term_resize", args = { self:getSize() } })
+                    end
+                end
+            end
+        end,
+
+        repositionHandler = function(self, ...)
+            base.repositionHandler(self, ...)
+            if (curProcess ~= nil) then
+                if not (curProcess:isDead()) then
+                    pWindow.basalt_reposition(self:getPosition())
+                end
+            end
+        end,
+
         draw = function(self)
             base.draw(self)
             self:addDraw("program", function()
@@ -660,7 +688,6 @@ return function(name, basalt)
                 local obx, oby = self:getPosition()
                 local xCur, yCur = pWindow.getCursorPos()
                 local w,h = self:getSize()
-                pWindow.basalt_reposition(obx, oby)
                 pWindow.basalt_update()
             end)
         end,

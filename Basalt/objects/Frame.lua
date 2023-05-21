@@ -38,6 +38,22 @@ return function(name, basalt)
             return self
         end,
 
+        getXOffset = function(self)
+            return xOffset
+        end,
+
+        setXOffset = function(self, newXOffset)
+            return self:setOffset(newXOffset, nil)
+        end,
+
+        getYOffset = function(self)
+            return yOffset
+        end,
+
+        setYOffset = function(self, newYOffset)
+            return self:setOffset(nil, newYOffset)
+        end,
+
         setParent = function(self, p, ...)
             base.setParent(self, p, ...)
             parent = p
@@ -48,10 +64,10 @@ return function(name, basalt)
             if(base.render~=nil)then
                 if(self:isVisible())then
                     base.render(self)
-                    local objects = self:getObjects()
-                    for _, obj in ipairs(objects) do
-                        if (obj.element.render ~= nil) then
-                            obj.element:render()
+                    local children = self:getChildren()
+                    for _, child in ipairs(children) do
+                        if (child.element.render ~= nil) then
+                            child.element:render()
                         end
                     end
                 end
@@ -81,7 +97,8 @@ return function(name, basalt)
 
         setCursor = function(self, blink, x, y, color)
             local obx, oby = self:getPosition()
-            parent:setCursor(blink or false, (x or 0)+obx-1, (y or 0)+oby-1, color or colors.white)
+            local xO, yO = self:getOffset()
+            parent:setCursor(blink or false, (x or 0)+obx-1 - xO, (y or 0)+oby-1 - yO, color or colors.white)
             return self
         end,
     }

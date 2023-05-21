@@ -15,6 +15,7 @@ return function(name, basalt)
     local infinitePlay = false
     local animTimer
     local usePalette = false
+    local autoSize = true
 
     local xOffset, yOffset = 0, 0
 
@@ -44,6 +45,14 @@ return function(name, basalt)
         return p
     end
 
+    local function checkAutoSize()
+        if(autoSize)then
+            if(bimgLibrary~=nil)then
+                base:setSize(bimgLibrary.getSize())
+            end
+        end
+    end
+
     local object = {
         getType = function(self)
             return objectType
@@ -64,8 +73,30 @@ return function(name, basalt)
             return self
         end,
 
+        setXOffset = function(self, _x)
+            return self:setOffset(self, _x, nil)
+        end,
+
+        setYOffset = function(self, _y)
+            return self:setOffset(self, nil, _y)
+        end,
+
+        setSize = function(self, _x, _y)
+            base:setSize(_x, _y)
+            autoSize = false
+            return self
+        end,
+
         getOffset = function(self)
             return xOffset, yOffset
+        end,
+
+        getXOffset = function(self)
+            return xOffset
+        end,
+
+        getYOffset = function(self)
+            return yOffset
         end,
 
         selectFrame = function(self, id)
@@ -74,7 +105,7 @@ return function(name, basalt)
             end
             bimgFrame = bimgLibrary.getFrameObject(id)
             image = bimgFrame.getImage(id)
-            selectedFrame = id
+            activeFrame = id
             self:updateDraw()
         end,
 
@@ -117,22 +148,28 @@ return function(name, basalt)
             if(fs.exists(path))then
                 local newBimg = images.loadBIMG(path)
                 bimgLibrary = bimg(newBimg)
-                selectedFrame = 1
+                activeFrame = 1
                 bimgFrame = bimgLibrary.getFrameObject(1)
                 originalImage = bimgLibrary.createBimg()
                 image = bimgFrame.getImage()
+                checkAutoSize()
                 self:updateDraw()
             end     
             return self
         end,
 
+        setPath = function(self, path)
+            return self:loadImage(path)
+        end,
+
         setImage = function(self, t)
             if(type(t)=="table")then
                 bimgLibrary = bimg(t)
-                selectedFrame = 1
+                activeFrame = 1
                 bimgFrame = bimgLibrary.getFrameObject(1)
                 originalImage = bimgLibrary.createBimg()
                 image = bimgFrame.getImage()
+                checkAutoSize()
                 self:updateDraw()
             end
             return self
@@ -159,6 +196,14 @@ return function(name, basalt)
             return self
         end,
 
+        getUsePalette = function(self)
+            return usePalette
+        end,
+
+        setUsePalette = function(self, use)
+            return self:usePalette(use)
+        end,
+
         play = function(self, inf)
             if(bimgLibrary.getMetadata("animated"))then
                 local t = bimgLibrary.getMetadata("duration") or bimgLibrary.getMetadata("secondsPerFrame") or 0.2
@@ -167,6 +212,10 @@ return function(name, basalt)
                 infinitePlay = inf or false
             end
             return self
+        end,
+
+        setPlay = function(self, inf)
+            return self:play(inf)
         end,
 
         stop = function(self)
@@ -266,7 +315,7 @@ return function(name, basalt)
         resizeImage = function(self, w, h)
             local newBimg = images.resizeBIMG(originalImage, w, h)
             bimgLibrary = bimg(newBimg)
-            selectedFrame = 1
+            activeFrame = 1
             bimgFrame = bimgLibrary.getFrameObject(1)
             image = bimgFrame.getImage()
             self:updateDraw()

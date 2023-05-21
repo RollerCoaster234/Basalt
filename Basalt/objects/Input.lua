@@ -17,7 +17,7 @@ return function(name, basalt)
 
     local defaultText = ""
     local defaultBGCol = colors.black
-    local defaultFGCol = colors.white
+    local defaultFGCol = colors.lightGray
     local showingText = defaultText
     local internalValueChange = false
 
@@ -35,6 +35,14 @@ return function(name, basalt)
         end,
         isType = function(self, t)
             return objectType==t or base.isType~=nil and base.isType(t) or false
+        end,
+
+        setDefaultFG = function(self, fCol)
+            return self:setDefaultText(self, defaultText, fCol, nil)
+        end,
+
+        setDefaultBG = function(self, bCol)
+            return self:setDefaultText(self, defaultText, nil, bCol)
         end,
 
         setDefaultText = function(self, text, fCol, bCol)
@@ -154,7 +162,7 @@ return function(name, basalt)
                         end
                     end
                     if (key == keys.enter) then
-                        parent:removeFocusedObject(self)
+                        parent:clearFocusedChild(self)
                     end
                     if (key == keys.right) then
                         local tLength = tostring(base.getValue()):len()
@@ -255,7 +263,7 @@ return function(name, basalt)
                     end
                 end
                 local parent = self:getParent()
-                parent:removeFocusedObject()
+                parent:clearFocusedChild()
             end
         end,
 

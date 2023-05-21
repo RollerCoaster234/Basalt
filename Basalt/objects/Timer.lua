@@ -1,4 +1,5 @@
-return function(name)
+return function(name, basalt)
+    local base = basalt.getObject("Object")(name, basalt)
     local objectType = "Timer"
 
     local timer = 0
@@ -16,6 +17,10 @@ return function(name)
             timer = _timer or 0
             savedRepeats = _repeats or 1
             return self
+        end,
+
+        getTime = function(self)
+            return timer
         end,
 
         start = function(self)
@@ -42,12 +47,21 @@ return function(name)
             return self
         end,
 
+        setStart = function(self, start)
+            if (start == true) then
+                return self:start()
+            else
+                return self:cancel()
+            end
+        end,
+
         onCall = function(self, func)
             self:registerEvent("timed_event", func)
             return self
         end,
 
-        eventHandler = function(self, event, tObj)
+        eventHandler = function(self, event, ...)
+            base.eventHandler(self, event, ...)
             if event == "timer" and tObj == timerObj and timerIsActive then
                 self:sendEvent("timed_event")
                 if (repeats >= 1) then
@@ -61,7 +75,7 @@ return function(name)
             end
         end,
     }
-    object.__index = object
 
-    return object
+    object.__index = object
+    return setmetatable(object, base)
 end

@@ -215,6 +215,8 @@ local lerp = {
     easeInOutBounce=easeInOutBounce,
 }
 
+local XMLParser = require("xmlParser")
+
 return {
     VisualObject = function(base, basalt)
         local activeAnimations = {}
@@ -252,6 +254,19 @@ return {
             self:listenEvent("other_event")
         end
 
+        local function createColorAnimation(self, duration, timeOffset, typ, set, ...)
+            local newColors = {...}
+            if(activeAnimations[typ]~=nil)then
+                os.cancelTimer(activeAnimations[typ].timerId)
+            end
+            activeAnimations[typ] = {}
+            local colorIndex = 1
+            activeAnimations[typ].call = function()
+                local color = newColors[colorIndex]
+                set(self, color)
+            end
+        end
+
         local object = {
             animatePosition = function(self, x, y, duration, timeOffset, mode, f)
                 mode = mode or defaultMode
@@ -276,6 +291,14 @@ return {
                 duration = duration or 1
                 timeOffset = timeOffset or 0
                 createAnimation(self, x, y, duration, timeOffset, mode, "offset", f, self.getOffset, self.setOffset)
+                return self
+            end,
+
+            animateBackground = function(self, color, duration, timeOffset, mode, f)
+                mode = mode or defaultMode
+                duration = duration or 1
+                timeOffset = timeOffset or 0
+                createColorAnimation(self, color, nil, duration, timeOffset, mode, "background", f, self.getBackground, self.setBackground)
                 return self
             end,
 
@@ -313,24 +336,7 @@ return {
                         end
                     end
                 end
-            end,
-
-            setValuesByXMLData = function(self, data, scripts)
-                base.setValuesByXMLData(self, data, scripts)
-                local animX, animY, animateDuration, animeteTimeOffset, animateMode = xmlValue("animateX", data), xmlValue("animateY", data), xmlValue("animateDuration", data), xmlValue("animateTimeOffset", data), xmlValue("animateMode", data)
-                local animW, animH, animateDuration, animeteTimeOffset, animateMode = xmlValue("animateW", data), xmlValue("animateH", data), xmlValue("animateDuration", data), xmlValue("animateTimeOffset", data), xmlValue("animateMode", data)
-                local animXOffset, animYOffset, animateDuration, animeteTimeOffset, animateMode = xmlValue("animateXOffset", data), xmlValue("animateYOffset", data), xmlValue("animateDuration", data), xmlValue("animateTimeOffset", data), xmlValue("animateMode", data)
-                if(animX~=nil and animY~=nil)then
-                    self:animatePosition(animX, animY, animateDuration, animeteTimeOffset, animateMode)
-                end
-                if(animW~=nil and animH~=nil)then
-                    self:animateSize(animW, animH, animateDuration, animeteTimeOffset, animateMode)
-                end
-                if(animXOffset~=nil and animYOffset~=nil)then
-                    self:animateOffset(animXOffset, animYOffset, animateDuration, animeteTimeOffset, animateMode)
-                end                
-                return self
-            end,
+            end
         }
 
         return object

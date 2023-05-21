@@ -1,5 +1,6 @@
 local basaltEvent = require("basaltEvent")()
-local _OBJECTS = require("loadObjects")
+local baseObjects = require("loadObjects")
+local moddedObjects
 local pluginSystem = require("plugin")
 local utils = require("utils")
 local log = require("basaltLogs")
@@ -9,13 +10,14 @@ local count = utils.tableCount
 local moveThrottle = 300
 local dragThrottle = 0
 local renderingThrottle = 0
+local newObjects = {}
 
 local baseTerm = term.current()
 local version = "1.7.0"
 
 local projectDirectory = fs.getDir(table.pack(...)[2] or "")
 
-local activeKey, frames, monFrames, monGroups, variables, schedules = {}, {}, {}, {}, {}, {}
+local activeKey, frames, monFrames, variables, schedules = {}, {}, {}, {}, {}
 local mainFrame, activeFrame, focusedObject, updaterActive
 
 local basalt = {}
@@ -43,26 +45,6 @@ local function stop()
     end
 end
 
-function basalt.basaltError(errMsg)
-    baseTerm.clear()
-    baseTerm.setBackgroundColor(colors.black)
-    baseTerm.setTextColor(colors.red)
-    local w,h = baseTerm.getSize()
-    if(basalt.logging)then
-        log(errMsg, "Error")
-    end
-
-    local text = wrapText("Basalt error: "..errMsg, w)
-    local yPos = 1
-    for k,v in pairs(text)do
-        baseTerm.setCursorPos(1,yPos)
-        baseTerm.write(v)
-        yPos = yPos + 1
-    end 
-    baseTerm.setCursorPos(1,yPos+1)
-    updaterActive = false
-end
-
 local function schedule(f)
 assert(f~="function", "Schedule needs a function in order to work!")
 return function(...)
@@ -86,6 +68,18 @@ end
 
 local getVariable = function(name)
     return variables[name]
+end
+
+local getObjects = function()
+    return moddedObjects
+end
+
+local getObject = function(objectName)
+    return getObjects()[objectName]
+end
+
+local createObject = function(basalt, objectName, id)
+    return getObject(objectName)(id, basalt)
 end
 
 local bInstance = {
@@ -143,22 +137,39 @@ local bInstance = {
     schedule = schedule,
 
     stop = stop,
-    newFrame = Frame,
     debug = basalt.debug,
     log = basalt.log,
+    
+    getObjects = getObjects,
 
-    getObjects = function()
-        return _OBJECTS
-    end,
+    getObject = getObject,
 
-    getObject = function(id)
-        return _OBJECTS[id]
-    end,
+    createObject = createObject,
 
     getDirectory = function()
         return projectDirectory
     end
 }
+
+local function defaultErrorHandler(errMsg)
+    baseTerm.clear()
+    baseTerm.setBackgroundColor(colors.black)
+    baseTerm.setTextColor(colors.red)
+    local w,h = baseTerm.getSize()
+    if(basalt.logging)then
+        log(errMsg, "Error")
+    end
+
+    local text = wrapText("Basalt error: "..errMsg, w)
+    local yPos = 1
+    for _,v in pairs(text)do
+        baseTerm.setCursorPos(1,yPos)
+        baseTerm.write(v)
+        yPos = yPos + 1
+    end 
+    baseTerm.setCursorPos(1,yPos+1)
+    updaterActive = false
+end
 
 local function handleSchedules(event, p1, p2, p3, p4)
     if(#schedules>0)then
@@ -190,10 +201,6 @@ local function drawFrames()
     for _,v in pairs(monFrames)do
         v:render()
         v:updateTerm()
-    end
-    for _,v in pairs(monGroups)do
-        v[1]:render()
-        v[1]:updateTerm()
     end
 end
 
@@ -270,13 +277,9 @@ local function basaltUpdateEvent(event, ...)
     end
 
     if(event == "monitor_touch") then
-        if(monFrames[a[2]]~=nil)then
-            monFrames[a[2]]:mouseHandler(1, a[2], a[3], true)
-            activeFrame = monFrames[a[2]]
-        end
-        if(count(monGroups)>0)then
-            for k,v in pairs(monGroups)do
-                v[1]:mouseHandler(1, a[2], a[3], true, a[1])
+        for k,v in pairs(monFrames)do
+            if(v:mouseHandler(1, a[2], a[3], true, a[1]))then
+                activeFrame = v
             end
         end
         handleSchedules(event, ...)
@@ -311,7 +314,10 @@ local function basaltUpdateEvent(event, ...)
     elseif(event=="timer")and(a[1]==renderingTimer)then
         renderingUpdateTimer()
     else
-        for k, v in pairs(frames) do
+        for _, v in pairs(frames) do
+            v:eventHandler(event, ...)
+        end
+        for _, v in pairs(monFrames) do
             v:eventHandler(event, ...)
         end
         handleSchedules(event, ...)
@@ -319,11 +325,83 @@ local function basaltUpdateEvent(event, ...)
     end
 end
 
+local loadedObjects = false
+local loadedPlugins = false
+local function InitializeBasalt()
+    if not(loadedObjects)then
+        for _,v in pairs(newObjects)do
+            if(fs.exists(v))then
+                if(fs.isDir(v))then
+                    local files = fs.list(v)
+                    for _,object in pairs(files)do
+                        if not(fs.isDir(v.."/"..object))then
+                            local name = object:gsub(".lua", "")
+                            if(name~="example.lua")and not(name:find(".disabled"))then
+                                if(baseObjects[name]==nil)then
+                                    baseObjects[name] = require(v.."."..object:gsub(".lua", ""))
+                                else
+                                    error("Duplicate object name: "..name)
+                                end
+                            end
+                        end
+                    end
+                else
+                    local name = v:gsub(".lua", "")
+                    if(baseObjects[name]==nil)then
+                        baseObjects[name] = require(name)
+                    else
+                        error("Duplicate object name: "..name)
+                    end
+                end
+            end
+        end
+        loadedObjects = true
+    end
+    if not(loadedPlugins)then
+        moddedObjects = pluginSystem.loadPlugins(baseObjects, bInstance)
+        local basaltPlugins = pluginSystem.get("basalt")
+        if(basaltPlugins~=nil)then
+            for k,v in pairs(basaltPlugins)do
+                for a,b in pairs(v(basalt))do
+                    basalt[a] = b
+                    bInstance[a] = b
+                end
+            end
+        end
+        local basaltPlugins = pluginSystem.get("basaltInternal")
+        if(basaltPlugins~=nil)then
+            for _,v in pairs(basaltPlugins)do
+                for a,b in pairs(v(basalt))do
+                    bInstance[a] = b
+                end
+            end
+        end
+        loadedPlugins = true
+    end
+end
+
+local function createFrame(name)
+    InitializeBasalt()
+    for _, v in pairs(frames) do
+        if (v:getName() == name) then
+            return nil
+        end
+    end
+    local newFrame = moddedObjects["BaseFrame"](name, bInstance)
+    newFrame:init()
+    newFrame:load()
+    newFrame:draw()
+    table.insert(frames, newFrame)
+    if(mainFrame==nil)and(newFrame:getName()~="basaltDebuggingFrame")then
+        newFrame:show()
+    end
+    return newFrame
+end
+
 basalt = {
+    basaltError = defaultErrorHandler,
     logging = false,
     dynamicValueEvents = false,
-    setTheme = setTheme,
-    getTheme = getTheme,
     drawFrames = drawFrames,
     log = log,
     getVersion = function()
@@ -333,9 +411,36 @@ basalt = {
     memory = function()
         return math.floor(collectgarbage("count")+0.5).."KB"
     end,
+    
+    addObject = function(path)
+        if(fs.exists(path))then
+            table.insert(newObjects, path)
+        end
+    end,
+
+    addPlugin = function(path)
+        pluginSystem.addPlugin(path)
+    end,
+
+    getAvailablePlugins = function()
+        return pluginSystem.getAvailablePlugins()
+    end,
+
+    getAvailableObjects = function()
+        local objectNames = {}
+        for k,_ in pairs(baseObjects)do
+            table.insert(objectNames, k)
+        end
+        return objectNames
+    end,
 
     setVariable = setVariable,
     getVariable = getVariable,
+
+    getObjects = getObjects,
+    getObject = getObject,
+
+    createObject = createObject,
 
     setBaseTerm = function(_baseTerm)
         baseTerm = _baseTerm
@@ -399,7 +504,8 @@ basalt = {
     
     update = function(event, ...)
         if (event ~= nil) then
-            local ok, err = xpcall(basaltUpdateEvent, debug.traceback, event, ...)
+            local args = {...}
+            local ok, err = xpcall(function() basaltUpdateEvent(event, table.unpack(args)) end, debug.traceback)
             if not(ok)then
                 basalt.basaltError(err)
                 return
@@ -449,20 +555,21 @@ basalt = {
 
     schedule = schedule,
     
-    createFrame = function(name)
+    addFrame  = createFrame,
+    createFrame = createFrame,
+
+    addMonitor = function(name)
+        InitializeBasalt()
         for _, v in pairs(frames) do
             if (v:getName() == name) then
                 return nil
             end
         end
-        local newFrame = _OBJECTS["BaseFrame"](name, bInstance)
+        local newFrame = moddedObjects["MonitorFrame"](name, bInstance)
         newFrame:init()
         newFrame:load()
         newFrame:draw()
-        table.insert(frames, newFrame)
-        if(mainFrame==nil)and(newFrame:getName()~="basaltDebuggingFrame")then
-            newFrame:show()
-        end
+        table.insert(monFrames, newFrame)
         return newFrame
     end,
     
@@ -474,8 +581,6 @@ basalt = {
         projectDirectory = dir
     end,
 }
-
-_OBJECTS = pluginSystem.addPlugins(_OBJECTS, bInstance)
 
 local basaltPlugins = pluginSystem.get("basalt")
 if(basaltPlugins~=nil)then

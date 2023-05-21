@@ -25,20 +25,27 @@ return function(name, basalt)
 
         local node = {}
 
+        local onSelect
+
         node = {
-            getChildren = function()
+            getChildren = function(self)
                 return children
             end,
 
-            setParent = function(p)
+            setParent = function(self, p)
+                if(parent~=nil)then
+                    parent.removeChild(parent.findChildrenByText(node.getText()))
+                end
                 parent = p
+                base:updateDraw()
+                return node
             end,
 
-            getParent = function()
+            getParent = function(self)
                 return parent
             end,
 
-            addChild = function(text, expandable)
+            addChild = function(self, text, expandable)
                 local childNode = newNode(text, expandable)
                 childNode.setParent(node)
                 table.insert(children, childNode)
@@ -46,46 +53,75 @@ return function(name, basalt)
                 return childNode
             end,
 
-            setExpanded = function(exp)
+            setExpanded = function(self, exp)
                 if(expandable)then
                     expanded = exp
                 end
                 base:updateDraw()
+                return node
             end,
 
-            isExpanded = function()
+            isExpanded = function(self)
                 return expanded
             end,
 
-            setExpandable = function(expandable)
-                expandable = expandable
-                base:updateDraw()
+            onSelect = function(self, ...)
+                for _,v in pairs(table.pack(...))do
+                    if(type(v)=="function")then
+                        onSelect = v
+                    end
+                end
+                return node
             end,
 
-            isExpandable = function()
+            callOnSelect = function(self)
+                if(onSelect~=nil)then
+                    onSelect(node)
+                end
+            end,
+
+            setExpandable = function(self, expandable)
+                expandable = expandable
+                base:updateDraw()
+                return node
+            end,
+
+            isExpandable = function(self)
                 return expandable
             end,
 
-            removeChild = function(index)
+            removeChild = function(self, index)
+                if(type(index)=="table")then
+                    for k,v in pairs(index)do
+                        if(v==index)then
+                            index = k
+                            break
+                        end
+                    end
+                end
                 table.remove(children, index)
+                base:updateDraw()
+                return node
             end,
 
-            findChildrenByText = function(searchText)
+            findChildrenByText = function(self, searchText)
                 local foundNodes = {}
                 for _, child in ipairs(children) do
-                    if child.getText() == searchText then
+                    if string.find(child.getText(), searchText) then
                         table.insert(foundNodes, child)
                     end
                 end
                 return foundNodes
             end,
 
-            getText = function()
+            getText = function(self)
                 return text
             end,
 
-            setText = function(t)
+            setText = function(self, t)
                 text = t
+                base:updateDraw()
+                return node
             end
         }
 
@@ -93,7 +129,7 @@ return function(name, basalt)
     end
 
     local root = newNode("Root", true)
-    root.setExpanded(true)
+    root:setExpanded(true)
 
     local object = {
         init = function(self)
@@ -121,13 +157,33 @@ return function(name, basalt)
             return self
         end,
 
+        setXOffset = function(self, x)
+            return self:setOffset(x, yOffset)
+        end,
+
+        setYOffset = function(self, y)
+            return self:setOffset(xOffset, y)
+        end,
+
         getOffset = function(self)
             return xOffset, yOffset
+        end,
+
+        getXOffset = function(self)
+            return xOffset
+        end,
+
+        getYOffset = function(self)
+            return yOffset
         end,
 
         setScrollable = function(self, scroll)
             scrollable = scroll
             return self
+        end,
+
+        getScrollable = function(self, scroll)
+            return scrollable
         end,
 
         setSelectionColor = function(self, bgCol, fgCol, active)
@@ -138,8 +194,24 @@ return function(name, basalt)
             return self
         end,
 
+        setSelectionBG = function(self, bgCol)
+            return self:setSelectionColor(bgCol, nil, selectionColorActive)
+        end,
+
+        setSelectionFG = function(self, fgCol)
+            return self:setSelectionColor(nil, fgCol, selectionColorActive)
+        end,
+
         getSelectionColor = function(self)
             return itemSelectedBG, itemSelectedFG
+        end,
+
+        getSelectionBG = function(self)
+            return itemSelectedBG
+        end,
+
+        getSelectionFG = function(self)
+            return itemSelectedFG
         end,
 
         isSelectionColorActive = function(self)
@@ -150,6 +222,27 @@ return function(name, basalt)
             return root
         end,
 
+        setRoot = function(self, node)
+            root = node
+            node.setParent(nil)
+            return self
+        end,
+
+        onSelect = function(self, ...)
+            for _,v in pairs(table.pack(...))do
+                if(type(v)=="function")then
+                    self:registerEvent("treeview_select", v)
+                end
+            end
+            return self
+        end,
+
+        selectionHandler = function(self, node)
+            node.callOnSelect(node)
+            self:sendEvent("treeview_select", node)
+            return self
+        end,
+
         mouseHandler = function(self, button, x, y)
             if base.mouseHandler(self, button, x, y) then
                 local currentLine = 1 - yOffset
@@ -158,15 +251,16 @@ return function(name, basalt)
                 local function checkNodeClick(node, level)
                     if y == oby+currentLine-1 then
                         if x >= obx and x < obx + w then
-                            node.setExpanded(not node.isExpanded())
+                            node:setExpanded(not node:isExpanded())
+                            self:selectionHandler(node)
                             self:setValue(node)
                             self:updateDraw()
                             return true
                         end
                     end
                     currentLine = currentLine + 1
-                    if node.isExpanded() then
-                        for _, child in ipairs(node.getChildren()) do
+                    if node:isExpanded() then
+                        for _, child in ipairs(node:getChildren()) do
                             if checkNodeClick(child, level + 1) then
                                 return true
                             end
@@ -175,7 +269,7 @@ return function(name, basalt)
                     return false
                 end
         
-                for _, item in ipairs(root.getChildren()) do
+                for _, item in ipairs(root:getChildren()) do
                     if checkNodeClick(item, 1) then
                         return true
                     end
@@ -197,14 +291,14 @@ return function(name, basalt)
                         local visibleLines = 0
                         local function countVisibleLines(node, level)
                             visibleLines = visibleLines + 1
-                            if node.isExpanded() then
-                                for _, child in ipairs(node.getChildren()) do
+                            if node:isExpanded() then
+                                for _, child in ipairs(node:getChildren()) do
                                     countVisibleLines(child, level + 1)
                                 end
                             end
                         end
         
-                        for _, item in ipairs(root.getChildren()) do
+                        for _, item in ipairs(root:getChildren()) do
                             countVisibleLines(item, 1)
                         end
         
@@ -239,16 +333,16 @@ return function(name, basalt)
                         self:addBlit(1 + level + xOffset, currentLine, text, tHex[fg]:rep(#text), tHex[bg]:rep(#text))
                     end
                 
-                    currentLine = currentLine + 1     
+                    currentLine = currentLine + 1
                                
-                    if node.isExpanded() then
-                        for _, child in ipairs(node.getChildren()) do
+                    if node:isExpanded() then
+                        for _, child in ipairs(node:getChildren()) do
                             drawNode(child, level + 1)
                         end
                     end
                 end
         
-                for _, item in ipairs(root.getChildren()) do
+                for _, item in ipairs(root:getChildren()) do
                     drawNode(item, 1)
                 end
             end)

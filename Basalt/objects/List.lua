@@ -59,6 +59,20 @@ return function(name, basalt)
             return self
         end,
 
+        setOptions = function(self, ...)
+            list = {}
+            for k,v in pairs(...)do
+                if(type(v)=="string")then
+                    table.insert(list, { text = v, bgCol = self:getBackground(), fgCol = self:getForeground(), args = {} })
+                else
+                    table.insert(list, { text = v[1], bgCol = v[2] or self:getBackground(), fgCol = v[3] or self:getForeground(), args = v[4] or {} })
+                end
+            end
+            self:setValue(list[1], false)
+            self:updateDraw()
+            return self
+        end,
+
         setOffset = function(self, yOff)
             yOffset = yOff
             self:updateDraw()
@@ -70,7 +84,16 @@ return function(name, basalt)
         end,
 
         removeItem = function(self, index)
-            table.remove(list, index)
+            if(type(index)=="number")then
+                table.remove(list, index)
+            elseif(type(index)=="table")then
+                for k,v in pairs(list)do
+                    if(v==index)then
+                        table.remove(list, k)
+                        break
+                    end
+                end
+            end
             self:updateDraw()
             return self
         end,
@@ -80,6 +103,10 @@ return function(name, basalt)
         end,
 
         getAll = function(self)
+            return list
+        end,
+
+        getOptions = function(self)
             return list
         end,
 
@@ -124,8 +151,24 @@ return function(name, basalt)
             return self
         end,
 
+        setSelectionBG = function(self, bgCol)
+            return self:setSelectionColor(bgCol, nil, selectionColorActive)
+        end,
+
+        setSelectionFG = function(self, fgCol)
+            return self:setSelectionColor(nil, fgCol, selectionColorActive)
+        end,
+
         getSelectionColor = function(self)
             return itemSelectedBG, itemSelectedFG
+        end,
+
+        getSelectionBG = function(self)
+            return itemSelectedBG
+        end,
+
+        getSelectionFG = function(self)
+            return itemSelectedFG
         end,
 
         isSelectionColorActive = function(self)
@@ -137,6 +180,10 @@ return function(name, basalt)
             if(scroll==nil)then scrollable = true end
             self:updateDraw()
             return self
+        end,
+
+        getScrollable = function(self)
+            return scrollable
         end,
 
         scrollHandler = function(self, dir, x, y)
@@ -175,6 +222,7 @@ return function(name, basalt)
                         if (list[n + yOffset] ~= nil) then
                             if (obx <= x) and (obx + w > x) and (oby + n - 1 == y) then
                                 self:setValue(list[n + yOffset])
+                                self:selectHandler()
                                 self:updateDraw()
                             end
                         end
@@ -193,11 +241,22 @@ return function(name, basalt)
             return self:mouseHandler(1, x, y)
         end,
 
+        onSelect = function(self, ...)
+            for _,v in pairs(table.pack(...))do
+                if(type(v)=="function")then
+                    self:registerEvent("select_item", v)
+                end
+            end
+            return self
+        end,
+
+        selectHandler = function(self)
+            self:sendEvent("select_item", self:getValue())
+        end,
+
         draw = function(self)
             base.draw(self)
             self:addDraw("list", function()
-                local parent = self:getParent()
-                local obx, oby = self:getPosition()
                 local w, h = self:getSize()
                 for n = 1, h do
                     if list[n + yOffset] then
@@ -206,7 +265,9 @@ return function(name, basalt)
                         if list[n + yOffset] == self:getValue() and selectionColorActive then
                             fg, bg = itemSelectedFG, itemSelectedBG
                         end
-                        self:addBlit(1, n, t, tHex[fg]:rep(#t), tHex[bg]:rep(#t))
+                        self:addText(1, n, t:sub(1,w))
+                        self:addBG(1, n, tHex[bg]:rep(w))
+                        self:addFG(1, n, tHex[fg]:rep(w))
                     end
                 end
             end)

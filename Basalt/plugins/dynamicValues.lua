@@ -1,4 +1,5 @@
-local count = require("utils").tableCount
+local utils = require("utils")
+local count = utils.tableCount
 
 return {
     VisualObject = function(base, basalt)
@@ -27,7 +28,7 @@ return {
             local parent = self:getParent()
             local objects = {}
             for k,v in pairs(objectGroup)do
-                objects[v] = parent:getObject(v)
+                objects[v] = parent:getChild(v)
                 if(objects[v]==nil)then
                     error("Dynamic Values - unable to find object: "..v)
                 end

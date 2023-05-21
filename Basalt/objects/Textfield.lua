@@ -61,7 +61,7 @@ return function(name, basalt)
     end
 
     local function removeSelection(self)
-        local sx, ex, sy, ey = getSelectionCoordinates(self)
+        local sx, ex, sy, ey = getSelectionCoordinates()
         local startLine = lines[sy]
         local endLine = lines[ey]
         lines[sy] = startLine:sub(1, sx - 1) .. endLine:sub(ex + 1, endLine:len())
@@ -161,8 +161,24 @@ return function(name, basalt)
             return self
         end,
 
+        setSelectionFG = function(self, fg)
+            return self:setSelection(fg, nil)
+        end,
+
+        setSelectionBG = function(self, bg)
+            return self:setSelection(nil, bg)
+        end,
+
         getSelection = function(self)
             return selectionFG, selectionBG
+        end,
+
+        getSelectionFG = function(self)
+            return selectionFG
+        end,
+
+        getSelectionBG = function(self)
+            return selectionBG
         end,
 
         getLines = function(self)
@@ -289,6 +305,22 @@ return function(name, basalt)
             return self
         end,
 
+        getXOffset = function(self)
+            return wIndex
+        end,
+
+        setXOffset = function(self, xOff)
+            return self:setOffset(xOff, nil)
+        end,
+
+        getYOffset = function(self)
+            return hIndex
+        end,
+
+        setYOffset = function(self, yOff)
+            return self:setOffset(nil, yOff)
+        end,
+
         getFocusHandler = function(self)
             base.getFocusHandler(self)
             local obx, oby = self:getPosition()
@@ -301,7 +333,7 @@ return function(name, basalt)
         end,
 
         keyHandler = function(self, key)
-            if (base.keyHandler(self, event, key)) then
+            if (base.keyHandler(self, key)) then
                 local parent = self:getParent()
                 local obx, oby = self:getPosition()
                 local w,h = self:getSize()
@@ -554,29 +586,28 @@ return function(name, basalt)
             if (base.dragHandler(self, button, x, y)) then
                 local parent = self:getParent()
                 local obx, oby = self:getAbsolutePosition()
-                local anchx, anchy = self:getPosition()
+                local ox, oy = self:getPosition()
                 local w,h = self:getSize()
                 if (lines[y - oby + hIndex] ~= nil) then
-                    if anchx <= x - obx + wIndex and anchx + w > x - obx + wIndex then
+                    if(x - obx + wIndex > 0)and(x - obx + wIndex <= w)then
                         textX = x - obx + wIndex
                         textY = y - oby + hIndex
-                
+
                         if textX > lines[textY]:len() then
                             textX = lines[textY]:len() + 1
                         end
-
                         endSelX = textX
                         endSelY = textY
-                        
+
                         if textX < wIndex then
                             wIndex = textX - 1
                             if wIndex < 1 then
                                 wIndex = 1
                             end
                         end
-                        parent:setCursor(not isSelected(), anchx + textX - wIndex, anchy + textY - hIndex, self:getForeground())
+                        parent:setCursor(not isSelected(), ox + textX - wIndex, oy + textY - hIndex, self:getForeground())
                         self:updateDraw()
-                    end 
+                    end
                 end
                 return true
             end
@@ -639,7 +670,6 @@ return function(name, basalt)
         mouseUpHandler = function(self, button, x, y)
             if (base.mouseUpHandler(self, button, x, y)) then
                 local obx, oby = self:getAbsolutePosition()
-                local anchx, anchy = self:getPosition()
                     if (lines[y - oby + hIndex] ~= nil) then
                         endSelX = x - obx + wIndex
                         endSelY = y - oby + hIndex
@@ -648,32 +678,31 @@ return function(name, basalt)
                         end
                         if(startSelX==endSelX)and(startSelY==endSelY)then
                             startSelX, endSelX, startSelY, endSelY = nil, nil, nil, nil
-                        end                            
+                        end
                         self:updateDraw()
                     end
                 return true
             end
         end,
 
-        eventHandler = function(self, event, paste, p2, p3, p4)
-            if(base.eventHandler(self, event, paste, p2, p3, p4))then
-                if(event=="paste")then
-                    if(self:isFocused())then
-                        local parent = self:getParent()
-                        local fgColor, bgColor = self:getForeground(), self:getBackground()
-                        local w, h = self:getSize()
-                        lines[textY] = lines[textY]:sub(1, textX - 1) .. paste .. lines[textY]:sub(textX, lines[textY]:len())
-                        fgLines[textY] = fgLines[textY]:sub(1, textX - 1) .. tHex[fgColor]:rep(paste:len()) .. fgLines[textY]:sub(textX, fgLines[textY]:len())
-                        bgLines[textY] = bgLines[textY]:sub(1, textX - 1) .. tHex[bgColor]:rep(paste:len()) .. bgLines[textY]:sub(textX, bgLines[textY]:len())
-                        textX = textX + paste:len()
-                        if (textX >= w + wIndex) then
-                            wIndex = (textX+1)-w
-                        end
-                        local anchx, anchy = self:getPosition()
-                        parent:setCursor(true, anchx + textX - wIndex, anchy + textY - hIndex, fgColor)
-                        updateColors(self)
-                        self:updateDraw()
+        eventHandler = function(self, event, paste, ...)
+            base.eventHandler(self, event, paste, ...)
+            if(event=="paste")then
+                if(self:isFocused())then
+                    local parent = self:getParent()
+                    local fgColor, bgColor = self:getForeground(), self:getBackground()
+                    local w, h = self:getSize()
+                    lines[textY] = lines[textY]:sub(1, textX - 1) .. paste .. lines[textY]:sub(textX, lines[textY]:len())
+                    fgLines[textY] = fgLines[textY]:sub(1, textX - 1) .. tHex[fgColor]:rep(paste:len()) .. fgLines[textY]:sub(textX, fgLines[textY]:len())
+                    bgLines[textY] = bgLines[textY]:sub(1, textX - 1) .. tHex[bgColor]:rep(paste:len()) .. bgLines[textY]:sub(textX, bgLines[textY]:len())
+                    textX = textX + paste:len()
+                    if (textX >= w + wIndex) then
+                        wIndex = (textX+1)-w
                     end
+                    local anchx, anchy = self:getPosition()
+                    parent:setCursor(true, anchx + textX - wIndex, anchy + textY - hIndex, fgColor)
+                    updateColors(self)
+                    self:updateDraw()
                 end
             end
         end,
@@ -681,8 +710,6 @@ return function(name, basalt)
         draw = function(self)
             base.draw(self)
             self:addDraw("textfield", function()
-                local parent = self:getParent()
-                local obx, oby = self:getPosition()
                 local w, h = self:getSize()
                 local bgColor = tHex[self:getBackground()]
                 local fgColor = tHex[self:getForeground()]
@@ -708,21 +735,24 @@ return function(name, basalt)
                 end
         
                 if startSelX and endSelX and startSelY and endSelY then
-                    local sx, ex, sy, ey = getSelectionCoordinates(self)
+                    local sx, ex, sy, ey = getSelectionCoordinates()
                     for n = sy, ey do
                         local line = #lines[n]
                         local xOffset = 0
                         if n == sy and n == ey then
-                            xOffset = sx - 1
-                            line = line - (sx - 1) - (line - ex)
+                            xOffset = sx - 1 - (wIndex - 1)
+                            line = line - (sx - 1 - (wIndex - 1)) - (line - ex + (wIndex - 1))
                         elseif n == ey then
-                            line = line - (line - ex)
+                            line = line - (line - ex + (wIndex - 1))
                         elseif n == sy then
                             line = line - (sx - 1)
-                            xOffset = sx - 1
+                            xOffset = sx - 1 - (wIndex - 1)
                         end
-                        self:addBG(1 + xOffset, n, rep(tHex[selectionBG], line))
-                        self:addFG(1 + xOffset, n, rep(tHex[selectionFG], line))
+                        
+                        local visible_line_length = math.min(line, w - xOffset)
+                
+                        self:addBG(1 + xOffset, n, rep(tHex[selectionBG], visible_line_length))
+                        self:addFG(1 + xOffset, n, rep(tHex[selectionFG], visible_line_length))
                     end
                 end
             end)

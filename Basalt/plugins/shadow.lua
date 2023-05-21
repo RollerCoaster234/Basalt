@@ -1,3 +1,5 @@
+local XMLParser = require("xmlParser")
+
 return {
     VisualObject = function(base)
         local shadow = false        
@@ -26,12 +28,6 @@ return {
                         end
                     end
                 end)
-            end,
-
-            setValuesByXMLData = function(self, data)
-                base.setValuesByXMLData(self, data)
-                if(xmlValue("shadow", data)~=nil)then self:setShadow(xmlValue("shadow", data)) end
-                return self
             end
         }
 

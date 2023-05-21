@@ -46,12 +46,19 @@ return function(name, basalt)
             return self
         end,
 
+        getSpace = function(self)
+            return space
+        end,
+
         setScrollable = function(self, scroll)
             scrollable = scroll
             if(scroll==nil)then scrollable = true end
             return self
         end,
 
+        getScrollable = function(self)
+            return scrollable
+        end,
 
         mouseHandler = function(self, button, x, y)
             if(base:getBase().mouseHandler(self, button, x, y))then
@@ -97,7 +104,6 @@ return function(name, basalt)
             base.draw(self)
             self:addDraw("list", function()
                 local parent = self:getParent()
-                local obx, oby = self:getPosition()
                 local w,h = self:getSize()
                 local text = ""
                 local textBGCol = ""

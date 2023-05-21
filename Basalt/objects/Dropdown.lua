@@ -8,14 +8,13 @@ return function(name, basalt)
     base:setSize(12, 1)
     base:setZIndex(6)
 
-    local itemSelectedBG = colors.black
-    local itemSelectedFG = colors.lightGray
     local selectionColorActive = true
     local align = "left"
     local yOffset = 0
 
-    local dropdownW = 16
-    local dropdownH = 6
+    local dropdownW = 0
+    local dropdownH = 0
+    local autoSize = true
     local closedSymbol = "\16"
     local openedSymbol = "\31"
     local isOpened = false
@@ -46,17 +45,65 @@ return function(name, basalt)
             return yOffset
         end,
 
-        setDropdownSize = function(self, width, height)
-            dropdownW, dropdownH = width, height
+        addItem = function(self, t, ...)
+            base.addItem(self, t, ...)
+            if(autoSize)then
+                dropdownW = math.max(dropdownW, #t)
+                dropdownH = dropdownH + 1
+            end
+            return self
+        end,
+
+        removeItem = function(self, index)
+            base.removeItem(self, index)
+            if(autoSize)then
+                dropdownW = 0
+                dropdownH = 0
+                for n = 1, #list do
+                    dropdownW = math.max(dropdownW, #list[n].text)
+                end
+                dropdownH = #list
+            end
+        end,
+
+        isOpened = function(self)
+            return isOpened
+        end,
+
+        setOpened = function(self, open)
+            isOpened = open
             self:updateDraw()
             return self
+        end,
+
+        setDropdownSize = function(self, width, height)
+            dropdownW, dropdownH = width, height
+            autoSize = false
+            self:updateDraw()
+            return self
+        end,
+
+        setDropdownWidth = function(self, width)
+            return self:setDropdownSize(width, dropdownH)
+        end,
+
+        setDropdownHeight = function(self, height)
+            return self:setDropdownSize(dropdownW, height)
         end,
 
         getDropdownSize = function(self)
             return dropdownW, dropdownH
         end,
 
-        mouseHandler = function(self, button, x, y)
+        getDropdownWidth = function(self)
+            return dropdownW
+        end,
+
+        getDropdownHeight = function(self)
+            return dropdownH
+        end,
+
+        mouseHandler = function(self, button, x, y, isMon)
             if (isOpened) then
                 local obx, oby = self:getAbsolutePosition()
                 if(button==1)then
@@ -67,8 +114,14 @@ return function(name, basalt)
                                 if (obx <= x) and (obx + dropdownW > x) and (oby + n == y) then
                                     self:setValue(list[n + yOffset])
                                     self:updateDraw()
-                                    local val = self:sendEvent("mouse_click", self, "mouse_click", dir, x, y)
+                                    local val = self:sendEvent("mouse_click", self, "mouse_click", button, x, y)
                                     if(val==false)then return val end
+                                    if(isMon)then
+                                        basalt.schedule(function()
+                                            sleep(0.1)
+                                            self:mouseUpHandler(button, x, y)
+                                        end)()
+                                    end
                                     return true
                                 end
                             end
@@ -78,7 +131,8 @@ return function(name, basalt)
             end
             local base = base:getBase()
             if (base.mouseHandler(self, button, x, y)) then
-                isOpened = true
+                isOpened = not isOpened
+                self:getParent():setImportant(self)
                 self:updateDraw()
                 return true
             else
@@ -101,7 +155,7 @@ return function(name, basalt)
                                 if (obx <= x) and (obx + dropdownW > x) and (oby + n == y) then
                                     isOpened = false
                                     self:updateDraw()
-                                    local val = self:sendEvent("mouse_up", self, "mouse_up", dir, x, y)
+                                    local val = self:sendEvent("mouse_up", self, "mouse_up", button, x, y)
                                     if(val==false)then return val end
                                     return true
                                 end
@@ -112,8 +166,26 @@ return function(name, basalt)
             end
         end,
 
+        dragHandler = function(self, btn, x, y)
+            if(base.dragHandler(self, btn, x, y))then
+                isOpened = true
+            end
+        end,
+
         scrollHandler = function(self, dir, x, y)
+            if(isOpened)then
+                local xPos, yPos = self:getAbsolutePosition()
+                if(x >= xPos)and(x <= xPos + dropdownW)and(y >= yPos)and(y <= yPos + dropdownH)then
+                    self:setFocus()
+                end
+            end
             if (isOpened)and(self:isFocused()) then
+                local xPos, yPos = self:getAbsolutePosition()
+                if(x < xPos)or(x > xPos + dropdownW)or(y < yPos)or(y > yPos + dropdownH)then
+                    return false
+                end
+                if(#self:getAll() <= dropdownH)then return false end
+
                 local list = self:getAll()
                 yOffset = yOffset + dir
                 if (yOffset < 0) then
@@ -156,6 +228,7 @@ return function(name, basalt)
                             local t =utils.getTextHorizontalAlign(list[n + yOffset].text, dropdownW, align)
                             if (list[n + yOffset] == val) then
                                 if (selectionColorActive) then
+                                    local itemSelectedBG, itemSelectedFG = self:getSelectionColor()
                                     self:addBlit(1, n+1, t, tHex[itemSelectedFG]:rep(#t), tHex[itemSelectedBG]:rep(#t))
                                 else
                                     self:addBlit(1, n+1, t, tHex[list[n + yOffset].fgCol]:rep(#t), tHex[list[n + yOffset].bgCol]:rep(#t))
