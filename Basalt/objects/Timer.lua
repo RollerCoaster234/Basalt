@@ -2,8 +2,22 @@ return function(name, basalt)
     local base = basalt.getObject("Object")(name, basalt)
     local objectType = "Timer"
 
-    local timer = 0
-    local savedRepeats = 0
+    base:addProperty("Timer", "number", 0, false, function(self, value)
+        if (value < 0) then
+            value = 0
+        end
+        return value
+    end)
+
+    base:addProperty("Repeat", "number", 1, false, function(self, value)
+        if (value < 0) then
+            value = 0
+        end
+        return value
+    end)
+
+    base:combineProperty("Time", "Timer", "Repeat")
+
     local repeats = 0
     local timerObj
     local timerIsActive = false
@@ -13,21 +27,12 @@ return function(name, basalt)
             return objectType
         end,
 
-        setTime = function(self, _timer, _repeats)
-            timer = _timer or 0
-            savedRepeats = _repeats or 1
-            return self
-        end,
-
-        getTime = function(self)
-            return timer
-        end,
-
         start = function(self)
             if(timerIsActive)then
                 os.cancelTimer(timerObj)
             end
-            repeats = savedRepeats
+            local timer, repeatAmount = self:getTime()
+            repeats = repeatAmount
             timerObj = os.startTimer(timer)
             timerIsActive = true
             self:listenEvent("other_event")
@@ -64,6 +69,7 @@ return function(name, basalt)
             base.eventHandler(self, event, ...)
             if event == "timer" and tObj == timerObj and timerIsActive then
                 self:sendEvent("timed_event")
+                local timer = self:getTimer()
                 if (repeats >= 1) then
                     repeats = repeats - 1
                     if (repeats >= 1) then

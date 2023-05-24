@@ -15,10 +15,12 @@ return function(name, basalt)
     local eventSystem = basaltEvent()
     local registeredEvents = {}
     local activeEvents = {}
+    local properties = {}
 
     local parent
+    local object
     
-    local object = {
+    object = {
         init = function(self)
             if(initialized)then return false end
             initialized = true
@@ -35,6 +37,11 @@ return function(name, basalt)
             return objectType==t
         end,
 
+        getName = function(self)
+            return name
+        end,
+
+        --[[
         getProperty = function(self, name)
             local get = self["get" .. name:gsub("^%l", string.upper)]
             if (get ~= nil) then
@@ -47,14 +54,71 @@ return function(name, basalt)
             if (set ~= nil) then
                 return set(self, ...)
             end
+        end,]]
+
+        getProperty = function(self, name)
+            return properties[name:gsub("^%l", string.upper)]
         end,
 
-        getName = function(self)
-            return name
+        getProperties = function(self)
+            return properties
         end,
 
-        getParent = function(self)
-            return parent
+        setProperty = function(self, name, value)
+            properties[name:gsub("^%l", string.upper)] = value
+            self:updateDraw()
+            return self
+        end,
+
+        addProperty = function(self, name, typ, defaultValue, readonly, setLogic, getLogic)
+            -- typ = number, string, boolean, char, if color then check colors[value], if table then check if value is something inside table
+            -- | for splitting types
+            -- later implementation
+            name = name:gsub("^%l", string.upper)
+            properties[name] = defaultValue
+            object["get" .. name] = function(self)
+                if(getLogic~=nil)then
+                    return getLogic(self, properties[name])
+                end
+                return properties[name]
+            end
+            if(not readonly)then
+                object["set" .. name] = function(self, value)
+                    if(setLogic~=nil)then
+                        local modifiedVal = setLogic(self, value)
+                        if(modifiedVal~=nil)then
+                            value = modifiedVal
+                        end
+                    end
+                    properties[name] = value
+                    self:updateDraw()
+                    return self
+                end
+            end
+            return self
+        end,
+
+        combineProperty = function(self, name, ...)
+            name = name:gsub("^%l", string.upper)
+            local args = {...}
+            object["get" .. name] = function(self)
+                local result = {}
+                for _,v in pairs(args)do
+                    v = v:gsub("^%l", string.upper)
+                    result[#result+1] = self["get" .. v](self)
+                end
+                return unpack(result)
+            end
+            object["set" .. name] = function(self, ...)
+                local values = {...}
+                for k,v in pairs(args)do
+                    if(self["set"..v]~=nil)then -- if später entfernen
+                        self["set" .. v](self, values[k])
+                    end
+                end
+                return self
+            end
+            return self
         end,
 
         setParent = function(self, newParent, noRemove)
@@ -68,6 +132,10 @@ return function(name, basalt)
                 parent = newParent
             end
             return self
+        end,
+
+        getParent = function(self)
+            return parent
         end,
 
         updateEvents = function(self)
@@ -91,10 +159,6 @@ return function(name, basalt)
                 end
             end
             return self
-        end,
-
-        getZIndex = function(self)
-            return 1
         end,
 
         enable = function(self)
@@ -146,6 +210,10 @@ return function(name, basalt)
         registerEvent = function(self, event, func)
             if(parent~=nil)then
                 parent:addEvent(event, self)
+                if(event=="mouse_drag")then
+                    parent:addEvent("mouse_click", self)
+                    parent:addEvent("mouse_up", self)
+                end
             end
             eventSystem:registerEvent(event, func)
             if (registeredEvents[event] == nil) then
@@ -277,6 +345,14 @@ return function(name, basalt)
             return self
         end,
     }
+
+    object:addProperty("ZIndex", "number", 1, false, function(self, value)
+        if (parent ~= nil) then
+            parent:updateZIndex(self, value)
+            self:updateDraw()
+        end
+        return value
+    end)
 
     object.__index = object
     return object

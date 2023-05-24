@@ -188,8 +188,12 @@ return function(img)
     local width,height = 0, 0
 
     if(img~=nil)then
-        if(img[1][1][1]~=nil)then
-            width,height = metadata.width or #img[1][1][1], metadata.height or #img[1]
+        if(img[1]~=nil)then
+            if(img[1][1]~=nil)then
+                if(img[1][1][1]~=nil)then
+                    width,height = metadata.width or #img[1][1][1], metadata.height or #img[1]
+                end
+            end
         end
     end
 

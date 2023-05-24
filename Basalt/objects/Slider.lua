@@ -8,18 +8,24 @@ return function(name, basalt)
     base:setValue(1)
     base:setBackground(false, "\140", colors.black)
 
-    local barType = "horizontal"
-    local symbol = " "
-    local symbolFG = colors.black
-    local symbolBG = colors.gray
-    local maxValue = 12
+    base:addProperty("Symbol", "char", " ")
+    base:addProperty("SymbolForeground", "color", colors.black)
+    base:addProperty("SymbolBackground", "color", colors.gray)
+    base:combineProperty("Symbol", "SymbolForeground", "SymbolBackground")
+    base:addProperty("SymbolSize", "number", 1)
+    base:addProperty("BarType", {"vertical", "horizontal"}, "horizontal")
+    base:addProperty("MaxValue", "number", 12)
+
     local index = 1
-    local symbolSize = 1
 
     local function mouseEvent(self, button, x, y)
     local obx, oby = self:getPosition()
     local w,h = self:getSize()
+    local barType = self:getBarType()
         local size = barType == "vertical" and h or w
+        local symbolSize = self:getSymbolSize()
+        local symbol = self:getSymbol()
+        local maxValue = self:getMaxValue()
         for i = 0, size do
             if ((barType == "vertical" and oby + i == y) or (barType == "horizontal" and obx + i == x)) and (obx <= x) and (obx + w > x) and (oby <= y) and (oby + h > y) then
                 index = math.min(i + 1, size - (#symbol + symbolSize - 2))
@@ -40,22 +46,15 @@ return function(name, basalt)
             self:listenEvent("mouse_scroll")
         end,
 
-        setSymbol = function(self, _symbol)
-            symbol = _symbol:sub(1, 1)
-            self:updateDraw()
-            return self
-        end,
-
-        getSymbol = function(self)
-            return symbol
-        end,
-
         setIndex = function(self, _index)
             index = _index
             if (index < 1) then
                 index = 1
             end
             local w,h = self:getSize()
+            local symbolSize = self:getSymbolSize()
+            local maxValue = self:getMaxValue()
+            local barType = self:getBarType()
             index = math.min(index, (barType == "vertical" and h or w) - (symbolSize - 1))
             self:setValue(maxValue / (barType == "vertical" and h or w) * index)
             self:updateDraw()
@@ -64,35 +63,6 @@ return function(name, basalt)
 
         getIndex = function(self)
             return index
-        end,
-
-        setMaxValue = function(self, val)
-            maxValue = val
-            return self
-        end,
-
-        getMaxValue = function(self)
-            return maxValue
-        end,
-
-        setSymbolColor = function(self, col)
-            symbolColor = col
-            self:updateDraw()
-            return self
-        end,
-
-        getSymbolColor = function(self)
-            return symbolColor
-        end,
-
-        setBarType = function(self, _typ)
-            barType = _typ:lower()
-            self:updateDraw()
-            return self
-        end,
-
-        getBarType = function(self)
-            return barType
         end,
 
         mouseHandler = function(self, button, x, y)
@@ -118,6 +88,9 @@ return function(name, basalt)
                 if (index < 1) then
                     index = 1
                 end
+                local symbolSize = self:getSymbolSize()
+                local maxValue = self:getMaxValue()
+                local barType = self:getBarType()
                 index = math.min(index, (barType == "vertical" and h or w) - (symbolSize - 1))
                 self:setValue(maxValue / (barType == "vertical" and h or w) * index)
                 self:updateDraw()
@@ -131,6 +104,12 @@ return function(name, basalt)
             self:addDraw("slider", function()
                 local w,h = self:getSize()
                 local bgCol,fgCol = self:getBackground(), self:getForeground()
+                local symbolSize = self:getSymbolSize()
+                local symbol = self:getSymbol()
+                local symbolFG = self:getSymbolForeground()
+                local symbolBG = self:getSymbolBackground()
+                local barType = self:getBarType()
+                local obx, oby = self:getPosition()
                 if (barType == "horizontal") then
                     self:addText(index, oby, symbol:rep(symbolSize))
                     if(symbolBG~=false)then self:addBG(index, 1, tHex[symbolBG]:rep(#symbol*symbolSize)) end
@@ -141,11 +120,11 @@ return function(name, basalt)
                     for n = 0, h - 1 do
                         if (index == n + 1) then
                             for curIndexOffset = 0, math.min(symbolSize - 1, h) do
-                                self:addBlit(1, 1+n+curIndexOffset, symbol, tHex[symbolColor], tHex[symbolColor])
+                                self:addBlit(1, 1+n+curIndexOffset, symbol, tHex[symbolFG], tHex[symbolFG])
                             end
                         else
                             if (n + 1 < index) or (n + 1 > index - 1 + symbolSize) then
-                                self:addBlit(1, 1+n, bgSymbol, tHex[fgCol], tHex[bgCol])
+                                self:addBlit(1, 1+n, " ", tHex[fgCol], tHex[bgCol])
                             end
                         end
                     end

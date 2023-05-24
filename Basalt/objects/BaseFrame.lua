@@ -7,8 +7,6 @@ return function(name, basalt)
     local base = basalt.getObject("Container")(name, basalt)
     local objectType = "BaseFrame"
 
-    local xOffset, yOffset = 0, 0
-
     local colorTheme = {}
 
     local updateRender = true
@@ -17,6 +15,17 @@ return function(name, basalt)
     local basaltDraw = drawSystem(termObject)
 
     local xCursor, yCursor, cursorBlink, cursorColor = 1, 1, false, colors.white
+
+    base:addProperty("XOffset", "number", 0)
+    base:addProperty("YOffset", "number", 0)
+    base:combineProperty("Offset", "XOffset", "YOffset")
+    base:addProperty("Term", "table", nil, false, function(self, value)
+        termObject = value
+        basaltDraw = nil
+        if(value~=nil)then
+            basaltDraw = drawSystem(value)
+        end
+    end)
 
     local object = {   
         getType = function()
@@ -30,46 +39,20 @@ return function(name, basalt)
             return base
         end,
 
-        getOffset = function(self)
-            return xOffset, yOffset
-        end,
-
-        setOffset = function(self, xOff, yOff)
-            xOffset = xOff or xOffset
-            yOffset = yOff or yOffset
-            self:updateDraw()
-            return self
-        end,
-
-        getXOffset = function(self)
-            return xOffset
-        end,
-
-        setXOffset = function(self, newXOffset)
-            return self:setOffset(newXOffset, nil)
-        end,
-
-        getYOffset = function(self)
-            return yOffset
-        end,
-
-        setYOffset = function(self, newYOffset)
-            return self:setOffset(nil, newYOffset)
-        end,
-
-        setPalette = function(self, col, ...)            
+        setPalette = function(self, col, ...)
             if(self==basalt.getActiveFrame())then
                 if(type(col)=="string")then
-                    colorTheme[col] = ...
-                    termObject.setPaletteColor(type(col)=="number" and col or colors[col], ...)
+                    col = colors[col]
+                    colorTheme[math.log(col, 2)] = ...
+                    termObject.setPaletteColor(col, ...)
                 elseif(type(col)=="table")then
                     for k,v in pairs(col)do
                         colorTheme[k] = v
                         if(type(v)=="number")then
-                            termObject.setPaletteColor(type(k)=="number" and k or colors[k], v)
+                            termObject.setPaletteColor(2 ^ k, v)
                         else
                             local r,g,b = table.unpack(v)
-                            termObject.setPaletteColor(type(k)=="number" and k or colors[k], r,g,b)
+                            termObject.setPaletteColor(2 ^ k, r,g,b)
                         end
                     end
                 end
@@ -105,10 +88,10 @@ return function(name, basalt)
             end
             for k,v in pairs(colorTheme)do
                 if(type(v)=="number")then
-                    termObject.setPaletteColor(type(k)=="number" and k or colors[k], v)
+                    termObject.setPaletteColor(k ^ 2, v)
                 else
                     local r,g,b = table.unpack(v)
-                    termObject.setPaletteColor(type(k)=="number" and k or colors[k], r,g,b)
+                    termObject.setPaletteColor(k ^ 2, r,g,b)
                 end
             end
             basalt.setMainFrame(self)
@@ -150,20 +133,6 @@ return function(name, basalt)
             end
         end,
 
-        setTerm = function(self, newTerm)
-            termObject = newTerm
-            if(newTerm==nil)then
-                basaltDraw = nil
-            else
-                basaltDraw = drawSystem(termObject)
-            end
-            return self
-        end,
-
-        getTerm = function()
-            return termObject
-        end,
-
         blit = function (self, x, y, t, f, b)
             local obx, oby = self:getPosition()
             local w, h = self:getSize()
@@ -197,7 +166,7 @@ return function(name, basalt)
         end,
     }
 
-    for k,v in pairs({mouse_click={"mouseHandler", true},mouse_up={"mouseUpHandler", false},mouse_drag={"dragHandler", false},mouse_scroll={"scrollHandler", true},mouse_hover={"hoverHandler", false}})do
+    for _,v in pairs({mouse_click={"mouseHandler", true},mouse_up={"mouseUpHandler", false},mouse_drag={"dragHandler", false},mouse_scroll={"scrollHandler", true},mouse_hover={"hoverHandler", false}})do
         object[v[1]] = function(self, btn, x, y, ...)
             if(base[v[1]](self, btn, x, y, ...))then
                 basalt.setActiveFrame(self)
@@ -205,7 +174,7 @@ return function(name, basalt)
         end
     end
 
-    for k,v in pairs({"drawBackgroundBox", "drawForegroundBox", "drawTextBox"})do
+    for _,v in pairs({"drawBackgroundBox", "drawForegroundBox", "drawTextBox"})do
         object[v] = function(self, x, y, width, height, symbol)
             local obx, oby = self:getPosition()
             local w, h  = self:getSize()
@@ -215,7 +184,7 @@ return function(name, basalt)
         end
     end
 
-    for k,v in pairs({"setBG", "setFG", "setText"}) do
+    for _,v in pairs({"setBG", "setFG", "setText"}) do
         object[v] = function(self, x, y, str)
             local obx, oby = self:getPosition()
             local w, h  = self:getSize()

@@ -3,24 +3,27 @@ return function(name, basalt)
     -- Base object
     local objectType = "ChangeableObject"
 
-    local value
+
+    base:addProperty("ChangeHandler", "function", nil)
+    base:addProperty("value", "any", nil, false, function(self, value)
+        local _value = self:getValue()
+        if (value ~= _value) then
+            local valueChangedHandler = self:getChangeHandler()
+            print(valueChangedHandler)
+            if(valueChangedHandler~=nil)then
+                valueChangedHandler(self, value)
+            end
+            self:sendEvent("value_changed", value)
+        end
+    end)
     
     local object = {
-        setValue = function(self, _value, valueChangedHandler)
-            if (value ~= _value) then
-                value = _value
-                self:updateDraw()
-                if(valueChangedHandler~=false)then
-                    self:valueChangedHandler()
-                end
-            end
-            return self
+        getType = function(self)
+            return objectType
         end,
-
-        getValue = function(self)
-            return value
+        isType = function(self, t)
+            return objectType==t or base.isType~=nil and base.isType(t) or false
         end,
-
         onChange = function(self, ...)
             for _,v in pairs(table.pack(...))do
                 if(type(v)=="function")then
@@ -28,10 +31,6 @@ return function(name, basalt)
                 end
             end
             return self
-        end,
-
-        valueChangedHandler = function(self)
-            self:sendEvent("value_changed", value)
         end,
     }
 

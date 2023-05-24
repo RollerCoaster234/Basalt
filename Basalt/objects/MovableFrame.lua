@@ -7,22 +7,11 @@ return function(name, basalt)
 
     local dragXOffset, dragYOffset, isDragging = 0, 0, false
 
-    local dragMap = {
-        {x1 = 1, x2 = "width", y1 = 1, y2 = 1}
-    }
+    base:addProperty("DraggingMap", "table", {{x1 = 1, x2 = "width", y1 = 1, y2 = 1}})
 
-    local object = {    
+    local object = {
         getType = function()
             return objectType
-        end,
-
-        setDraggingMap = function(self, t)
-            dragMap = t
-            return self
-        end,
-
-        getDraggingMap = function(self)
-            return dragMap
         end,
 
         isType = function(self, t)
@@ -31,8 +20,8 @@ return function(name, basalt)
 
         getBase = function(self)
             return base
-        end, 
-        
+        end,
+
         load = function(self)
             base.load(self)
             self:listenEvent("mouse_click")
@@ -50,13 +39,10 @@ return function(name, basalt)
         dragHandler = function(self, btn, x, y)
             if(base.dragHandler(self, btn, x, y))then
                 if (isDragging) then
-                    local xO, yO = parent:getOffset()
-                    xO = xO < 0 and math.abs(xO) or -xO
-                    yO = yO < 0 and math.abs(yO) or -yO
                     local parentX = 1
                     local parentY = 1
                     parentX, parentY = parent:getAbsolutePosition()
-                    self:setPosition(x + dragXOffset - (parentX - 1) + xO, y + dragYOffset - (parentY - 1) + yO)
+                    self:setPosition(x + dragXOffset - (parentX - 1), y + dragYOffset - (parentY - 1))
                     self:updateDraw()
                 end
                 return true
@@ -68,6 +54,7 @@ return function(name, basalt)
                 parent:setImportant(self)
                 local fx, fy = self:getAbsolutePosition()
                 local w, h = self:getSize()
+                local dragMap = self:getDraggingMap()
                 for k,v in pairs(dragMap)do
                     local x1, x2 = v.x1=="width" and w or v.x1, v.x2=="width" and w or v.x2
                     local y1, y2= v.y1=="height" and h or v.y1, v.y2=="height" and h or v.y2

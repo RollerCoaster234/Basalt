@@ -8,7 +8,7 @@ return {
         local textureMode = "default"
 
         local object = {
-            addTexture = function(self, path, animate)
+            setTexture = function(self, path, animate)
                 bimg = images.loadImageAsBimg(path)
                 texture = bimg[1]
                 if(animate)then
@@ -105,7 +105,7 @@ return {
                             self:addBlit(1, k, t:sub(textureX, textureX + textureWidth), f:sub(textureX, textureX + textureWidth), b:sub(textureX, textureX + textureWidth))
                         end
                     end
-                end, 1)
+                end)
                 self:setDrawState("texture-base", false)
             end
         }

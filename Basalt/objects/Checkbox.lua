@@ -10,7 +10,12 @@ return function(name, basalt)
     base:setValue(false)
     base:setSize(1, 1)
 
-    local symbol,inactiveSymbol,text,textPos = "\42"," ","","right"
+    base:addProperty("activeSymbol", "char", "\42")
+    base:addProperty("inactiveSymbol", "char", " ")
+    base:combineProperty("Symbol", "activeSymbol", "inactiveSymbol")
+
+    base:addProperty("text", "string", "")
+    base:addProperty("textPosition", {"left", "right"}, "right")
 
     local object = {
         load = function(self)
@@ -23,51 +28,6 @@ return function(name, basalt)
         end,
         isType = function(self, t)
             return objectType==t or base.isType~=nil and base.isType(t) or false
-        end,
-
-        setSymbol = function(self, sym, inactive)
-            symbol = sym or symbol
-            inactiveSymbol = inactive or inactiveSymbol
-            self:updateDraw()
-            return self
-        end,
-
-        setActiveSymbol = function(self, sym)
-            return self:setSymbol(sym, nil)
-        end,
-
-        setInactiveSymbol = function(self, inactive)
-            return self:setSymbol(nil, inactive)
-        end,
-
-        getSymbol = function(self)
-            return symbol, inactiveSymbol
-        end,
-
-        getActiveSymbol = function(self)
-            return symbol
-        end,
-
-        getInactiveSymbol = function(self)
-            return inactiveSymbol
-        end,
-
-        setText = function(self, _text)
-            text = _text
-            return self
-        end,
-
-        getText = function(self)
-            return text
-        end,
-
-        setTextPosition = function(self, pos)
-            textPos = pos or textPos
-            return self
-        end,
-
-        getTextPosition = function(self)
-            return textPos
         end,
 
         setChecked = base.setValue,
@@ -92,10 +52,13 @@ return function(name, basalt)
         draw = function(self)
             base.draw(self)
             self:addDraw("checkbox", function()
-                local obx, oby = self:getPosition()
                 local w,h = self:getSize()
                 local verticalAlign = utils.getTextVerticalAlign(h, "center")
                 local bg,fg = self:getBackground(), self:getForeground()
+                local symbol = self:getActiveSymbol()
+                local inactiveSymbol = self:getInactiveSymbol()
+                local text = self:getText()
+                local textPos = self:getTextPosition()
                 if (self:getValue()) then
                     self:addBlit(1, verticalAlign, utils.getTextHorizontalAlign(symbol, w, "center"), tHex[fg], tHex[bg])
                 else

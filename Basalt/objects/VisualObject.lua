@@ -3,18 +3,33 @@ local tHex = require("tHex")
 
 local sub, find, insert = string.sub, string.find, table.insert
 
+
+local function split(str, d)
+    local result = {}
+    if str == "" then
+        return result
+    end
+    d = d or " "
+    local start = 1
+    local delim_start, delim_end = find(str, d, start)
+        while delim_start do
+            insert(result, {x=start, value=sub(str, start, delim_start - 1)})
+            start = delim_end + 1
+            delim_start, delim_end = find(str, d, start)
+        end
+    insert(result, {x=start, value=sub(str, start)})
+    return result
+end
+
 return function(name, basalt)
     local base = basalt.getObject("Object")(name, basalt)
     -- Base object
     local objectType = "VisualObject" -- not changeable
 
     local isVisible,ignOffset,isHovered,isClicked,isDragging = true,false,false,false,false
-    local zIndex = 1
 
-    local x, y, width, height = 1,1,1,1
-    local dragStartX, dragStartY, dragXOffset, dragYOffset = 0, 0, 0, 0
+    local dragStartX, dragStartY = 0, 0
 
-    local bgColor,fgColor, transparency = colors.black, colors.white, false
     local parent
 
     local preDrawQueue = {}
@@ -23,23 +38,41 @@ return function(name, basalt)
 
     local renderObject = {}
 
-    local function split(str, d)
-        local result = {}
-        if str == "" then
-            return result
+    base:addProperty("Visible", "boolean", true)
+    base:addProperty("Transparent", "boolean", false)
+    base:addProperty("Background", "color", colors.black)
+    base:addProperty("Foreground", "color", colors.white)
+    base:addProperty("X", "number", 1, false, function(self, val)
+        local y = self:getProperty("Y")
+        if (parent ~= nil) then
+            parent:customEventHandler("basalt_FrameReposition", self, val, y)
         end
-        d = d or " "
-        local start = 1
-        local delim_start, delim_end = find(str, d, start)
-            while delim_start do
-                insert(result, {x=start, value=sub(str, start, delim_start - 1)})
-                start = delim_end + 1
-                delim_start, delim_end = find(str, d, start)
-            end
-        insert(result, {x=start, value=sub(str, start)})
-        return result
-    end
-
+        self:repositionHandler(val, y)
+    end)
+    base:addProperty("Y", "number", 1, false, function(self, val)
+        local x = self:getProperty("X")
+        if (parent ~= nil) then
+            parent:customEventHandler("basalt_FrameReposition", self, x, val)
+        end
+        self:repositionHandler(x, val)
+    end)
+    base:addProperty("Width", "number", 1, false, function(self, val)
+        local height = self:getProperty("Height")
+        if (parent ~= nil) then
+            parent:customEventHandler("basalt_FrameResize", self, val, height)
+        end
+        self:resizeHandler(val, height)
+    end)
+    base:addProperty("Height", "number", 1, false, function(self, val)
+        local width = self:getProperty("Width")
+        if (parent ~= nil) then
+            parent:customEventHandler("basalt_FrameResize", self, width, val)
+        end
+        self:resizeHandler(width, val)
+    end)
+    base:addProperty("IgnoreOffset", "boolean", false, false)
+    base:combineProperty("Position", "X", "Y")
+    base:combineProperty("Size", "Width", "Height")
 
     local object = {
         getType = function(self)
@@ -48,7 +81,7 @@ return function(name, basalt)
 
         getBase = function(self)
             return base
-        end,  
+        end,
       
         isType = function(self, t)
             return objectType==t or base.isType~=nil and base.isType(t) or false
@@ -59,31 +92,17 @@ return function(name, basalt)
         end,
 
         show = function(self)
-            isVisible = true
-            self:updateDraw()
+            self:setVisible(true)
             return self
         end,
 
         hide = function(self)
-            isVisible = false
-            self:updateDraw()
+            self:setVisible(false)
             return self
         end,
 
         isVisible = function(self)
-            return isVisible
-        end,
-
-        setVisible = function(self, _isVisible)
-            isVisible = _isVisible or not isVisible
-            self:updateDraw()
-            return self
-        end,
-
-        setTransparency = function(self, _transparency)
-            transparency = _transparency~= nil and _transparency or true
-            self:updateDraw()
-            return self
+            return self:getVisible()
         end,
 
         setParent = function(self, newParent, noRemove)
@@ -99,116 +118,11 @@ return function(name, basalt)
             return self
         end,
 
-        setZIndex = function(self, index)
-            zIndex = index
-            if (parent ~= nil) then
-                parent:updateZIndex(self, zIndex)
-                self:updateDraw()
-            end            
-            return self
-        end,
-
-        getZIndex = function(self)
-            return zIndex
-        end,
-
         updateDraw = function(self)
             if (parent ~= nil) then
                 parent:updateDraw()
             end
             return self
-        end,
-
-        setPosition = function(self, xPos, yPos, rel)
-            local curX, curY = x, y
-            if(type(xPos)=="number")then
-                x = rel and x+xPos or xPos
-            end
-            if(type(yPos)=="number")then
-                y = rel and y+yPos or yPos
-            end
-            if(parent~=nil)then parent:customEventHandler("basalt_FrameReposition", self) end
-            if(self:getType()=="Container")then parent:customEventHandler("basalt_FrameReposition", self) end
-            self:updateDraw()
-            self:repositionHandler(curX, curY)
-            return self
-        end,
-
-        getX = function(self)
-            return x
-        end,
-
-        setX = function(self, newX)
-            return self:setPosition(newX, y)
-        end,
-
-        getY = function(self)
-            return y
-        end,
-
-        setY = function(self, newY)
-            return self:setPosition(x, newY)
-        end,
-
-        getPosition = function(self)
-            return x, y
-        end,
-
-        setSize = function(self, newWidth, newHeight, rel)
-            local oldW, oldH = width, height
-            if(type(newWidth)=="number")then
-                width = rel and width+newWidth or newWidth
-            end
-            if(type(newHeight)=="number")then
-                height = rel and height+newHeight or newHeight
-            end
-            if(parent~=nil)then 
-                parent:customEventHandler("basalt_FrameResize", self)
-                if(self:getType()=="Container")then parent:customEventHandler("basalt_FrameResize", self) end
-            end
-            self:resizeHandler(oldW, oldH)
-            self:updateDraw()
-            return self
-        end,
-
-        getHeight = function(self)
-            return height
-        end,
-
-        setHeight = function(self, newHeight)
-            return self:setSize(width, newHeight)
-        end,
-
-        getWidth = function(self)
-            return width
-        end,
-
-        setWidth = function(self, newWidth)
-            return self:setSize(newWidth, height)
-        end,
-
-        getSize = function(self)
-            return width, height
-        end,
-
-        setBackground = function(self, color)
-            bgColor = color
-            self:updateDraw()
-            return self
-        end,
-
-        getBackground = function(self)
-            return bgColor
-        end,
-
-        setForeground = function(self, color)
-            fgColor = color or false
-            self:updateDraw()
-            return self
-        end,
-
-        getForeground = function(self)
-            return fgColor
         end,
 
         getAbsolutePosition = function(self, x, y)
@@ -223,16 +137,6 @@ return function(name, basalt)
                 y = fy + y - 1
             end
             return x, y
-        end,
-
-        ignoreOffset = function(self, ignore)
-            ignOffset = ignore
-            if(ignore==nil)then ignOffset = true end
-            return self
-        end,
-
-        getIgnoreOffset = function(self)
-            return ignOffset
         end,
 
         isCoordsInObject = function(self, x, y)
@@ -350,8 +254,7 @@ return function(name, basalt)
 
             if(self:isCoordsInObject(x, y))then
                 local objX, objY = self:getAbsolutePosition()
-                dragStartX, dragStartY = x, y 
-                dragXOffset, dragYOffset = objX - x, objY - y
+                dragStartX, dragStartY = x, y
             end
         end,
 
@@ -475,12 +378,13 @@ return function(name, basalt)
         addText = function(self, x, y, text)
             local obj = self:getParent() or self
             local xPos,yPos = self:getPosition()
+            local transparent = self:getTransparent()
             if(parent~=nil)then
                 local xO, yO = parent:getOffset()
                 xPos = ignOffset and xPos or xPos - xO
                 yPos = ignOffset and yPos or yPos - yO
             end
-            if not(transparency)then
+            if not(transparent)then
                 obj:setText(x+xPos-1, y+yPos-1, text)
                 return
             end
@@ -495,12 +399,13 @@ return function(name, basalt)
         addBG = function(self, x, y, bg, noText)
             local obj = parent or self
             local xPos,yPos = self:getPosition()
+            local transparent = self:getTransparent()
             if(parent~=nil)then
                 local xO, yO = parent:getOffset()
                 xPos = ignOffset and xPos or xPos - xO
                 yPos = ignOffset and yPos or yPos - yO
             end
-            if not(transparency)then
+            if not(transparent)then
                 obj:setBG(x+xPos-1, y+yPos-1, bg)
                 return
             end
@@ -521,12 +426,13 @@ return function(name, basalt)
         addFG = function(self, x, y, fg)
             local obj = parent or self
             local xPos,yPos = self:getPosition()
+            local transparent = self:getTransparent()
             if(parent~=nil)then
                 local xO, yO = parent:getOffset()
                 xPos = ignOffset and xPos or xPos - xO
                 yPos = ignOffset and yPos or yPos - yO
             end
-            if not(transparency)then
+            if not(transparent)then
                 obj:setFG(x+xPos-1, y+yPos-1, fg)
                 return
             end
@@ -541,12 +447,13 @@ return function(name, basalt)
         addBlit = function(self, x, y, t, fg, bg)
             local obj = parent or self
             local xPos,yPos = self:getPosition()
+            local transparent = self:getTransparent()
             if(parent~=nil)then
                 local xO, yO = parent:getOffset()
                 xPos = ignOffset and xPos or xPos - xO
                 yPos = ignOffset and yPos or yPos - yO
             end
-            if not(transparency)then
+            if not(transparent)then
                 obj:blit(x+xPos-1, y+yPos-1, t, fg, bg)
                 return
             end
@@ -631,6 +538,8 @@ return function(name, basalt)
         draw = function(self)
             self:addDraw("base", function()
                 local w,h = self:getSize()
+                local bgColor = self:getBackground()
+                local fgColor = self:getForeground()
                 if(bgColor~=false)then
                     self:addTextBox(1, 1, w, h, " ")
                     self:addBackgroundBox(1, 1, w, h, bgColor)
@@ -641,6 +550,7 @@ return function(name, basalt)
             end, 1)
         end,
     }
+
     object.__index = object
     return setmetatable(object, base)
 end

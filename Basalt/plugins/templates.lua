@@ -1,11 +1,11 @@
-local baseTheme = { -- The default main theme for basalt!
+local baseTemplate = { -- The default main theme for basalt!
     BaseFrameBG = colors.lightGray,
     BaseFrameText = colors.black,
     FrameBG = colors.gray,
     FrameText = colors.black,
     ButtonBG = colors.gray,
     ButtonText = colors.black,
-    CheckboxBG = colors.lightGray,
+    CheckboxBG = colors.gray,
     CheckboxText = colors.black,
     InputBG = colors.black,
     InputText = colors.lightGray,
@@ -39,23 +39,24 @@ local baseTheme = { -- The default main theme for basalt!
     LabelBG = false,
     LabelText = colors.black,
     GraphBG = colors.gray,
-    GraphText = colors.black    
+    GraphText = colors.black
 }
+
 
 local plugin = {
     Container = function(base, name, basalt)
-        local theme = {}
+        local template = {}
 
         local object = {
-            getTheme = function(self, name)
+            getTemplate = function(self, name)
                 local parent = self:getParent()
-                return theme[name] or (parent~=nil and parent:getTheme(name) or baseTheme[name])
+                return template[name] or (parent~=nil and parent:getTemplate(name) or baseTemplate[name])
             end,
-            setTheme = function(self, _theme, col)
-                if(type(_theme)=="table")then
-                    theme = _theme
-                elseif(type(_theme)=="string")then
-                    theme[_theme] = col
+            setTemplate = function(self, _template, col)
+                if(type(_template)=="table")then
+                    template = _template
+                elseif(type(_template)=="string")then
+                    template[_template] = col
                 end
                 self:updateDraw()
                 return self
@@ -66,16 +67,16 @@ local plugin = {
 
     basalt = function()
         return {
-            getTheme = function(name)
-                return baseTheme[name]
+            getTemplate = function(name)
+                return baseTemplate[name]
             end,
-            setTheme = function(_theme, col)
-                if(type(_theme)=="table")then
-                    baseTheme = _theme
-                elseif(type(_theme)=="string")then
-                    baseTheme[_theme] = col
+            setTemplate = function(_template, col)
+                if(type(_template)=="table")then
+                    baseTemplate = _template
+                elseif(type(_template)=="string")then
+                    baseTemplate[_template] = col
                 end
-            end
+            end,
         }
     end
     
@@ -87,8 +88,8 @@ plugin[v] = function(base, name, basalt)
             init = function(self)
                 if(base.init(self))then
                     local parent = self:getParent() or self
-                    self:setBackground(parent:getTheme(v.."BG"))
-                    self:setForeground(parent:getTheme(v.."Text"))      
+                    self:setBackground(parent:getTemplate(v.."BG"))
+                    self:setForeground(parent:getTemplate(v.."Text"))      
                 end
             end
         }

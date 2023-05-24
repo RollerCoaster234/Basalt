@@ -3,11 +3,13 @@ local max,min,sub,rep = math.max,math.min,string.sub,string.rep
 return function(name, basalt)
     local base = basalt.getObject("Frame")(name, basalt)
     local objectType = "ScrollableFrame"
-    local parent
 
-    local direction = 0
-    local manualScrollAmount = 0
-    local calculateScrollAmount = true
+    base:addProperty("AutoCalculate", "boolean", true)
+    base:addProperty("Direction", "number", 0)
+    base:addProperty("ScrollAmount", "number", 0, false, function(self, value)
+        self:setAutoCalculate(false)
+    end)
+    base:addProperty("ScrollSpeed", "number", 1)
 
     local function getHorizontalScrollAmount(self)
         local amount = 0
@@ -59,12 +61,16 @@ return function(name, basalt)
     local function scrollHandler(self, dir)
         local xO, yO = self:getOffset()
         local scrollAmn
+        local direction = self:getDirection()
+        local calculateScrollAmount = self:getAutoCalculate()
+        local manualScrollAmount = self:getScrollAmount()
+        local scrollSpeed = self:getScrollSpeed()
         if(direction==1)then
             scrollAmn = calculateScrollAmount and getHorizontalScrollAmount(self) or manualScrollAmount
-            self:setOffset(min(scrollAmn, max(0, xO + dir)), yO)
+            self:setOffset(min(scrollAmn, max(0, xO + dir * scrollSpeed)), yO)
         elseif(direction==0)then
             scrollAmn = calculateScrollAmount and getVerticalScrollAmount(self) or manualScrollAmount
-            self:setOffset(xO, min(scrollAmn, max(0, yO + dir)))
+            self:setOffset(xO, min(scrollAmn, max(0, yO + dir * scrollSpeed)))
         end
         self:updateDraw()
     end
@@ -78,17 +84,6 @@ return function(name, basalt)
             return objectType==t or base.isType~=nil and base.isType(t) or false
         end,
 
-        setDirection = function(self, dir)
-            direction = dir=="horizontal" and 1 or dir=="vertical" and 0 or direction
-            return self
-        end,
-
-        setScrollAmount = function(self, amount)
-            manualScrollAmount = amount
-            calculateScrollAmount = false
-            return self
-        end,
-
         getBase = function(self)
             return base
         end, 
@@ -96,17 +91,12 @@ return function(name, basalt)
         load = function(self)
             base.load(self)
             self:listenEvent("mouse_scroll")
+            self:listenEvent("mouse_drag")
         end,
 
         removeChildren = function(self)
             base.removeChildren(self)
             self:listenEvent("mouse_scroll")
-        end,
-
-        setParent = function(self, p, ...)
-            base.setParent(self, p, ...)
-            parent = p
-            return self
         end,
 
         scrollHandler = function(self, dir, x, y)
@@ -121,12 +111,12 @@ return function(name, basalt)
                         if(obj.element.getIgnoreOffset())then
                             xO, yO = 0, 0
                         end
-                        if (obj.element.scrollHandler(obj.element, dir, x+xO, y+yO)) then      
+                        if (obj.element.scrollHandler(obj.element, dir, x+xO, y+yO)) then
                             return true
                         end
                     end
                 end
-                scrollHandler(self, dir, x, y)
+                scrollHandler(self, dir)
                 self:clearFocusedChild()
                 return true
             end
@@ -135,7 +125,7 @@ return function(name, basalt)
         draw = function(self)
             base.draw(self)
             self:addDraw("scrollableFrame", function()
-                if(calculateScrollAmount)then
+                if(self:getAutoCalculate())then
                     scrollHandler(self, 0)
                 end
             end, 0)

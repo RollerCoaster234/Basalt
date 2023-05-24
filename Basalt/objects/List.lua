@@ -6,19 +6,20 @@ return function(name, basalt)
     local objectType = "List"
 
     local list = {}
-    local itemSelectedBG = colors.black
-    local itemSelectedFG = colors.lightGray
-    local selectionColorActive = true
-    local textAlign = "left"
-    local yOffset = 0
-    local scrollable = true
 
     base:setSize(16, 8)
     base:setZIndex(5)
 
+    base:addProperty("selectionBackground", "color", colors.black)
+    base:addProperty("selectionForeground", "color", colors.lightGray)
+    base:combineProperty("selectionColor", "selectionBackground", "selectionForeground")
+    base:addProperty("selectionColorActive", "boolean", true)
+    base:addProperty("textAlign", {"left", "center", "right"}, "left")
+    base:addProperty("scrollable", "boolean", true)
+    base:addProperty("offset", "number", 0)
+
     local object = {
         init = function(self)
-            local parent = self:getParent()
             self:listenEvent("mouse_click")
             self:listenEvent("mouse_drag")
             self:listenEvent("mouse_scroll")
@@ -28,19 +29,6 @@ return function(name, basalt)
         getBase = function(self)
             return base
         end,
-
-        setTextAlign = function(self, align)
-            textAlign = align
-            return self
-        end,
-
-        getTextAlign = function(self)
-            return textAlign
-        end,
-
-        getBase = function(self)
-            return base
-        end,  
 
         getType = function(self)
             return objectType
@@ -71,16 +59,6 @@ return function(name, basalt)
             self:setValue(list[1], false)
             self:updateDraw()
             return self
-        end,
-
-        setOffset = function(self, yOff)
-            yOffset = yOff
-            self:updateDraw()
-            return self
-        end,
-
-        getOffset = function(self)
-            return yOffset
         end,
 
         removeItem = function(self, index)
@@ -143,69 +121,29 @@ return function(name, basalt)
             return self
         end,
 
-        setSelectionColor = function(self, bgCol, fgCol, active)
-            itemSelectedBG = bgCol or self:getBackground()
-            itemSelectedFG = fgCol or self:getForeground()
-            selectionColorActive = active~=nil and active or true
-            self:updateDraw()
-            return self
-        end,
-
-        setSelectionBG = function(self, bgCol)
-            return self:setSelectionColor(bgCol, nil, selectionColorActive)
-        end,
-
-        setSelectionFG = function(self, fgCol)
-            return self:setSelectionColor(nil, fgCol, selectionColorActive)
-        end,
-
-        getSelectionColor = function(self)
-            return itemSelectedBG, itemSelectedFG
-        end,
-
-        getSelectionBG = function(self)
-            return itemSelectedBG
-        end,
-
-        getSelectionFG = function(self)
-            return itemSelectedFG
-        end,
-
-        isSelectionColorActive = function(self)
-            return selectionColorActive
-        end,
-
-        setScrollable = function(self, scroll)
-            scrollable = scroll
-            if(scroll==nil)then scrollable = true end
-            self:updateDraw()
-            return self
-        end,
-
-        getScrollable = function(self)
-            return scrollable
-        end,
-
         scrollHandler = function(self, dir, x, y)
             if(base.scrollHandler(self, dir, x, y))then
+                local scrollable = self:getScrollable()
                 if(scrollable)then
+                    local offset = self:getOffset()
                     local w,h = self:getSize()
-                    yOffset = yOffset + dir
-                    if (yOffset < 0) then
-                        yOffset = 0
+                    offset = offset + dir
+                    if (offset < 0) then
+                        offset = 0
                     end
                     if (dir >= 1) then
                         if (#list > h) then
-                            if (yOffset > #list - h) then
-                                yOffset = #list - h
+                            if (offset > #list - h) then
+                                offset = #list - h
                             end
-                            if (yOffset >= #list) then
-                                yOffset = #list - 1
+                            if (offset >= #list) then
+                                offset = #list - 1
                             end
                         else
-                            yOffset = yOffset - 1
+                            offset = offset - 1
                         end
                     end
+                    self:setOffset(offset)
                     self:updateDraw()
                 end
                 return true
@@ -218,10 +156,11 @@ return function(name, basalt)
                 local obx, oby = self:getAbsolutePosition()
                 local w,h = self:getSize()
                 if (#list > 0) then
+                    local offset = self:getOffset()
                     for n = 1, h do
-                        if (list[n + yOffset] ~= nil) then
+                        if (list[n + offset] ~= nil) then
                             if (obx <= x) and (obx + w > x) and (oby + n - 1 == y) then
-                                self:setValue(list[n + yOffset])
+                                self:setValue(list[n + offset])
                                 self:selectHandler()
                                 self:updateDraw()
                             end
@@ -258,11 +197,15 @@ return function(name, basalt)
             base.draw(self)
             self:addDraw("list", function()
                 local w, h = self:getSize()
+                local offset = self:getOffset()
+                local selectionColorActive = self:getSelectionColorActive()
+                local itemSelectedBG = self:getSelectionBackground()
+                local itemSelectedFG = self:getSelectionForeground()
                 for n = 1, h do
-                    if list[n + yOffset] then
-                        local t = list[n + yOffset].text
-                        local fg, bg = list[n + yOffset].fgCol, list[n + yOffset].bgCol
-                        if list[n + yOffset] == self:getValue() and selectionColorActive then
+                    if list[n + offset] then
+                        local t = list[n + offset].text
+                        local fg, bg = list[n + offset].fgCol, list[n + offset].bgCol
+                        if list[n + offset] == self:getValue() and selectionColorActive then
                             fg, bg = itemSelectedFG, itemSelectedBG
                         end
                         self:addText(1, n, t:sub(1,w))
