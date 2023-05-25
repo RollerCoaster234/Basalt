@@ -17,8 +17,8 @@ return function(name, basalt)
     base:addProperty("SelectionForeground", "color", colors.black)
     base:addProperty("SelectionBackground", "color", colors.lightBlue)
     base:combineProperty("SelectionColor", "SelectionBackground", "SelectionForeground")
-    base:addProperty("XOffset", "number", 0)
-    base:addProperty("YOffset", "number", 0)
+    base:addProperty("XOffset", "number", 1)
+    base:addProperty("YOffset", "number", 1)
     base:combineProperty("Offset", "XOffset", "YOffset")
     base:addProperty("TextXPosition", "number", 1)
     base:addProperty("TextYPosition", "number", 1)
@@ -86,6 +86,23 @@ return function(name, basalt)
         self:setTextPosition(sx, sy)
         startSelX, endSelX, startSelY, endSelY = nil, nil, nil, nil
         return self
+    end
+
+    local function getSelectedContent(self)
+        local sx, ex, sy, ey = getSelectionCoordinates()
+        local content = {}
+        if isSelected() then
+            if sy == ey then
+                table.insert(content, lines[sy]:sub(sx, ex))
+            else
+                table.insert(content, lines[sy]:sub(sx, lines[sy]:len()))
+                for i = sy + 1, ey - 1 do
+                    table.insert(content, lines[i])
+                end
+                table.insert(content, lines[ey]:sub(1, ex))
+            end
+        end
+        return content
     end
 
     local function stringGetPositions(str, word)
@@ -272,6 +289,16 @@ return function(name, basalt)
             return self
         end,
 
+        getLineCount = function(self)
+            return #lines
+        end,
+
+        getLineLength = function(self, index)
+            return lines[index]:len()
+        end,
+
+        getSelectedContent = getSelectedContent,
+
         getFocusHandler = function(self)
             base.getFocusHandler(self)
             local obx, oby = self:getPosition()
@@ -304,8 +331,8 @@ return function(name, basalt)
                                     table.remove(bgLines, textY)
                                     textX = lines[textY - 1]:len() + 1
                                     wIndex = textX - w + 1
-                                    if (wIndex < 0) then
-                                        wIndex = 0
+                                    if (wIndex < 1) then
+                                        wIndex = 1
                                     end
                                     textY = textY - 1
                                 end
@@ -313,8 +340,8 @@ return function(name, basalt)
                                 if (textY > 1) then
                                     textX = lines[textY - 1]:len() + 1
                                     wIndex = textX - w + 1
-                                    if (wIndex < 0) then
-                                        wIndex = 0
+                                    if (wIndex < 1) then
+                                        wIndex = 1
                                     end
                                     lines[textY - 1] = lines[textY - 1] .. lines[textY]
                                     fgLines[textY - 1] = fgLines[textY - 1] .. fgLines[textY]
@@ -375,7 +402,7 @@ return function(name, basalt)
                         bgLines[textY] = bgLines[textY]:sub(1, textX - 1)
                         textY = textY + 1
                         textX = 1
-                        wIndex = 0
+                        wIndex = 1
                         if (textY - hIndex >= h) then
                             hIndex = hIndex + 1
                         end
@@ -391,8 +418,8 @@ return function(name, basalt)
                             if (wIndex > 1) then
                                 if (textX < wIndex) then
                                     wIndex = textX - w + 1
-                                    if (wIndex < 0) then
-                                        wIndex = 0
+                                    if (wIndex < 1) then
+                                        wIndex = 1
                                     end
                                 end
                             end
@@ -413,8 +440,8 @@ return function(name, basalt)
                             if (wIndex > 1) then
                                 if (textX < wIndex) then
                                     wIndex = textX - w + 1
-                                    if (wIndex < 0) then
-                                        wIndex = 0
+                                    if (wIndex < 1) then
+                                        wIndex = 1
                                     end
                                 end
                             end
@@ -440,8 +467,8 @@ return function(name, basalt)
                         if (textX < wIndex) or (textX >= w + wIndex) then
                             wIndex = textX - w + 1
                         end
-                        if (wIndex < 0) then
-                            wIndex = 0
+                        if (wIndex < 1) then
+                            wIndex = 1
                         end
 
                     elseif (key == keys.left) then
@@ -463,8 +490,8 @@ return function(name, basalt)
                         if (textX < 1) then
                             textX = 1
                         end
-                        if (wIndex < 0) then
-                            wIndex = 0
+                        if (wIndex < 1) then
+                            wIndex = 1
                         end
                     elseif(key == keys.tab)then
                         if(textX % 3 == 0 )then
@@ -494,7 +521,7 @@ return function(name, basalt)
                 if (cursorX < 1) then
                     cursorX = 0
                 end
-                parent:setCursor(true, obx + cursorX - 1, oby + cursorY - 1, self:getForeground())
+                parent:setCursor(true, obx + cursorX, oby + cursorY, self:getForeground())
                 self:setOffset(wIndex, hIndex)
                 self:setTextPosition(textX, textY)
                 self:updateDraw()
@@ -507,11 +534,12 @@ return function(name, basalt)
                 local parent = self:getParent()
                 local obx, oby = self:getPosition()
                 local w,h = self:getSize()
-                local wIndex, hIndex = self:getOffset()
-                local textX, textY = self:getTextPosition()
                 if(isSelected())then
                     removeSelection(self)
                 end
+                local wIndex, hIndex = self:getOffset()
+                local textX, textY = self:getTextPosition()
+
                 lines[textY] = lines[textY]:sub(1, textX - 1) .. char .. lines[textY]:sub(textX, lines[textY]:len())
                 fgLines[textY] = fgLines[textY]:sub(1, textX - 1) .. tHex[self:getForeground()] .. fgLines[textY]:sub(textX, fgLines[textY]:len())
                 bgLines[textY] = bgLines[textY]:sub(1, textX - 1) .. tHex[self:getBackground()] .. bgLines[textY]:sub(textX, bgLines[textY]:len())
@@ -535,7 +563,7 @@ return function(name, basalt)
                 if (cursorX < 1) then
                     cursorX = 0
                 end
-                parent:setCursor(true, obx + cursorX - 1, oby + cursorY - 1, self:getForeground())
+                parent:setCursor(true, obx + cursorX, oby + cursorY, self:getForeground())
                 self:setOffset(wIndex, hIndex)
                 self:setTextPosition(textX, textY)
                 self:updateDraw()
@@ -564,13 +592,13 @@ return function(name, basalt)
 
                         if textX < wIndex then
                             wIndex = textX - 1
-                            if wIndex < 0 then
-                                wIndex = 0
+                            if wIndex < 1 then
+                                wIndex = 1
                             end
                         end
-                        parent:setCursor(not isSelected(), ox + textX - wIndex - 1, oy + textY - hIndex - 1, self:getForeground())
                         self:setOffset(wIndex, hIndex)
                         self:setTextPosition(textX, textY)
+                        parent:setCursor(not isSelected(), ox + textX - wIndex, oy + textY - hIndex, self:getForeground())
                         self:updateDraw()
                     end
                 end
@@ -595,13 +623,12 @@ return function(name, basalt)
                     hIndex = 1
                 end
 
+                self:setOffset(wIndex, hIndex)
                 if (obx + textX - wIndex >= obx and obx + textX - wIndex < obx + w) and (anchy + textY - hIndex >= anchy and anchy + textY - hIndex < anchy + h) then
                     parent:setCursor(not isSelected(), anchx + textX - wIndex, anchy + textY - hIndex, self:getForeground())
                 else
                     parent:setCursor(false)
                 end
-                self:setOffset(wIndex, hIndex)
-                self:setTextPosition(textX, textY)
                 self:updateDraw()
                 return true
             end
@@ -614,7 +641,7 @@ return function(name, basalt)
                 local anchx, anchy = self:getPosition()
                 local wIndex, hIndex = self:getOffset()
                 local textX, textY = self:getTextPosition()
-                    if (lines[y - oby + hIndex-1] ~= nil) then
+                    if (lines[y - oby + hIndex] ~= nil) then
                         textX = x - obx + wIndex
                         textY = y - oby + hIndex
                         endSelX = nil
@@ -627,15 +654,15 @@ return function(name, basalt)
                         end
                         if (textX < wIndex) then
                             wIndex = textX - 1
-                            if (wIndex < 0) then
-                                wIndex = 0
+                            if (wIndex < 1) then
+                                wIndex = 1
                             end
                         end
-                        self:setOffset(wIndex, hIndex)
-                        self:setTextPosition(textX, textY)
                         self:updateDraw()
                     end
-                parent:setCursor(true, anchx + textX - wIndex - 1, anchy + textY - hIndex - 1, self:getForeground())
+                self:setOffset(wIndex, hIndex)
+                self:setTextPosition(textX, textY)
+                parent:setCursor(true, anchx + textX - wIndex, anchy + textY - hIndex, self:getForeground())
                 return true
             end
         end,
@@ -653,7 +680,6 @@ return function(name, basalt)
                         if(startSelX==endSelX)and(startSelY==endSelY)then
                             startSelX, endSelX, startSelY, endSelY = nil, nil, nil, nil
                         end
-
                         self:updateDraw()
                     end
                 return true
@@ -666,6 +692,9 @@ return function(name, basalt)
                 if(self:isFocused())then
                     local parent = self:getParent()
                     local fgColor, bgColor = self:getForeground(), self:getBackground()
+                    if(isSelected())then
+                        removeSelection(self)
+                    end
                     local wIndex, hIndex = self:getOffset()
                     local textX, textY = self:getTextPosition()
                     local w, h = self:getSize()
@@ -699,13 +728,13 @@ return function(name, basalt)
                     local text = ""
                     local bg = ""
                     local fg = ""
-                    if lines[n + hIndex] then
-                        text = lines[n + hIndex]
-                        fg = fgLines[n + hIndex]
-                        bg = bgLines[n + hIndex]
+                    if lines[n + hIndex - 1] then
+                        text = lines[n + hIndex - 1]
+                        fg = fgLines[n + hIndex - 1]
+                        bg = bgLines[n + hIndex - 1]
                     end
         
-                    text = sub(text, wIndex, w + wIndex)
+                    text = sub(text, wIndex, w + wIndex - 1)
                     bg = rep(bgColor, w)
                     fg = rep(fgColor, w)
         
@@ -721,13 +750,13 @@ return function(name, basalt)
                         local line = #lines[n]
                         local xOffset = 0
                         if n == sy and n == ey then
-                            xOffset = sx - 1 - wIndex
-                            line = line - (sx - 1 - wIndex) - (line - ex + wIndex)
+                            xOffset = sx - 1 - (wIndex - 1)
+                            line = line - (sx - 1 - (wIndex - 1)) - (line - ex + (wIndex - 1))
                         elseif n == ey then
-                            line = line - (line - ex + wIndex)
+                            line = line - (line - ex + (wIndex - 1))
                         elseif n == sy then
                             line = line - (sx - 1)
-                            xOffset = sx - 1 - wIndex
+                            xOffset = sx - 1 - (wIndex - 1)
                         end
                         
                         local visible_line_length = math.min(line, w - xOffset)

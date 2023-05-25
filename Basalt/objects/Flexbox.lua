@@ -1,7 +1,6 @@
 
 local function flexObjectPlugin(base, basalt)
     local baseWidth, baseHeight = base:getSize()
-    print(base:getType())
 
     if(base:getType()~="lineBreakFakeObject")then
         base:addProperty("FlexGrow", "number", 0)

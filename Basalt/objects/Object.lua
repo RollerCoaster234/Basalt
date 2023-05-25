@@ -1,5 +1,7 @@
 local basaltEvent = require("basaltEvent")
 local utils = require("utils")
+local reactiveValue = require("reactiveValue")
+local split = utils.splitString
 local uuid = utils.uuid
 
 local unpack,sub = table.unpack,string.sub
@@ -16,6 +18,7 @@ return function(name, basalt)
     local registeredEvents = {}
     local activeEvents = {}
     local properties = {}
+    local propertyListeners = {}
 
     local parent
     local object
@@ -41,23 +44,12 @@ return function(name, basalt)
             return name
         end,
 
-        --[[
         getProperty = function(self, name)
-            local get = self["get" .. name:gsub("^%l", string.upper)]
-            if (get ~= nil) then
-                return get(self)
+            local prop = properties[name:gsub("^%l", string.upper)]
+            if(type(prop)=="table")then
+                return prop.value
             end
-        end,
-
-        setProperty = function(self, name, ...)
-            local set = self["set" .. name:gsub("^%l", string.upper)]
-            if (set ~= nil) then
-                return set(self, ...)
-            end
-        end,]]
-
-        getProperty = function(self, name)
-            return properties[name:gsub("^%l", string.upper)]
+            return prop
         end,
 
         getProperties = function(self)
@@ -65,32 +57,119 @@ return function(name, basalt)
         end,
 
         setProperty = function(self, name, value)
-            properties[name:gsub("^%l", string.upper)] = value
-            self:updateDraw()
+            name = name:gsub("^%l", string.upper)
+            if(type(value)=="string")and(value:sub(1)=="{")and(value:sub(-1)=="}")then
+                value = value:sub(2, -2)
+                value = reactiveValue(value, self)
+            end
+            properties[name] = value
+            if(propertyListeners[name]~=nil)then
+                for _,v in pairs(propertyListeners[name])do
+                    v(self, value)
+                end
+            end
+            if(self.updateDraw~=nil)then
+                self:updateDraw()
+            end
+            return self
+        end,
+
+        addPropertyListener = function(self, name, callback)
+            name = name:gsub("^%l", string.upper)
+            if(propertyListeners[name]==nil)then
+                propertyListeners[name] = {}
+            end
+            table.insert(propertyListeners[name], callback)
+            return self
+        end,
+
+        removePropertyListener = function(self, name, callback)
+            name = name:gsub("^%l", string.upper)
+            if(propertyListeners[name]==nil)then
+                return self
+            end
+            for i,v in pairs(propertyListeners[name])do
+                if(v==callback)then
+                    table.remove(propertyListeners[name], i)
+                end
+            end
             return self
         end,
 
         addProperty = function(self, name, typ, defaultValue, readonly, setLogic, getLogic)
-            -- typ = number, string, boolean, char, if color then check colors[value], if table then check if value is something inside table
-            -- | for splitting types
-            -- later implementation
             name = name:gsub("^%l", string.upper)
-            properties[name] = defaultValue
+            self:setProperty(name, defaultValue)
+
             object["get" .. name] = function(self)
+                local prop = self:getProperty(name)
                 if(getLogic~=nil)then
-                    return getLogic(self, properties[name])
+                    return getLogic(self, prop)
                 end
-                return properties[name]
+                return prop
             end
             if(not readonly)then
                 object["set" .. name] = function(self, value)
+                    local types = split(typ, "|")
+                    local isValid = false
+
+                    if(type(value)=="string")and(value:sub(1, 1)=="{")and(value:sub(-1)=="}")then
+                        value = value:sub(2, -2)
+                        value = reactiveValue(value, self)
+                        print(value.value)
+                    end
+
+                    for _,v in pairs(types)do
+                        if(type(value)==v)then
+                            isValid = true
+                        end
+                    end
+                    if(typ=="table")then
+                        for _,v in pairs(typ)do
+                            if(v==value)then
+                                isValid = true
+                            end
+                        end
+                    end
+                    if(typ=="color")then
+                        basalt.log(type(value))
+                        if(type(value)=="string")then
+                            if(colors[value]~=nil)then
+                                isValid = true
+                                value = colors[value]
+                            end
+                        else
+                            for _,v in pairs(colors)do
+                                if(v==value)then
+                                    isValid = true
+                                end
+                            end
+                        end
+                    end
+                    if(typ=="char")then
+                        if(type(value)=="string")then
+                            if(#value==1)then
+                                isValid = true
+                            end
+                        end
+                    end
+                    if(typ=="any")or(value==nil)then
+                        isValid = true
+                    end
+
+                    if(not isValid)then
+                        if(type(typ)=="table")then
+                            typ = table.concat(typ, ", ")
+                        end
+                        error(self:getType()..": Invalid type for property "..name.."! Expected "..typ..", got "..type(value))
+                    end
+
                     if(setLogic~=nil)then
                         local modifiedVal = setLogic(self, value)
                         if(modifiedVal~=nil)then
                             value = modifiedVal
                         end
                     end
-                    properties[name] = value
+                    self:setProperty(name, value)
                     self:updateDraw()
                     return self
                 end

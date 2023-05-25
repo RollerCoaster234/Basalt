@@ -220,17 +220,21 @@ return function(name, basalt)
                 end
                 isClicked = true
                 isDragging = true
-                dragStartX, dragStartY = x, y 
+                self:setProperty("isDragging", true)
+                self:setProperty("isClicked", true)
+                dragStartX, dragStartY = x, y
                 return true
             end
         end,
 
         mouseUpHandler = function(self, button, x, y)
             isDragging = false
+            self:setProperty("isDragging", false)
             if(isClicked)then
                 local objX, objY = self:getAbsolutePosition()
                 local val = self:sendEvent("mouse_release", button, x - (objX-1), y - (objY-1), x, y)
                 isClicked = false
+                self:setProperty("isClicked", false)
             end
             if(self:isCoordsInObject(x, y))then
                 local objX, objY = self:getAbsolutePosition()
@@ -253,7 +257,6 @@ return function(name, basalt)
             end
 
             if(self:isCoordsInObject(x, y))then
-                local objX, objY = self:getAbsolutePosition()
                 dragStartX, dragStartY = x, y
             end
         end,
@@ -275,12 +278,14 @@ return function(name, basalt)
                 local val = self:sendEvent("mouse_hover", x, y, stopped)
                 if(val==false)then return false end
                 isHovered = true
+                self:setProperty("isHovered", true)
                 return true
             end
             if(isHovered)then
                 local val = self:sendEvent("mouse_leave", x, y, stopped)
                 if(val==false)then return false end
                 isHovered = false
+                self:setProperty("isHovered", false)
             end
         end,
 
@@ -316,12 +321,15 @@ return function(name, basalt)
 
         getFocusHandler = function(self)
             local val = self:sendEvent("get_focus")
+            self:setProperty("isFocused", true)
             if(val~=nil)then return val end
             return true
         end,
 
         loseFocusHandler = function(self)
             isDragging = false
+            self:setProperty("isDragging", false)
+            self:setProperty("isFocused", false)
             local val = self:sendEvent("lose_focus")
             if(val~=nil)then return val end
             return true
@@ -410,7 +418,7 @@ return function(name, basalt)
                 return
             end
             local t = split(bg)
-            for k,v in pairs(t)do
+            for _,v in pairs(t)do
                 if(v.value~="")and(v.value~=" ")then
                     if(noText~=true)then
                         obj:setText(x+v.x+xPos-2, y+yPos-1, (" "):rep(#v.value))
