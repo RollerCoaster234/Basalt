@@ -3,7 +3,7 @@ local tHex = require("tHex")
 
 return function(name, basalt)
     local base = basalt.getObject("List")(name, basalt)
-    local objectType = "Radio"
+    base:setType("Radio")
 
     base:setSize(1, 1)
     base:setZIndex(5)
@@ -23,10 +23,6 @@ return function(name, basalt)
     local list = {}
 
     local object = {
-        getType = function(self)
-            return objectType
-        end,
-
         addItem = function(self, text, x, y, bgCol, fgCol, ...)
             base.addItem(self, text, bgCol, fgCol, ...)
             table.insert(list, { x = x or 1, y = y or #list * 2 })

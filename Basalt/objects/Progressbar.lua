@@ -1,6 +1,6 @@
 return function(name, basalt)
     local base = basalt.getObject("ChangeableObject")(name, basalt)
-    local objectType = "Progressbar"
+    base:setType("ProgressBar")
 
     base:setZIndex(5)
     base:setValue(false)
@@ -25,10 +25,6 @@ return function(name, basalt)
     base:addProperty("BackgroundSymbol", "char", "")
 
     local object = {
-        getType = function(self)
-            return objectType
-        end,
-
         onProgressDone = function(self, f)
             self:registerEvent("progress_done", f)
             return self
@@ -45,8 +41,8 @@ return function(name, basalt)
                 local progress = self:getProgress()
                 local activeBarColor, activeBarSymbol, activeBarSymbolCol = self:getProgressBar()
                 local direction = self:getDirection()
-                local bgBarSymbol = self:getBackgroundSymbol()
-                local bgCol = self:getbackground()
+                local bgBarSymbol = self:getBgSymbol()
+                local bgCol = self:getBackground()
                 local fgCol = self:getForeground()
                 if(bgCol~=false)then self:addBackgroundBox(1, 1, w, h, bgCol) end
                 if(bgBarSymbol~="")then self:addTextBox(1, 1, w, h, bgBarSymbol) end

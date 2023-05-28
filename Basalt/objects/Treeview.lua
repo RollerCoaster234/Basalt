@@ -3,9 +3,7 @@ local tHex = require("tHex")
 
 return function(name, basalt)
     local base = basalt.getObject("ChangeableObject")(name, basalt)
-    local objectType = "Treeview"
-
-    local nodes = {}
+    base:setType("Treeview")
 
     base:addProperty("Nodes", "table", {})
     base:addProperty("SelectionBackground", "color", colors.black)
@@ -158,14 +156,6 @@ return function(name, basalt)
 
         getBase = function(self)
             return base
-        end,
-
-        getType = function(self)
-            return objectType
-        end,
-
-        isType = function(self, t)
-            return objectType == t or base.isType ~= nil and base.isType(t) or false
         end,
 
         onSelect = function(self, ...)

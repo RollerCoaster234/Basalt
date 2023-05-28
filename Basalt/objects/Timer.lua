@@ -1,6 +1,6 @@
 return function(name, basalt)
     local base = basalt.getObject("Object")(name, basalt)
-    local objectType = "Timer"
+    base:setType("Timer")
 
     base:addProperty("Timer", "number", 0, false, function(self, value)
         if (value < 0) then
@@ -23,10 +23,6 @@ return function(name, basalt)
     local timerIsActive = false
 
     local object = {
-        getType = function(self)
-            return objectType
-        end,
-
         start = function(self)
             if(timerIsActive)then
                 os.cancelTimer(timerObj)

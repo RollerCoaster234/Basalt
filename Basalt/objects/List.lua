@@ -3,16 +3,16 @@ local tHex = require("tHex")
 
 return function(name, basalt)
     local base = basalt.getObject("ChangeableObject")(name, basalt)
-    local objectType = "List"
+    base:setType("List")
 
     local list = {}
 
     base:setSize(16, 8)
     base:setZIndex(5)
 
-    base:addProperty("selectionBackground", "color", colors.black)
-    base:addProperty("selectionForeground", "color", colors.lightGray)
-    base:combineProperty("selectionColor", "selectionBackground", "selectionForeground")
+    base:addProperty("SelectionBackground", "color", colors.black)
+    base:addProperty("SelectionForeground", "color", colors.lightGray)
+    base:combineProperty("SelectionColor", "SelectionBackground", "SelectionForeground")
     base:addProperty("selectionColorActive", "boolean", true)
     base:addProperty("textAlign", {"left", "center", "right"}, "left")
     base:addProperty("scrollable", "boolean", true)
@@ -28,14 +28,6 @@ return function(name, basalt)
 
         getBase = function(self)
             return base
-        end,
-
-        getType = function(self)
-            return objectType
-        end,
-
-        isType = function(self, t)
-            return objectType==t or base.isType~=nil and base.isType(t) or false
         end,
 
         addItem = function(self, text, bgCol, fgCol, ...)

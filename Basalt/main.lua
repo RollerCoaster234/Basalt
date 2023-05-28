@@ -379,9 +379,9 @@ local function InitializeBasalt()
         loadedPlugins = true
     end
 end
+InitializeBasalt()
 
 local function createFrame(name)
-    InitializeBasalt()
     for _, v in pairs(frames) do
         if (v:getName() == name) then
             return nil
@@ -559,7 +559,6 @@ basalt = {
     createFrame = createFrame,
 
     addMonitor = function(name)
-        InitializeBasalt()
         for _, v in pairs(frames) do
             if (v:getName() == name) then
                 return nil

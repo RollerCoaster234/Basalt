@@ -40,6 +40,8 @@ return function(name, basalt)
     base:addProperty("Visible", "boolean", true)
     base:addProperty("Transparent", "boolean", false)
     base:addProperty("Background", "color", colors.black)
+    base:addProperty("BgSymbol", "char", "")
+    base:addProperty("BgSymbolColor", "color", colors.black)
     base:addProperty("Foreground", "color", colors.white)
     base:addProperty("X", "number", 1, false, function(self, val)
         local y = self:getProperty("Y")
@@ -441,7 +443,7 @@ return function(name, basalt)
                 return
             end
             local t = split(fg)
-            for k,v in pairs(t)do
+            for _,v in pairs(t)do
                 if(v.value~="")and(v.value~=" ")then
                     obj:setFG(x+v.x+xPos-2, y+yPos-1, v.value)
                 end
@@ -543,12 +545,18 @@ return function(name, basalt)
             self:addDraw("base", function()
                 local w,h = self:getSize()
                 local bgColor = self:getBackground()
+                local bgSymbol = self:getBgSymbol()
+                local bgSymbolColor = self:getBgSymbolColor()
                 local fgColor = self:getForeground()
-                if(bgColor~=false)then
+                if(bgColor~=nil)then
                     self:addTextBox(1, 1, w, h, " ")
                     self:addBackgroundBox(1, 1, w, h, bgColor)
                 end
-                if(fgColor~=false)then
+                if(bgSymbol~=nil)and(bgSymbol~="")then
+                    self:addTextBox(1, 1, w, h, bgSymbol)
+                    self:addForegroundBox(1, 1, w, h, bgSymbolColor)
+                end
+                if(fgColor~=nil)then
                     self:addForegroundBox(1, 1, w, h, fgColor)
                 end
             end, 1)

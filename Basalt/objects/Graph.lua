@@ -1,6 +1,6 @@
 return function(name, basalt)
     local base = basalt.getObject("VisualObject")(name, basalt)
-    local objectType = "Graph"
+    base:setType("Graph")
 
     base:setZIndex(5)
     base:setSize(30, 10)
@@ -16,10 +16,6 @@ return function(name, basalt)
     local graphData = {}
 
     local object = {
-        getType = function(self)
-            return objectType
-        end,
-
         addDataPoint = function(self, value)
             local minValue = self:getMinValue()
             local maxValue = self:getMaxValue()

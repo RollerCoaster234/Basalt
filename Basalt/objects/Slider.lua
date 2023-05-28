@@ -2,23 +2,22 @@ local tHex = require("tHex")
 
 return function(name, basalt)
     local base = basalt.getObject("ChangeableObject")(name, basalt)
-    local objectType = "Slider"
+    base:setType("Slider")
 
     base:setSize(12, 1)
     base:setValue(1)
-    base:setBackground(false, "\140", colors.black)
 
-    base:addProperty("Symbol", "char", " ")
+    base:addProperty("SymbolText", "char", " ")
     base:addProperty("SymbolForeground", "color", colors.black)
     base:addProperty("SymbolBackground", "color", colors.gray)
-    base:combineProperty("Symbol", "SymbolForeground", "SymbolBackground")
+    base:combineProperty("Symbol", "SymbolText", "SymbolForeground", "SymbolBackground")
     base:addProperty("SymbolSize", "number", 1)
     base:addProperty("BarType", {"vertical", "horizontal"}, "horizontal")
     base:addProperty("MaxValue", "number", 12)
 
     local index = 1
 
-    local function mouseEvent(self, button, x, y)
+    local function mouseEvent(self, _, x, y)
     local obx, oby = self:getPosition()
     local w,h = self:getSize()
     local barType = self:getBarType()
@@ -36,10 +35,12 @@ return function(name, basalt)
     end
 
     local object = {
-        getType = function(self)
-            return objectType
+        init = function(self)
+            base.init(self)
+            base:setBgSymbol("\140")
+            base:setBgSymbolColor(colors.black)
+            base:setBackground(nil)
         end,
-
         load = function(self)
             self:listenEvent("mouse_click")
             self:listenEvent("mouse_drag")
@@ -105,7 +106,7 @@ return function(name, basalt)
                 local w,h = self:getSize()
                 local bgCol,fgCol = self:getBackground(), self:getForeground()
                 local symbolSize = self:getSymbolSize()
-                local symbol = self:getSymbol()
+                local symbol = self:getSymbolText()
                 local symbolFG = self:getSymbolForeground()
                 local symbolBG = self:getSymbolBackground()
                 local barType = self:getBarType()

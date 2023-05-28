@@ -4,7 +4,7 @@ local tHex = require("tHex")
 return function(name, basalt)
     -- Input
     local base = basalt.getObject("ChangeableObject")(name, basalt)
-    local objectType = "Input"
+    base:setType("Input")
 
     local inputType = "text"
     local inputLimit = 0
@@ -14,16 +14,12 @@ return function(name, basalt)
 
     local showingText = ""
 
-    base:addProperty("textDefault", "string", "", nil, function(self, value)
-        if (self:isFocused()) then
-            showingText = ""
-        else
-            showingText = value
-        end
+    base:addProperty("defaultText", "string", "", nil, function(self, value)
+        showingText = value
     end)
     base:addProperty("defaultForeground", "number", colors.lightGray)
     base:addProperty("defaultBackground", "number", colors.black)
-    base:combineProperty("defaultText", "textDefault", "defaultForeground", "defaultBackground")
+    base:combineProperty("default", "defaultText", "defaultForeground", "defaultBackground")
     base:addProperty("offset", "number", 1)
     base:addProperty("cursorPosition", "number", 1)
     base:addProperty("inputType", {"text", "number", "password"}, "text")
@@ -33,19 +29,17 @@ return function(name, basalt)
     local internalValueChange = false
 
     local object = {
+        init = function(self)
+            base.init(self)
+            self:setDefaultForeground(self:getForeground())
+            self:setDefaultBackground(self:getBackground())
+        end,
         load = function(self)
             self:listenEvent("mouse_click")
             self:listenEvent("key")
             self:listenEvent("char")
             self:listenEvent("other_event")
             self:listenEvent("mouse_drag")
-        end,
-
-        getType = function(self)
-            return objectType
-        end,
-        isType = function(self, t)
-            return objectType==t or base.isType~=nil and base.isType(t) or false
         end,
 
         setValue = function(self, val)
@@ -63,11 +57,6 @@ return function(name, basalt)
             end
             self:updateDraw()
             return self
-        end,
-
-        getValue = function(self)
-            local val = base.getValue(self)
-            return inputType == "number" and tonumber(val) or val
         end,
 
         getFocusHandler = function(self)
@@ -89,7 +78,7 @@ return function(name, basalt)
         loseFocusHandler = function(self)
             base.loseFocusHandler(self)
             local parent = self:getParent()
-            showingText = self:getTextDefault()
+            showingText = self:getDefaultText()
             if(showingText~="")then
                 self:updateDraw()
             end
@@ -105,7 +94,7 @@ return function(name, basalt)
                 local textX = self:getCursorPosition()
                     if (key == keys.backspace) then
                         -- on backspace
-                        local text = tostring(base.getValue())
+                        local text = tostring(self:getValue())
                         if (textX > 1) then
                             self:setValue(text:sub(1, textX - 2) .. text:sub(textX, text:len()))
                             textX = math.max(textX - 1, 1)
@@ -118,7 +107,7 @@ return function(name, basalt)
                         parent:clearFocusedChild(self)
                     end
                     if (key == keys.right) then
-                        local tLength = tostring(base.getValue()):len()
+                        local tLength = tostring(self:getValue()):len()
                         textX = textX + 1
 
                         if (textX > tLength) then
@@ -149,7 +138,7 @@ return function(name, basalt)
                     end
                     if (key == keys["end"]) then
                         -- end
-                        textX = tostring(base.getValue()):len() + 1
+                        textX = tostring(self:getValue()):len() + 1
                         wIndex = math.max(textX - w + 1, 1)
                     end
                     self:setOffset(wIndex)
@@ -166,7 +155,7 @@ return function(name, basalt)
                 local wIndex = self:getOffset()
                 local textX = self:getCursorPosition()
                 local w,h = self:getSize()
-                local text = base.getValue()
+                local text = self:getValue()
                 if (text:len() < inputLimit or inputLimit <= 0) then
                     if (inputType == "number") then
                         local cache = text
@@ -174,7 +163,7 @@ return function(name, basalt)
                             self:setValue(text:sub(1, textX - 1) .. char .. text:sub(textX, text:len()))
                             textX = textX + 1
                             if(char==".")or(char=="-")and(#text>0)then
-                                if (tonumber(base.getValue()) == nil) then
+                                if (tonumber(self:getValue()) == nil) then
                                     self:setValue(cache)
                                     textX = textX - 1
                                 end
@@ -206,7 +195,7 @@ return function(name, basalt)
                 local wIndex = self:getOffset()
                 local textX = self:getCursorPosition()
                 textX = x - obx + wIndex
-                local text = base.getValue()
+                local text = self:getValue()
                 if (textX > text:len()) then
                     textX = text:len() + 1
                 end
@@ -239,14 +228,14 @@ return function(name, basalt)
             base.eventHandler(self, event, paste, ...)
             if(event=="paste")then
                 if(self:isFocused())then
-                    local text = base.getValue()
+                    local text = self:getValue()
                     local textX = self:getCursorPosition()
                     if (inputType == "number") then
                         local cache = text
                         if (paste == ".") or (tonumber(paste) ~= nil) then
                             self:setValue(text:sub(1, textX - 1) .. paste .. text:sub(textX, text:len()))
                         end
-                        if (tonumber(base.getValue()) == nil) then
+                        if (tonumber(self:getValue()) == nil) then
                             self:setValue(cache)
                         end
                     else
@@ -272,7 +261,7 @@ return function(name, basalt)
                 
                 local verticalAlign = utils.getTextVerticalAlign(h, "center")
      
-                local val = tostring(base.getValue())
+                local val = tostring(self:getValue() or "")
                 local bCol = self:getBackground()
                 local fCol = self:getForeground()
                 local text

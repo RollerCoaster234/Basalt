@@ -36,7 +36,7 @@ end
 
 return function(name, basalt)
     local base = basalt.getObject("ScrollableFrame")(name, basalt)
-    local objectType = "Flexbox"
+    base:setType("Flexbox")
 
     local updateLayout = false
 
@@ -337,14 +337,6 @@ return function(name, basalt)
     end
 
     local object = {
-        getType = function()
-            return objectType
-        end,
-
-        isType = function(self, t)
-            return objectType == t or base.isType ~= nil and base.isType(t) or false
-        end,
-
         updateLayout = function(self)
             updateLayout = true
             self:updateDraw()

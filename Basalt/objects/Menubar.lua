@@ -3,7 +3,7 @@ local tHex = require("tHex")
 
 return function(name, basalt)
     local base = basalt.getObject("List")(name, basalt)
-    local objectType = "Menubar"
+    base:setType("Menubar")
     local object = {}
 
     base:setSize(30, 1)
@@ -30,10 +30,6 @@ return function(name, basalt)
             self:listenEvent("mouse_drag")
             self:listenEvent("mouse_scroll")
             return base.init(self)
-        end,
-
-        getType = function(self)
-            return objectType
         end,
 
         getBase = function(self)

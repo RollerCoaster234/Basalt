@@ -5,7 +5,7 @@ local sub = string.sub
 
 return function(name, basalt)
     local base = basalt.getObject("VisualObject")(name, basalt)
-    local objectType = "Program"
+    base:setType("Program")
     local object
 
     base:addProperty("Path", "string", nil)
@@ -406,10 +406,6 @@ return function(name, basalt)
     end
 
     object = {
-        getType = function(self)
-            return objectType
-        end,
-
         show = function(self)
             base.show(self)
             pWindow.setBackgroundColor(self:getBackground())

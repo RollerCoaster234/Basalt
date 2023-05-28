@@ -5,11 +5,10 @@ local writeWrappedText = utils.writeWrappedText
 return function(name, basalt)
     -- Label
     local base = basalt.getObject("VisualObject")(name, basalt)
-    local objectType = "Label"
+    base:setType("Label")
 
     base:setZIndex(3)
     base:setSize(5, 1)
-    base:setBackground(false)
 
     base:addProperty("text", "string", "Label", nil, function(self, value)
         local autoSize = self:getAutoSize()
@@ -28,12 +27,12 @@ return function(name, basalt)
     base:addProperty("textAlign", {"left", "center", "right"}, "left")
 
     local object = {
-        --- Returns the object type.
-        --- @return string
-        getType = function(self)
-            return objectType
+        init = function(self)
+            base.init(self)
+            local parent = self:getParent()
+            self:setBackground(nil)
+            self:setForeground(parent:getForeground())
         end,
-
         --- Returns the label's base object.
         --- @return object
         getBase = function(self)
@@ -61,14 +60,6 @@ return function(name, basalt)
                 writeWrappedText(self, align, 1, text, w+1, h)
             end)
         end,
-        
-        --- Initializes the label.
-        init = function(self)
-            base.init(self)
-            local parent = self:getParent()
-            self:setForeground(parent:getForeground())
-        end
-
     }
 
     object.__index = object

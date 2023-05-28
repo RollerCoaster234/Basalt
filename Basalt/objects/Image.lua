@@ -4,7 +4,7 @@ local unpack,sub,max,min = table.unpack,string.sub,math.max,math.min
 return function(name, basalt)
     -- Image
     local base = basalt.getObject("VisualObject")(name, basalt)
-    local objectType = "Image"
+    base:setType("Image")
 
     local bimgLibrary = bimg()
     local bimgFrame = bimgLibrary.getFrameObject(1)
@@ -56,13 +56,6 @@ return function(name, basalt)
     end
 
     local object = {
-        getType = function(self)
-            return objectType
-        end,
-        isType = function(self, t)
-            return objectType==t or base.isType~=nil and base.isType(t) or false
-        end,
-
         setSize = function(self, _x, _y)
             base:setSize(_x, _y)
             autoSize = false

@@ -1,5 +1,13 @@
 local split = require("utils").splitString
 
+local function copy(t)
+    local new = {}
+    for k,v in pairs(t)do
+        new[k] = v
+    end
+    return new
+end
+
 local plugin = {
     VisualObject = function(base, basalt)
         return {
@@ -20,12 +28,15 @@ local plugin = {
             init = function(self)
                 base.init(self)
                 local template = basalt.getTemplate(self)
+                local objects = basalt.getObjects()
                 if(template~=nil)then
                     for k,v in pairs(template)do
-                        if(colors[v]~=nil)then
-                            self:setProperty(k, colors[v])
-                        else
-                            self:setProperty(k, v)
+                        if(objects[k]==nil)then
+                            if(colors[v]~=nil)then
+                                self:setProperty(k, colors[v])
+                            else
+                                self:setProperty(k, v)
+                            end
                         end
                     end
                 end
@@ -36,21 +47,39 @@ local plugin = {
 
     basalt = function()
         local baseTemplate = {
+            default = {
+                Background = colors.gray,
+                Foreground = colors.black,
+            },
             BaseFrame = {
                 Background = colors.lightGray,
+                Foreground = colors.black,
                 Button = {
                     Background = "{self.clicked ? black : gray}",
-                    Foreground = "{self.clicked ? lightGray : black}",
+                    Foreground = "{self.clicked ? lightGray : black}"
                 },
                 Container = {
                     Background = colors.gray,
+                    Foreground = colors.black,
                     Button = {
-                        Background = colors.black,
-                        Foreground = colors.lightGray,
-                        },
-                    }
+                        Background = "{self.clicked ? lightGray : black}",
+                        Foreground = "{self.clicked ? black : lightGray}"
+                    },
                 },
-            }
+                Checkbox = {
+                    Background = colors.gray,
+                    Foreground = colors.black,
+                    Text = "Checkbox"
+                },
+                Input = {
+                    Background = "{self.focused ? gray : black}",
+                    Foreground = "{self.focused ? black : lightGray}",
+                    defaultBackground = "{self.focused ? gray : black}",
+                    defaultForeground = "{self.focused ? black : lightGray}",
+                    defaultText = "..."
+                },
+            },
+        }
 
         local function addTemplate(newTemplate)
             if(type(newTemplate)=="string")then
@@ -71,22 +100,28 @@ local plugin = {
         end
 
         local function lookUpTemplate(template, allTypes)
-            local elementData
+            local elementData = copy(baseTemplate.default)
             local tLink = template
             if(tLink~=nil)then
                 for _, v in pairs(allTypes)do
                     for _, b in pairs(v)do
                         if(tLink[b]~=nil)then
                             tLink = tLink[b]
-                            elementData = tLink
+                            for k, v in pairs(tLink) do
+                                elementData[k] = v
+                            end
                             break
+                        else
+                            for k, v in pairs(baseTemplate.default) do
+                                elementData[k] = v
+                            end
                         end
                     end
                 end
             end
             return elementData
         end
-
+        
         return {
             getTemplate = function(element)
                 return lookUpTemplate(baseTemplate, element:__getElementPathTypes())

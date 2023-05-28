@@ -2,7 +2,7 @@ local max,min,sub,rep = math.max,math.min,string.sub,string.rep
 
 return function(name, basalt)
     local base = basalt.getObject("Frame")(name, basalt)
-    local objectType = "MovableFrame"
+    base:setType("MovableFrame")
     local parent
 
     local dragXOffset, dragYOffset, isDragging = 0, 0, false
@@ -10,14 +10,6 @@ return function(name, basalt)
     base:addProperty("DraggingMap", "table", {{x1 = 1, x2 = "width", y1 = 1, y2 = 1}})
 
     local object = {
-        getType = function()
-            return objectType
-        end,
-
-        isType = function(self, t)
-            return objectType==t or (base.isType~=nil and base.isType(t)) or false
-        end,
-
         getBase = function(self)
             return base
         end,

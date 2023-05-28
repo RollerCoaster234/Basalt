@@ -3,12 +3,11 @@ local tHex = require("tHex")
 
 return function(name, basalt)
     local base = basalt.getObject("List")(name, basalt)
-    local objectType = "Dropdown"
+    base:setType("Dropdown")
 
     base:setSize(12, 1)
     base:setZIndex(6)
 
-    base:addProperty("SelectionColor", "number", colors.lightGray)
     base:addProperty("SelectionColorActive", "boolean", true)
     base:addProperty("Align", {"left", "center", "right"}, "left")
     base:addProperty("Offset", "number", 0)
@@ -21,14 +20,6 @@ return function(name, basalt)
     base:combineProperty("DropdownSize", "DropdownWidth", "DropdownHeight")
 
     local object = {
-        getType = function(self)
-            return objectType
-        end,
-
-        isType = function(self, t)
-            return objectType==t or base.isType~=nil and base.isType(t) or false
-        end,
-
         load = function(self)
             self:listenEvent("mouse_click", self)
             self:listenEvent("mouse_up", self)

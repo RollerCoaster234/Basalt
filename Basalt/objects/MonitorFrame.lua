@@ -4,7 +4,7 @@ local max,min,sub,rep = math.max,math.min,string.sub,string.rep
 
 return function(name, basalt)
     local base = basalt.getObject("BaseFrame")(name, basalt)
-    local objectType = "MonitorFrame"
+    base:setType("MonitorFrame")
 
     local isMonitorGroup = false
 
@@ -27,15 +27,6 @@ return function(name, basalt)
     base:setTerm(nil)
 
     local object = {
-
-        getType = function()
-            return objectType
-        end,
-
-        isType = function(self, t)
-            return objectType==t or base.isType~=nil and base.isType(t) or false
-        end,
-
         getBase = function(self)
             return base
         end,

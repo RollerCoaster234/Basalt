@@ -2,7 +2,7 @@ local max,min,sub,rep = math.max,math.min,string.sub,string.rep
 
 return function(name, basalt)
     local base = basalt.getObject("Frame")(name, basalt)
-    local objectType = "ScrollableFrame"
+    base:setType("ScrollableFrame")
 
     base:addProperty("AutoCalculate", "boolean", true)
     base:addProperty("Direction", "number", 0)
@@ -74,20 +74,12 @@ return function(name, basalt)
         end
         self:updateDraw()
     end
-    
-    local object = {    
-        getType = function()
-            return objectType
-        end,
 
-        isType = function(self, t)
-            return objectType==t or base.isType~=nil and base.isType(t) or false
-        end,
-
+    local object = {
         getBase = function(self)
             return base
-        end, 
-        
+        end,
+
         load = function(self)
             base.load(self)
             self:listenEvent("mouse_scroll")

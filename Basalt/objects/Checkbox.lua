@@ -4,7 +4,7 @@ local tHex = require("tHex")
 return function(name, basalt)
     -- Checkbox
     local base = basalt.getObject("ChangeableObject")(name, basalt)
-    local objectType = "Checkbox"
+    base:setType("Checkbox")
 
     base:setZIndex(5)
     base:setValue(false)
@@ -22,14 +22,7 @@ return function(name, basalt)
             self:listenEvent("mouse_click", self)
             self:listenEvent("mouse_up", self)
         end,
-
-        getType = function(self)
-            return objectType
-        end,
-        isType = function(self, t)
-            return objectType==t or base.isType~=nil and base.isType(t) or false
-        end,
-
+        
         setChecked = base.setValue,
 
         getChecked = base.getValue,

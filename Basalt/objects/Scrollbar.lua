@@ -2,11 +2,11 @@ local tHex = require("tHex")
 
 return function(name, basalt)
     local base = basalt.getObject("VisualObject")(name, basalt)
-    local objectType = "Scrollbar"
+    base:setType("Scrollbar")
 
     base:setZIndex(2)
     base:setSize(1, 8)
-    base:setBackground(colors.lightGray, "\127", colors.gray)
+    base:setBackground(colors.lightGray, "\127", colors.black)
 
     base:addProperty("SymbolChar", "char", " ")
     base:addProperty("SymbolBG", "color", colors.black)
@@ -26,13 +26,13 @@ return function(name, basalt)
             base:setSymbolSize(math.max((barType == "vertical" and h or w-(#symbol)) - (scrollAmount-1), 1))
         end
     end
-    updateSymbolSize()
 
     base:addProperty("ScrollAmount", "number", 3, false, updateSymbolSize)
-    base:addProperty("SymbolSize", "number", 1, false, updateSymbolSize)
+    base:addProperty("SymbolSize", "number", 1)
     base:addProperty("BarType", {"vertical", "horizontal"}, "vertical", false, updateSymbolSize)
+    updateSymbolSize()
 
-    local function mouseEvent(self, button, x, y)
+    local function mouseEvent(self, _, x, y)
     local obx, oby = self:getAbsolutePosition()
     local w,h = self:getSize()
         updateSymbolSize()
@@ -50,10 +50,6 @@ return function(name, basalt)
     end
 
     local object = {
-        getType = function(self)
-            return objectType
-        end,
-
         load = function(self)
             base.load(self)
             self:listenEvent("mouse_click")
@@ -136,7 +132,7 @@ return function(name, basalt)
             base.customEventHandler(self, event, ...)
             if(event=="basalt_FrameResize")then
                 updateSymbolSize()
-            end 
+            end
         end,
 
         draw = function(self)

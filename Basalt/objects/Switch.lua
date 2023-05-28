@@ -1,6 +1,6 @@
 return function(name, basalt)
     local base = basalt.getObject("ChangeableObject")(name, basalt)
-    local objectType = "Switch"
+    base:setType("Switch")
 
     base:setSize(4, 1)
     base:setValue(false)
@@ -11,10 +11,6 @@ return function(name, basalt)
     base:addProperty("InactiveBackground", "color", colors.red)
 
     local object = {
-        getType = function(self)
-            return objectType
-        end,
-
         load = function(self)
             self:listenEvent("mouse_click")
         end,

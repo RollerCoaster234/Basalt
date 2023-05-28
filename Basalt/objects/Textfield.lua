@@ -4,7 +4,7 @@ local rep,find,gmatch,sub,len = string.rep,string.find,string.gmatch,string.sub,
 
 return function(name, basalt)
     local base = basalt.getObject("ChangeableObject")(name, basalt)
-    local objectType = "Textfield"
+    base:setType("Textfield")
 
     local lines = { "" }
     local bgLines = { "" }
@@ -163,10 +163,6 @@ return function(name, basalt)
     end
 
     local object = {
-        getType = function(self)
-            return objectType
-        end;
-
         setBackground = function(self, bg)
             base.setBackground(self, bg)
             updateAllColors(self)
