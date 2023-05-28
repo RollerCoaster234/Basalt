@@ -1,6 +1,5 @@
 local basaltEvent = require("basaltEvent")
 local utils = require("utils")
-local reactiveValue = require("reactiveValue")
 local split = utils.splitString
 local uuid = utils.uuid
 
@@ -18,11 +17,62 @@ return function(name, basalt)
     local registeredEvents = {}
     local activeEvents = {}
     local properties = {}
-    local propertyListeners = {}
+
+    local function defaultRule(typ)
+        return function(self, value)
+        local types = split(typ, "|")
+            local isValid = false
+
+            for _,v in pairs(types)do
+                if(type(value)==v)then
+                    isValid = true
+                end
+            end
+            if(typ=="table")then
+                for _,v in pairs(typ)do
+                    if(v==value)then
+                        isValid = true
+                    end
+                end
+            end
+            if(typ=="color")then
+                if(type(value)=="string")then
+                    if(colors[value]~=nil)then
+                        isValid = true
+                        value = colors[value]
+                    end
+                else
+                    for _,v in pairs(colors)do
+                        if(v==value)then
+                            isValid = true
+                        end
+                    end
+                end
+            end
+            if(typ=="char")then
+                if(type(value)=="string")then
+                    if(#value==1)then
+                        isValid = true
+                    end
+                end
+            end
+            if(typ=="any")or(value==nil)or(type(value)=="function")then
+                isValid = true
+            end
+
+            if(not isValid)then
+                if(type(typ)=="table")then
+                    typ = table.concat(typ, ", ")
+                end
+                error(self:getType()..": Invalid type for property "..name.."! Expected "..typ..", got "..type(value))
+            end
+            return value
+        end
+    end
 
     local parent
     local object
-    
+
     object = {
         init = function(self)
             if(initialized)then return false end
@@ -46,8 +96,8 @@ return function(name, basalt)
 
         getProperty = function(self, name)
             local prop = properties[name:gsub("^%l", string.upper)]
-            if(type(prop)=="table")then
-                return prop.value
+            if(type(prop)=="function")then
+                return prop()
             end
             return prop
         end,
@@ -56,121 +106,44 @@ return function(name, basalt)
             return properties
         end,
 
-        setProperty = function(self, name, value)
+        setProperty = function(self, name, value, rule)
             name = name:gsub("^%l", string.upper)
-            if(type(value)=="string")and(value:sub(1)=="{")and(value:sub(-1)=="}")then
-                value = value:sub(2, -2)
-                value = reactiveValue(value, self)
+            if(rule~=nil)then
+                value = rule(self, value)
             end
-            properties[name] = value
-            if(propertyListeners[name]~=nil)then
-                for _,v in pairs(propertyListeners[name])do
-                    v(self, value)
+            --if(properties[name]~=value)then
+                properties[name] = value
+                if(self.updateDraw~=nil)then
+                    self:updateDraw()
                 end
-            end
-            if(self.updateDraw~=nil)then
-                self:updateDraw()
-            end
+            --end
             return self
         end,
 
-        addPropertyListener = function(self, name, callback)
-            name = name:gsub("^%l", string.upper)
-            if(propertyListeners[name]==nil)then
-                propertyListeners[name] = {}
-            end
-            table.insert(propertyListeners[name], callback)
-            return self
-        end,
-
-        removePropertyListener = function(self, name, callback)
-            name = name:gsub("^%l", string.upper)
-            if(propertyListeners[name]==nil)then
-                return self
-            end
-            for i,v in pairs(propertyListeners[name])do
-                if(v==callback)then
-                    table.remove(propertyListeners[name], i)
-                end
-            end
-            return self
-        end,
-
-        addProperty = function(self, name, typ, defaultValue, readonly, setLogic, getLogic)
+        addProperty = function(self, name, typ, defaultValue, readonly, setLogic, getLogic, alteredRule)
             name = name:gsub("^%l", string.upper)
             self:setProperty(name, defaultValue)
 
             object["get" .. name] = function(self)
-                local prop = self:getProperty(name)
-                if(getLogic~=nil)then
-                    return getLogic(self, prop)
+                if(self~=nil)then
+                    local prop = self:getProperty(name)
+                    if(getLogic~=nil)then
+                        return getLogic(self, prop)
+                    end
+                    return prop
                 end
-                return prop
             end
             if(not readonly)then
                 object["set" .. name] = function(self, value)
-                    local types = split(typ, "|")
-                    local isValid = false
-
-                    if(type(value)=="string")and(value:sub(1, 1)=="{")and(value:sub(-1)=="}")then
-                        value = value:sub(2, -2)
-                        value = reactiveValue(value, self)
-                        print(value.value)
-                    end
-
-                    for _,v in pairs(types)do
-                        if(type(value)==v)then
-                            isValid = true
-                        end
-                    end
-                    if(typ=="table")then
-                        for _,v in pairs(typ)do
-                            if(v==value)then
-                                isValid = true
+                    if(self~=nil)then
+                        if(setLogic~=nil)then
+                            local modifiedVal = setLogic(self, value)
+                            if(modifiedVal~=nil)then
+                                value = modifiedVal
                             end
                         end
+                        self:setProperty(name, value, alteredRule~=nil and alteredRule(typ) or defaultRule(typ))
                     end
-                    if(typ=="color")then
-                        basalt.log(type(value))
-                        if(type(value)=="string")then
-                            if(colors[value]~=nil)then
-                                isValid = true
-                                value = colors[value]
-                            end
-                        else
-                            for _,v in pairs(colors)do
-                                if(v==value)then
-                                    isValid = true
-                                end
-                            end
-                        end
-                    end
-                    if(typ=="char")then
-                        if(type(value)=="string")then
-                            if(#value==1)then
-                                isValid = true
-                            end
-                        end
-                    end
-                    if(typ=="any")or(value==nil)then
-                        isValid = true
-                    end
-
-                    if(not isValid)then
-                        if(type(typ)=="table")then
-                            typ = table.concat(typ, ", ")
-                        end
-                        error(self:getType()..": Invalid type for property "..name.."! Expected "..typ..", got "..type(value))
-                    end
-
-                    if(setLogic~=nil)then
-                        local modifiedVal = setLogic(self, value)
-                        if(modifiedVal~=nil)then
-                            value = modifiedVal
-                        end
-                    end
-                    self:setProperty(name, value)
-                    self:updateDraw()
                     return self
                 end
             end

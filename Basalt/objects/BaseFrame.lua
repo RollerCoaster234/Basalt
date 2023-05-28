@@ -26,6 +26,7 @@ return function(name, basalt)
             basaltDraw = drawSystem(value)
         end
     end)
+    base:setSize(termObject.getSize())
 
     local object = {   
         getType = function()
@@ -64,18 +65,6 @@ return function(name, basalt)
             base.setSize(self, ...)
             basaltDraw = drawSystem(termObject)
             return self
-        end,
-
-        getSize = function()
-            return termObject.getSize()
-        end,
-
-        getWidth = function(self)
-            return ({termObject.getSize()})[1]
-        end,
-
-        getHeight = function(self)
-            return ({termObject.getSize()})[2]
         end,
 
         show = function(self)

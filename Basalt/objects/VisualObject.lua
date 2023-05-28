@@ -74,6 +74,11 @@ return function(name, basalt)
     base:combineProperty("Position", "X", "Y")
     base:combineProperty("Size", "Width", "Height")
 
+    base:setProperty("Clicked", false)
+    base:setProperty("Hovered", false)
+    base:setProperty("Dragging", false)
+    base:setProperty("Focused", false)
+
     local object = {
         getType = function(self)
             return objectType
@@ -220,8 +225,8 @@ return function(name, basalt)
                 end
                 isClicked = true
                 isDragging = true
-                self:setProperty("isDragging", true)
-                self:setProperty("isClicked", true)
+                self:setProperty("Dragging", true)
+                self:setProperty("Clicked", true)
                 dragStartX, dragStartY = x, y
                 return true
             end
@@ -229,12 +234,12 @@ return function(name, basalt)
 
         mouseUpHandler = function(self, button, x, y)
             isDragging = false
-            self:setProperty("isDragging", false)
             if(isClicked)then
                 local objX, objY = self:getAbsolutePosition()
                 local val = self:sendEvent("mouse_release", button, x - (objX-1), y - (objY-1), x, y)
                 isClicked = false
-                self:setProperty("isClicked", false)
+                self:setProperty("Clicked", false)
+                self:setProperty("Dragging", false)
             end
             if(self:isCoordsInObject(x, y))then
                 local objX, objY = self:getAbsolutePosition()
@@ -278,14 +283,14 @@ return function(name, basalt)
                 local val = self:sendEvent("mouse_hover", x, y, stopped)
                 if(val==false)then return false end
                 isHovered = true
-                self:setProperty("isHovered", true)
+                self:setProperty("Hovered", true)
                 return true
             end
             if(isHovered)then
                 local val = self:sendEvent("mouse_leave", x, y, stopped)
                 if(val==false)then return false end
                 isHovered = false
-                self:setProperty("isHovered", false)
+                self:setProperty("Hovered", false)
             end
         end,
 
@@ -321,15 +326,15 @@ return function(name, basalt)
 
         getFocusHandler = function(self)
             local val = self:sendEvent("get_focus")
-            self:setProperty("isFocused", true)
+            self:setProperty("Focused", true)
             if(val~=nil)then return val end
             return true
         end,
 
         loseFocusHandler = function(self)
             isDragging = false
-            self:setProperty("isDragging", false)
-            self:setProperty("isFocused", false)
+            self:setProperty("Dragging", false)
+            self:setProperty("Focused", false)
             local val = self:sendEvent("lose_focus")
             if(val~=nil)then return val end
             return true
