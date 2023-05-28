@@ -23,8 +23,7 @@ end
 
 return function(name, basalt)
     local base = basalt.getObject("Object")(name, basalt)
-    -- Base object
-    local objectType = "VisualObject" -- not changeable
+    base:setType("VisualObject")
 
     local isVisible,ignOffset,isHovered,isClicked,isDragging = true,false,false,false,false
 
@@ -80,16 +79,8 @@ return function(name, basalt)
     base:setProperty("Focused", false)
 
     local object = {
-        getType = function(self)
-            return objectType
-        end,
-
         getBase = function(self)
             return base
-        end,
-      
-        isType = function(self, t)
-            return objectType==t or base.isType~=nil and base.isType(t) or false
         end,
 
         getBasalt = function(self)

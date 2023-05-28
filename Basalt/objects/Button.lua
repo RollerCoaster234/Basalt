@@ -4,7 +4,7 @@ local tHex = require("tHex")
 return function(name, basalt)
     -- Button
     local base = basalt.getObject("VisualObject")(name, basalt)
-    local objectType = "Button"
+    base:setType("Button")
 
     base:setSize(12, 3)
     base:setZIndex(5)
@@ -15,13 +15,6 @@ return function(name, basalt)
     base:combineProperty("textAlign", "textHorizontalAlign", "textVerticalAlign")
 
     local object = {
-        getType = function(self)
-            return objectType
-        end,
-        isType = function(self, t)
-            return objectType==t or base.isType~=nil and base.isType(t) or false
-        end,
-
         getBase = function(self)
             return base
         end,

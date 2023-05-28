@@ -3,7 +3,7 @@ local tableCount = utils.tableCount
 
 return function(name, basalt)
     local base = basalt.getObject("VisualObject")(name, basalt)
-    local objectType = "Container"
+    base:setType("Container")
 
     local children = {}
 
@@ -195,18 +195,10 @@ return function(name, basalt)
     end
 
     container = {
-        getType = function()
-            return objectType
-        end,
-
         getBase = function(self)
             return base
-        end,  
-        
-        isType = function(self, t)
-            return objectType==t or base.isType~=nil and base.isType(t) or false
         end,
-        
+
         setSize = function(self, ...)
             base.setSize(self, ...)
             self:customEventHandler("basalt_FrameResize")

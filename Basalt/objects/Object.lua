@@ -10,7 +10,6 @@ return function(name, basalt)
     assert(basalt~=nil, "Unable to find basalt instance! ID: "..name)
 
     -- Base object
-    local objectType = "Object" -- not changeable
     local isEnabled,initialized = true,false
 
     local eventSystem = basaltEvent()
@@ -80,14 +79,20 @@ return function(name, basalt)
             return true
         end,
 
-        load = function(self)
+        isType = function(self, typ)
+            for k,v in pairs(properties["Type"])do
+                if(v==typ)then
+                    return true
+                end
+            end
+            return false
         end,
 
-        getType = function(self)
-            return objectType
+        getTypes = function(self)
+            return properties["Type"]
         end,
-        isType = function(self, t)
-            return objectType==t
+
+        load = function(self)
         end,
 
         getName = function(self)
@@ -124,20 +129,20 @@ return function(name, basalt)
             name = name:gsub("^%l", string.upper)
             self:setProperty(name, defaultValue)
 
-            object["get" .. name] = function(self)
+            object["get" .. name] = function(self, ...)
                 if(self~=nil)then
                     local prop = self:getProperty(name)
                     if(getLogic~=nil)then
-                        return getLogic(self, prop)
+                        return getLogic(self, prop, ...)
                     end
                     return prop
                 end
             end
             if(not readonly)then
-                object["set" .. name] = function(self, value)
+                object["set" .. name] = function(self, value, ...)
                     if(self~=nil)then
                         if(setLogic~=nil)then
-                            local modifiedVal = setLogic(self, value)
+                            local modifiedVal = setLogic(self, value, ...)
                             if(modifiedVal~=nil)then
                                 value = modifiedVal
                             end
@@ -404,6 +409,15 @@ return function(name, basalt)
             self:updateDraw()
         end
         return value
+    end)
+    object:addProperty("Type", "string|table", {"Object"}, false, function(self, value)
+        if(type(value)=="string")then
+            table.insert(properties["Type"], 1, value)
+            return properties["Type"]
+        end
+    end,
+    function(self, _, depth)
+        return properties["Type"][depth or 1]
     end)
 
     object.__index = object

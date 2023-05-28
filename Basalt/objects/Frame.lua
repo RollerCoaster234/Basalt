@@ -4,7 +4,7 @@ local max,min,sub,rep,len = math.max,math.min,string.sub,string.rep,string.len
 
 return function(name, basalt)
     local base = basalt.getObject("Container")(name, basalt)
-    local objectType = "Frame"
+    base:setType("Frame")
     local parent
     
     base:setSize(30, 10)
@@ -14,19 +14,11 @@ return function(name, basalt)
     base:addProperty("YOffset", "number", 0)
     base:combineProperty("Offset", "XOffset", "YOffset")
 
-    local object = {    
-        getType = function()
-            return objectType
-        end,
-
-        isType = function(self, t)
-            return objectType==t or base.isType~=nil and base.isType(t) or false
-        end,
-
+    local object = {
         getBase = function(self)
             return base
         end,
-        
+
         setParent = function(self, p, ...)
             base.setParent(self, p, ...)
             parent = p

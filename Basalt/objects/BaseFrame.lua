@@ -5,7 +5,7 @@ local max,min,sub,rep = math.max,math.min,string.sub,string.rep
 
 return function(name, basalt)
     local base = basalt.getObject("Container")(name, basalt)
-    local objectType = "BaseFrame"
+    base:setType("BaseFrame")
 
     local colorTheme = {}
 
@@ -29,13 +29,6 @@ return function(name, basalt)
     base:setSize(termObject.getSize())
 
     local object = {   
-        getType = function()
-            return objectType
-        end,
-        isType = function(self, t)
-            return objectType==t or base.isType~=nil and base.isType(t) or false
-        end,
-
         getBase = function(self)
             return base
         end,
