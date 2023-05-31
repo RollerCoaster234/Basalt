@@ -18,8 +18,8 @@ local function parseString(str)
     str = str:gsub("(%s?)([%w.]+)", function(a, b) return a .. replace(b) end)
     str = str:gsub("%s?%?", " and ")
     str = str:gsub("%s?:", " or ")
-    str = str:gsub("%.w", ".width")
-    str = str:gsub("%.h", ".height")
+    str = str:gsub("%.w%f[%W]", ".width")
+    str = str:gsub("%.h%f[%W]", ".height")
     return str
 end
 
@@ -35,6 +35,7 @@ local function processString(str, env)
         return math.floor(val + 0.5)
     end
     local f = load("return " .. str, "", nil, env)
+
     if(f==nil)then error(str.." - is not a valid dynamic value string") end
     return f()
 end
@@ -136,6 +137,7 @@ local function dynamicValue(object, name, dynamicString, basalt)
             if(needsUpdate)then
                 cachedValue = calculate()
                 needsUpdate = false
+                object:updatePropertyObservers(name)
             end
             return cachedValue
         end,
@@ -164,6 +166,15 @@ return {
         end
 
         return {
+            updatePropertyObservers = function(self, name)
+                if(observers[name]~=nil)then
+                    for _,v in pairs(observers[name])do
+                        v(self, name)
+                    end
+                end
+                return self
+            end,
+
             setProperty = function(self, name, value, rule)
                 value = filterDynValues(self, name, value)
                 base.setProperty(self, name, value, rule)

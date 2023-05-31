@@ -175,7 +175,7 @@ return function(name, basalt)
 
         mouseHandler = function(self, button, x, y)
             if base.mouseHandler(self, button, x, y) then
-                local currentLine = 1 - yOffset
+                local currentLine = 1 - self:getYOffset()
                 local obx, oby = self:getAbsolutePosition()
                 local w, h = self:getSize()
                 local function checkNodeClick(node, level)
@@ -242,6 +242,7 @@ return function(name, basalt)
                             yOffset = yOffset - 1
                         end
                     end
+                    self:setYOffset(yOffset)
                     self:updateDraw()
                 end
                 return true

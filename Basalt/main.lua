@@ -11,6 +11,7 @@ local moveThrottle = 300
 local dragThrottle = 0
 local renderingThrottle = 0
 local newObjects = {}
+local mousePos = {0, 0}
 
 local baseTerm = term.current()
 local version = "1.7.0"
@@ -269,6 +270,12 @@ local function basaltUpdateEvent(event, ...)
         }
         local mouseEvent = mouseEvents[event]
         if(mouseEvent~=nil)then
+            if(event~="mouse_scroll")then
+                local mouseX, mouseY = a[3], a[4]
+                if(mouseX~=nil and mouseY~=nil)then
+                    mousePos = {mouseX, mouseY}
+                end
+            end
             mouseEvent(mainFrame, ...)
             handleSchedules(event, ...)
             renderingUpdateEvent()
@@ -432,6 +439,9 @@ basalt = {
             table.insert(objectNames, k)
         end
         return objectNames
+    end,
+    getMousePosition = function()
+        return mousePos[1], mousePos[2]
     end,
 
     setVariable = setVariable,

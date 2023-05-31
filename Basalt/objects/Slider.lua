@@ -113,8 +113,8 @@ return function(name, basalt)
                 local obx, oby = self:getPosition()
                 if (barType == "horizontal") then
                     self:addText(index, oby, symbol:rep(symbolSize))
-                    if(symbolBG~=false)then self:addBG(index, 1, tHex[symbolBG]:rep(#symbol*symbolSize)) end
-                    if(symbolFG~=false)then self:addFG(index, 1, tHex[symbolFG]:rep(#symbol*symbolSize)) end
+                    if(symbolBG~=false)then self:addBg(index, 1, tHex[symbolBG]:rep(#symbol*symbolSize)) end
+                    if(symbolFG~=false)then self:addFg(index, 1, tHex[symbolFG]:rep(#symbol*symbolSize)) end
                 end
 
                 if (barType == "vertical") then

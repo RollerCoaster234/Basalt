@@ -35,7 +35,7 @@ return function(name, basalt)
                 end
 
                 self:addText(xOffset + 1, verticalAlign, text)
-                self:addFG(xOffset + 1, verticalAlign, tHex[self:getForeground() or colors.white]:rep(text:len()))
+                self:addFg(xOffset + 1, verticalAlign, tHex[self:getForeground() or colors.white]:rep(text:len()))
             end)
         end,
     }

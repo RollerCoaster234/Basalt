@@ -735,8 +735,8 @@ return function(name, basalt)
                     fg = rep(fgColor, w)
         
                     self:addText(1, n, text)
-                    self:addBG(1, n, bg)
-                    self:addFG(1, n, fg)
+                    self:addBg(1, n, bg)
+                    self:addFg(1, n, fg)
                     self:addBlit(1, n, text, fg, bg)
                 end
         
@@ -757,8 +757,8 @@ return function(name, basalt)
                         
                         local visible_line_length = math.min(line, w - xOffset)
                 
-                        self:addBG(1 + xOffset, n, rep(tHex[selectionBG], visible_line_length))
-                        self:addFG(1 + xOffset, n, rep(tHex[selectionFG], visible_line_length))
+                        self:addBg(1 + xOffset, n, rep(tHex[selectionBG], visible_line_length))
+                        self:addFg(1 + xOffset, n, rep(tHex[selectionFG], visible_line_length))
                     end
                 end
             end)

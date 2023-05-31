@@ -166,7 +166,7 @@ return function(name, basalt)
         end
     end
 
-    for _,v in pairs({"setBG", "setFG", "setText"}) do
+    for _,v in pairs({"setBg", "setFg", "setText"}) do
         object[v] = function(self, x, y, str)
             local obx, oby = self:getPosition()
             local w, h  = self:getSize()

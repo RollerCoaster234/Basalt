@@ -6,8 +6,6 @@ return function(name, basalt)
     local base = basalt.getObject("ChangeableObject")(name, basalt)
     base:setType("Input")
 
-    local inputType = "text"
-    local inputLimit = 0
     base:setZIndex(5)
     base:setValue("")
     base:setSize(12, 1)
@@ -17,7 +15,7 @@ return function(name, basalt)
     base:addProperty("defaultText", "string", "", nil, function(self, value)
         showingText = value
     end)
-    base:addProperty("defaultForeground", "number", colors.lightGray)
+    base:addProperty("defaultForeground", "number", colors.white)
     base:addProperty("defaultBackground", "number", colors.black)
     base:combineProperty("default", "defaultText", "defaultForeground", "defaultBackground")
     base:addProperty("offset", "number", 1)
@@ -29,11 +27,6 @@ return function(name, basalt)
     local internalValueChange = false
 
     local object = {
-        init = function(self)
-            base.init(self)
-            self:setDefaultForeground(self:getForeground())
-            self:setDefaultBackground(self:getBackground())
-        end,
         load = function(self)
             self:listenEvent("mouse_click")
             self:listenEvent("key")
@@ -63,15 +56,11 @@ return function(name, basalt)
             base.getFocusHandler(self)
             local parent = self:getParent()
             if (parent ~= nil) then
-                local obx, oby = self:getPosition()
                 local defaultText = self:getDefaultText()
                 showingText = ""
                 if(defaultText~="")then
                     self:updateDraw()
                 end
-                local wIndex = self:getOffset()
-                local textX = self:getCursorPosition()
-                parent:setCursor(true, obx + textX - wIndex, oby+math.max(math.ceil(self:getHeight()/2-1, 1)), self:getForeground())
             end
         end,
 
@@ -155,7 +144,9 @@ return function(name, basalt)
                 local wIndex = self:getOffset()
                 local textX = self:getCursorPosition()
                 local w,h = self:getSize()
-                local text = self:getValue()
+                local text = tostring(self:getValue())
+                local inputType = self:getInputType()
+                local inputLimit = self:getInputLimit()
                 if (text:len() < inputLimit or inputLimit <= 0) then
                     if (inputType == "number") then
                         local cache = text
@@ -188,14 +179,12 @@ return function(name, basalt)
 
         mouseHandler = function(self, button, x, y)
             if(base.mouseHandler(self, button, x, y))then
-                local parent = self:getParent()
                 local ax, ay = self:getPosition()
                 local obx, oby = self:getAbsolutePosition(ax, ay)
-                local w, h = self:getSize()
                 local wIndex = self:getOffset()
                 local textX = self:getCursorPosition()
                 textX = x - obx + wIndex
-                local text = self:getValue()
+                local text = tostring(self:getValue())
                 if (textX > text:len()) then
                     textX = text:len() + 1
                 end
@@ -207,7 +196,6 @@ return function(name, basalt)
                 end
                 self:setOffset(wIndex)
                 self:setCursorPosition(textX)
-                parent:setCursor(true, ax + textX - wIndex, ay+math.max(math.ceil(h/2-1, 1)), self:getForeground())
                 return true
             end
         end,
@@ -228,8 +216,9 @@ return function(name, basalt)
             base.eventHandler(self, event, paste, ...)
             if(event=="paste")then
                 if(self:isFocused())then
-                    local text = self:getValue()
+                    local text = tostring(self:getValue())
                     local textX = self:getCursorPosition()
+                    local inputType = self:getInputType()
                     if (inputType == "number") then
                         local cache = text
                         if (paste == ".") or (tonumber(paste) ~= nil) then

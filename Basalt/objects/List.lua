@@ -200,9 +200,7 @@ return function(name, basalt)
                         if list[n + offset] == self:getValue() and selectionColorActive then
                             fg, bg = itemSelectedFG, itemSelectedBG
                         end
-                        self:addText(1, n, t:sub(1,w))
-                        self:addBG(1, n, tHex[bg]:rep(w))
-                        self:addFG(1, n, tHex[fg]:rep(w))
+                        self:addBlit(1, n, t:sub(1,w), tHex[fg]:rep(w), tHex[bg]:rep(w))
                     end
                 end
             end)

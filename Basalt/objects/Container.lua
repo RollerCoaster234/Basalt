@@ -1,5 +1,6 @@
 local utils = require("utils")
 local tableCount = utils.tableCount
+local rpairs = utils.rpairs
 
 return function(name, basalt)
     local base = basalt.getObject("VisualObject")(name, basalt)
@@ -95,11 +96,11 @@ return function(name, basalt)
         for i, v in ipairs(children) do
             if v.element == element then
                 table.remove(children, i)
+                self:removeEvents(element)
+                sorted = false
                 return true
             end
         end
-        self:removeEvents(element)
-        sorted = false
     end
 
     local function removeChildren(self)
@@ -111,6 +112,7 @@ return function(name, basalt)
         evId = 0
         focusedChild = nil
         parent:removeEvents(self)
+        self:updateEvents()
     end
 
     local function updateZIndex(self, element, newZ)
@@ -145,7 +147,10 @@ return function(name, basalt)
             end
             if(tableCount(events[a])<=0)then
                 if(parent~=nil)then
-                    parent:removeEvent(a, self)
+                    if(self:getEventSystem().getEventCount(a)<=0)then
+                        parent:removeEvent(a, self)
+                        self:updateEvents()
+                    end
                 end
             end
         end
@@ -300,6 +305,21 @@ return function(name, basalt)
         getFocused = function(self)
             return focusedChild
         end,
+
+        getChildrenAt = function(self, x, y)
+            local results = {}
+            for _, child in rpairs(children) do
+                if(child.element.getPosition~=nil)and(child.element.getSize~=nil)then
+                    local xObj, yObj = child.element:getPosition()
+                    local wObj, hObj = child.element:getSize()
+                    --basalt.log("x: "..x.." y: "..y.." xObj: "..xObj.." yObj: "..yObj.." wObj: "..wObj.." hObj: "..hObj)
+                    if (x >= xObj and x <= xObj + wObj - 1 and y >= yObj and y <= yObj + hObj - 1) then
+                        table.insert(results, child.element)
+                    end
+                end
+            end
+            return results
+        end,
         
         getChild = getChild,
         getChildren = getChildren,
@@ -376,7 +396,7 @@ return function(name, basalt)
                                         xO, yO = 0, 0
                                     end
                                 end
-                                if (obj.element[v[1]](obj.element, btn, x+xO, y+yO, ...)) then      
+                                if (obj.element[v[1]](obj.element, btn, x+xO, y+yO, ...)) then 
                                     return true
                                 end
                             end

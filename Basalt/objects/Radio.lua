@@ -55,6 +55,7 @@ return function(name, basalt)
                 for k, value in pairs(baseList) do
                     if (obx + list[k].x - 1 <= x) and (obx + list[k].x - 1 + value.text:len() + 1 >= x) and (oby + list[k].y - 1 == y) then
                         self:setValue(value)
+                        self:selectHandler()
                         local val = self:sendEvent("mouse_click", self, "mouse_click", button, x, y, ...)
                         self:updateDraw()
                         if(val==false)then return val end

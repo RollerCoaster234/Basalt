@@ -9,9 +9,8 @@ return function(name, basalt)
     base:setSize(30, 1)
     base:setZIndex(5)
 
-    base:addProperty("itemOffset", "number", 0)
-    base:addProperty("scrollable", "boolean", true)
-    base:addProperty("space", "number", 1)
+    base:addProperty("ItemOffset", "number", 0)
+    base:addProperty("Space", "number", 1)
 
     local function maxScroll()
         local mScroll = 0
@@ -48,6 +47,7 @@ return function(name, basalt)
                         if (list[n] ~= nil) then
                             if (objX + xPos <= x + itemOffset) and (objX + xPos + list[n].text:len() + (space*2) > x + itemOffset) and (objY == y) then
                                 self:setValue(list[n])
+                                self:selectHandler()
                             end
                             xPos = xPos + list[n].text:len() + space * 2
                         end
@@ -72,6 +72,7 @@ return function(name, basalt)
                     if (itemOffset > mScroll) then
                         itemOffset = mScroll
                     end
+                    self:setItemOffset(itemOffset)
                     self:updateDraw()
                 end
                 return true

@@ -12,6 +12,7 @@ return function(name, basalt)
             end
             self:sendEvent("value_changed", value)
         end
+        return value
     end)
 
     local object = {

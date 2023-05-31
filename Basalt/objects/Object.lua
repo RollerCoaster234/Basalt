@@ -10,12 +10,13 @@ return function(name, basalt)
     assert(basalt~=nil, "Unable to find basalt instance! ID: "..name)
 
     -- Base object
-    local isEnabled,initialized = true,false
+    local initialized = false
 
     local eventSystem = basaltEvent()
     local registeredEvents = {}
     local activeEvents = {}
     local properties = {}
+    local propertyConfig = {}
 
     local function defaultRule(typ)
         return function(self, value)
@@ -125,8 +126,17 @@ return function(name, basalt)
             return self
         end,
 
+        getPropertyConfig = function(self, name)
+            name = name:gsub("^%l", string.upper)
+            return propertyConfig[name]
+        end,
+
         addProperty = function(self, name, typ, defaultValue, readonly, setLogic, getLogic, alteredRule)
             name = name:gsub("^%l", string.upper)
+            propertyConfig[name] = {type=typ, defaultValue=defaultValue, readonly=readonly}
+            if(properties[name]~=nil)then
+                error("Property "..name.." in "..self:getType().." already exists!")
+            end
             self:setProperty(name, defaultValue)
 
             object["get" .. name] = function(self, ...)
@@ -183,9 +193,6 @@ return function(name, basalt)
             if (newParent.getType ~= nil and newParent:isType("Container")) then
                 self:remove()
                 newParent:addChild(self)
-                if (self.show) then
-                    self:show()
-                end
                 parent = newParent
             end
             return self
@@ -219,17 +226,17 @@ return function(name, basalt)
         end,
 
         enable = function(self)
-            isEnabled = true
+            self:setProperty("Enabled", true)
             return self
         end,
 
         disable = function(self)
-            isEnabled = false
+            self:setProperty("Enabled", false)
             return self
         end,
 
         isEnabled = function(self)
-            return isEnabled
+            return self:getProperty("Enabled")
         end,
 
         remove = function(self)
@@ -419,6 +426,7 @@ return function(name, basalt)
     function(self, _, depth)
         return properties["Type"][depth or 1]
     end)
+    object:addProperty("Enabled", "boolean", true)
 
     object.__index = object
     return object

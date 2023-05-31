@@ -94,7 +94,7 @@ return function(drawTerm)
         end
     end
 
-    local function setBG(x, y, bg)
+    local function setBg(x, y, bg)
         if y >= 1 and y <= height then
             if x + #bg > 0 and x <= width then
                 local newCacheBG
@@ -119,7 +119,7 @@ return function(drawTerm)
         end
     end
 
-    local function setFG(x, y, fg)
+    local function setFg(x, y, fg)
         if y >= 1 and y <= height then
             if x + #fg > 0 and x <= width then
                 local newCacheFG
@@ -180,16 +180,16 @@ return function(drawTerm)
             mirrorTerm = mirror
         end,
 
-        setBG = function(x, y, colorStr)
-            setBG(x, y, colorStr)
+        setBg = function(x, y, colorStr)
+            setBg(x, y, colorStr)
         end,
 
         setText = function(x, y, text)
             setText(x, y, text)
         end,
 
-        setFG = function(x, y, colorStr)
-            setFG(x, y, colorStr)
+        setFg = function(x, y, colorStr)
+            setFg(x, y, colorStr)
         end;
 
         blit = function(x, y, t, fg, bg)
@@ -199,13 +199,13 @@ return function(drawTerm)
         drawBackgroundBox = function(x, y, width, height, bgCol)
             local colorStr = rep(tHex[bgCol], width)
             for n = 1, height do
-                setBG(x, y + (n - 1), colorStr)
+                setBg(x, y + (n - 1), colorStr)
             end
         end,
         drawForegroundBox = function(x, y, width, height, fgCol)
             local colorStr = rep(tHex[fgCol], width)
             for n = 1, height do
-                setFG(x, y + (n - 1), colorStr)
+                setFg(x, y + (n - 1), colorStr)
             end
         end,
         drawTextBox = function(x, y, width, height, symbol)

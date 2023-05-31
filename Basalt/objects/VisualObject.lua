@@ -25,7 +25,7 @@ return function(name, basalt)
     local base = basalt.getObject("Object")(name, basalt)
     base:setType("VisualObject")
 
-    local isVisible,ignOffset,isHovered,isClicked,isDragging = true,false,false,false,false
+    local ignOffset,isHovered,isClicked,isDragging = false,false,false,false
 
     local dragStartX, dragStartY = 0, 0
 
@@ -37,11 +37,13 @@ return function(name, basalt)
 
     local renderObject = {}
 
-    base:addProperty("Visible", "boolean", true)
+    base:addProperty("Visible", "boolean", true, false, function(self, val)
+        self:setProperty("Enabled", val)
+    end)
     base:addProperty("Transparent", "boolean", false)
     base:addProperty("Background", "color", colors.black)
     base:addProperty("BgSymbol", "char", "")
-    base:addProperty("BgSymbolColor", "color", colors.black)
+    base:addProperty("BgSymbolColor", "color", colors.red)
     base:addProperty("Foreground", "color", colors.white)
     base:addProperty("X", "number", 1, false, function(self, val)
         local y = self:getProperty("Y")
@@ -104,8 +106,8 @@ return function(name, basalt)
         end,
 
         setParent = function(self, newParent, noRemove)
-            base.setParent(self, newParent, noRemove)
             parent = newParent
+            base.setParent(self, newParent, noRemove)
             return self
         end,
 
@@ -124,7 +126,6 @@ return function(name, basalt)
         end,
 
         getAbsolutePosition = function(self, x, y)
-            -- relative position to absolute position
             if (x == nil) or (y == nil) then
                 x, y = self:getPosition()
             end
@@ -137,11 +138,24 @@ return function(name, basalt)
             return x, y
         end,
 
+        getRelativePosition = function(self, x, y)
+            if (x == nil) or (y == nil) then
+                x, y = 1, 1
+            end
+
+            if (parent ~= nil) then
+                local xO, yO = self:getAbsolutePosition()
+                x = xO - x + 1
+                y = yO - y + 1
+            end
+            return x, y
+        end,
+
         isCoordsInObject = function(self, x, y)
-            if(isVisible)and(self:isEnabled())then
+            if(self:getVisible())and(self:getEnabled())then
                 if(x==nil)or(y==nil)then return false end
                 local objX, objY = self:getAbsolutePosition()
-                local w, h = self:getSize()            
+                local w, h = self:getSize()
                 if (objX <= x) and (objX + w > x) and (objY <= y) and (objY + h > y) then
                     return true
                 end
@@ -288,7 +302,7 @@ return function(name, basalt)
         end,
 
         keyHandler = function(self, key, isHolding)
-            if(self:isEnabled())and(isVisible)then
+            if(self:isEnabled())and(self:getVisible())then
                 if (self:isFocused()) then
                 local val = self:sendEvent("key", key, isHolding)
                 if(val==false)then return false end
@@ -298,7 +312,7 @@ return function(name, basalt)
         end,
 
         keyUpHandler = function(self, key)
-            if(self:isEnabled())and(isVisible)then
+            if(self:isEnabled())and(self:getVisible())then
                 if (self:isFocused()) then
                     local val = self:sendEvent("key_up", key)
                 if(val==false)then return false end
@@ -308,7 +322,7 @@ return function(name, basalt)
         end,
 
         charHandler = function(self, char)
-            if(self:isEnabled())and(isVisible)then
+            if(self:isEnabled())and(self:getVisible())then
                 if(self:isFocused())then
                 local val = self:sendEvent("char", char)
                 if(val==false)then return false end
@@ -363,7 +377,7 @@ return function(name, basalt)
         setDrawState = function(self, name, state, typ)
             local queue = (typ==nil or typ==1) and drawQueue or typ==2 and preDrawQueue or typ==3 and postDrawQueue
             for k,v in pairs(queue)do
-                if(v.name==name)then 
+                if(v.name==name)then
                     v.active = state
                     break
                 end
@@ -402,7 +416,7 @@ return function(name, basalt)
             end
         end,
 
-        addBG = function(self, x, y, bg, noText)
+        addBg = function(self, x, y, bg, noText)
             local obj = parent or self
             local xPos,yPos = self:getPosition()
             local transparent = self:getTransparent()
@@ -412,7 +426,7 @@ return function(name, basalt)
                 yPos = ignOffset and yPos or yPos - yO
             end
             if not(transparent)then
-                obj:setBG(x+xPos-1, y+yPos-1, bg)
+                obj:setBg(x+xPos-1, y+yPos-1, bg)
                 return
             end
             local t = split(bg)
@@ -420,16 +434,16 @@ return function(name, basalt)
                 if(v.value~="")and(v.value~=" ")then
                     if(noText~=true)then
                         obj:setText(x+v.x+xPos-2, y+yPos-1, (" "):rep(#v.value))
-                        obj:setBG(x+v.x+xPos-2, y+yPos-1, v.value)
+                        obj:setBg(x+v.x+xPos-2, y+yPos-1, v.value)
                     else
                         table.insert(renderObject, {x=x+v.x-1,y=y,bg=v.value})
-                        obj:setBG(x+xPos-1, y+yPos-1, fg)
+                        obj:setBg(x+xPos-1, y+yPos-1, v.value)
                     end
                 end
             end
         end,
 
-        addFG = function(self, x, y, fg)
+        addFg = function(self, x, y, fg)
             local obj = parent or self
             local xPos,yPos = self:getPosition()
             local transparent = self:getTransparent()
@@ -439,13 +453,13 @@ return function(name, basalt)
                 yPos = ignOffset and yPos or yPos - yO
             end
             if not(transparent)then
-                obj:setFG(x+xPos-1, y+yPos-1, fg)
+                obj:setFg(x+xPos-1, y+yPos-1, fg)
                 return
             end
             local t = split(fg)
             for _,v in pairs(t)do
                 if(v.value~="")and(v.value~=" ")then
-                    obj:setFG(x+v.x+xPos-2, y+yPos-1, v.value)
+                    obj:setFg(x+v.x+xPos-2, y+yPos-1, v.value)
                 end
             end
         end,
@@ -466,19 +480,19 @@ return function(name, basalt)
             local _text = split(t, "\0")
             local _fg = split(fg)
             local _bg = split(bg)
-            for k,v in pairs(_text)do
+            for _,v in pairs(_text)do
                 if(v.value~="")or(v.value~="\0")then
                     obj:setText(x+v.x+xPos-2, y+yPos-1, v.value)
                 end
             end
-            for k,v in pairs(_bg)do
+            for _,v in pairs(_bg)do
                 if(v.value~="")or(v.value~=" ")then
-                    obj:setBG(x+v.x+xPos-2, y+yPos-1, v.value)
+                    obj:setBg(x+v.x+xPos-2, y+yPos-1, v.value)
                 end
             end
-            for k,v in pairs(_fg)do
+            for _,v in pairs(_fg)do
                 if(v.value~="")or(v.value~=" ")then
-                    obj:setFG(x+v.x+xPos-2, y+yPos-1, v.value)
+                    obj:setFg(x+v.x+xPos-2, y+yPos-1, v.value)
                 end
             end
         end,
@@ -517,7 +531,7 @@ return function(name, basalt)
         end,
 
         render = function(self)
-            if (isVisible)then
+            if (self:getVisible())then
                 self:redraw()
             end
         end,

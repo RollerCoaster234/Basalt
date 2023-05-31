@@ -69,6 +69,7 @@ return function(name, basalt)
                             if (list[n + offset] ~= nil) then
                                 if (obx <= x) and (obx + dropdownW > x) and (oby + n == y) then
                                     self:setValue(list[n + offset])
+                                    self:selectHandler()
                                     self:updateDraw()
                                     local val = self:sendEvent("mouse_click", self, "mouse_click", button, x, y)
                                     if(val==false)then return val end
