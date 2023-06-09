@@ -1,429 +1,373 @@
-local utils = require("utils")
-local tableCount = utils.tableCount
+local objectLoader = require("objectLoader")
+local VisualObject = objectLoader.load("VisualObject")
+local Container = VisualObject.new(VisualObject)
 
-return function(name, basalt)
-    local base = basalt.getObject("VisualObject")(name, basalt)
-    local objectType = "Container"
+local basaltRender = require("Basalt2.libraries.basaltRender")
 
-    local children = {}
+local basaltTerm = term.current()
+basaltTerm.__noCopy = true
 
-    local events = {}
-
-    local container = {}
-
-    local focusedChild
-    local sorted = true
-    local objId, evId = 0, 0
-
-    local objSort = function(a, b)
-        if a.zIndex == b.zIndex then
-            return a.objId < b.objId
-        else
-            return a.zIndex < b.zIndex
-        end
+Container:setPropertyType("Container")
+Container:addProperty("term", "table", basaltTerm)
+Container:addProperty("Children", "table", {})
+Container:addProperty("ChildrenByName", "table", {})
+Container:addProperty("ChildrenEvents", "table", {})
+Container:addProperty("cursorBlink", "boolean", false)
+Container:addProperty("cursorColor", "color", colors.white)
+Container:addProperty("cursorX", "number", 1)
+Container:addProperty("cursorY", "number", 1)
+Container:addProperty("focusedChild", "table", nil, false, function(self, value)
+  local curFocus = self:getFocusedChild()
+  if(curFocus~=value)then
+    if(curFocus~=nil)then
+      curFocus:setFocused(false)
     end
-    local evSort = function(a, b)
-        if a.zIndex == b.zIndex then
-            return a.evId > b.evId
-        else
-            return a.zIndex > b.zIndex
-        end
+    if(value~=nil)then
+      value:setFocused(true)
     end
+  end
+  return value
+end)
+Container:addProperty("ElementsSorted", "boolean", true)
+Container:addProperty("XOffset", "number", 0)
+Container:addProperty("YOffset", "number", 0)
+Container:combineProperty("Offset", "XOffset", "YOffset")
+local _basaltRender = basaltRender(basaltTerm)
 
-    local function getChildren(self)
-        self:sortChildren()
-        return children
-    end
+local sub, max = string.sub, math.max
 
-    local function getChild(self, name)
-        if (type(name)=="table") then
-            name = name:getName()
-        end
-        for _, v in ipairs(children) do
-            if v.element:getName() == name then
-                return v.element
-            end
-        end
-    end
-
-    local function getDeepChild(self, name)
-        local maybeChild = getChild(name)
-        if (maybeChild ~= nil) then
-            return maybeChild
-        end
-        for _, child in ipairs(children) do            
-            if (child:getType() == "Container") then
-                local maybeDeepChild = child:getDeepChild(name)
-                if (maybeDeepChild ~= nil) then
-                    return maybeDeepChild
-                end
-            end
-        end
-    end
-
-    local function addChild(self, element)
-        if (getChild(element:getName()) ~= nil) then
-            return
-        end
-        objId = objId + 1
-        local zIndex = element:getZIndex()
-        table.insert(children, {element = element, zIndex = zIndex, objId = objId})
-        sorted = false
-        element:setParent(self, true)
-        for event, _ in pairs(element:getRegisteredEvents()) do
-            self:addEvent(event, element)
-        end
-        if (element.init~=nil) then
-            element:init()
-        end
-        if (element.load~=nil) then
-            element:load()
-        end
-        if (element.draw~=nil) then
-            element:draw()
-        end
-        return element
-    end
-
-    local function removeChild(self, element)
-        if (type(element)=="string") then
-            element = getChild(element:getName())
-        end
-        if (element==nil) then
-            return
-        end
-        for i, v in ipairs(children) do
-            if v.element == element then
-                table.remove(children, i)
-                return true
-            end
-        end
-        self:removeEvents(element)
-        sorted = false
-    end
-
-    local function removeChildren(self)
-        local parent = self:getParent()
-        children = {}
-        events = {}
-        sorted = false
-        objId = 0
-        evId = 0
-        focusedChild = nil
-        if parent ~= nil then parent:removeEvents(self) end
-    end
-
-    local function updateZIndex(self, element, newZ)
-        objId = objId + 1
-        evId = evId + 1
-        for _,v in pairs(children)do
-            if(v.element==element)then
-                v.zIndex = newZ
-                v.objId = objId
-                break
-            end
-        end
-        for _,v in pairs(events)do
-            for a,b in pairs(v)do
-                if(b.element==element)then
-                    b.zIndex = newZ
-                    b.evId = evId
-                end
-            end
-        end
-        sorted = false
-        self:updateDraw()
-    end
-
-    local function removeEvents(self, element)
-        local parent = self:getParent()
-        for a, b in pairs(events) do
-            for c, d in pairs(b) do
-                if(d.element == element)then
-                    table.remove(events[a], c)
-                end
-            end
-            if(tableCount(events[a])<=0)then
-                if(parent~=nil)then
-                    parent:removeEvent(a, self)
-                end
-            end
-        end
-        sorted = false
-    end
-
-    local function getEvent(self, event, name)
-        if(type(name)=="table")then name = name:getName() end
-        if(events[event]~=nil)then
-            for _, obj in pairs(events[event]) do
-                if (obj.element:getName() == name) then
-                    return obj
-                end
-            end
-        end
-    end
-
-    local function addEvent(self, event, element)
-        if (getEvent(self, event, element:getName()) ~= nil) then
-            return
-        end
-        local zIndex = element:getZIndex() 
-        evId = evId + 1
-        if(events[event]==nil)then events[event] = {} end
-        table.insert(events[event], {element = element, zIndex = zIndex, evId = evId})
-        sorted = false
-        self:listenEvent(event)
-        return element
-    end
-
-    local function removeEvent(self, event, element)
-        if(events[event]~=nil)then
-            for a, b in pairs(events[event]) do
-                if(b.element == element)then
-                    table.remove(events[event], a)
-                end
-            end
-            if(tableCount(events[event])<=0)then
-                self:listenEvent(event, false)
-            end
-        end
-        sorted = false
-    end
-
-    local function getEvents(self, event)
-        return event~=nil and events[event] or events
-    end
-
-    container = {
-        getType = function()
-            return objectType
-        end,
-
-        getBase = function(self)
-            return base
-        end,  
-        
-        isType = function(self, t)
-            return objectType==t or base.isType~=nil and base.isType(t) or false
-        end,
-        
-        setSize = function(self, ...)
-            base.setSize(self, ...)
-            self:customEventHandler("basalt_FrameResize")
-            return self
-        end,
-
-        setPosition = function(self, ...)
-            base.setPosition(self, ...)
-            self:customEventHandler("basalt_FrameReposition")
-            return self
-        end,
-
-        searchChildren = function(self, name)
-            local results = {}
-            for _, child in pairs(children) do
-                if (string.find(child.element:getName(), name)) then
-                    table.insert(results, child)
-                end
-            end
-            return results
-        end,
-
-        getChildrenByType = function(self, type)
-            local results = {}
-            for _, child in pairs(children) do
-                if (child.element:isType(type)) then
-                    table.insert(results, child)
-                end
-            end
-            return results
-        end,
-
-        setImportant = function(self, element)
-            objId = objId + 1
-            evId = evId + 1
-            for a, b in pairs(events) do
-                for c, d in pairs(b) do
-                    if(d.element == element)then
-                        d.evId = evId
-                        table.remove(events[a], c)
-                        table.insert(events[a], d)
-                        break
-                    end
-                end
-            end
-            for i, v in ipairs(children) do
-                if v.element == element then
-                    v.objId = objId
-                    table.remove(children, i)
-                    table.insert(children, v)
-                    break
-                end
-            end
-            if(self.updateDraw~=nil)then
-                self:updateDraw()
-            end
-            sorted = false
-        end,
-
-        sortChildren = function(self)
-            if (sorted) then
-                return
-            end
-            table.sort(children, objSort)
-            for event, _ in pairs(events) do
-                table.sort(events[event], evSort)
-            end
-            sorted = true
-        end,
-
-        clearFocusedChild = function(self)
-            if(focusedChild~=nil)then
-                if(getChild(self, focusedChild)~=nil)then
-                    focusedChild:loseFocusHandler()
-                end
-            end
-            focusedChild = nil
-            return self
-        end,
-
-        setFocusedChild = function(self, obj)
-            if(focusedChild~=obj)then
-                if(focusedChild~=nil)then
-                    if(getChild(self, focusedChild)~=nil)then
-                        focusedChild:loseFocusHandler()
-                    end
-                end
-                if(obj~=nil)then
-                    if(getChild(self, obj)~=nil)then
-                        obj:getFocusHandler()
-                    end
-                end
-                focusedChild = obj
-                return true
-            end
-            return false
-        end,
-
-        getFocused = function(self)
-            return focusedChild
-        end,
-        
-        getChild = getChild,
-        getChildren = getChildren,
-        getDeepChildren = getDeepChild,
-        addChild = addChild,
-        removeChild = removeChild,
-        removeChildren = removeChildren,
-        getEvents = getEvents,
-        getEvent = getEvent,
-        addEvent = addEvent,
-        removeEvent = removeEvent,
-        removeEvents = removeEvents,
-        updateZIndex = updateZIndex,
-
-        listenEvent = function(self, event, active)
-            base.listenEvent(self, event, active)
-            if(events[event]==nil)then events[event] = {} end
-            return self
-        end,
-
-        customEventHandler = function(self, ...)
-            base.customEventHandler(self, ...)
-            for _, o in pairs(children) do
-                if (o.element.customEventHandler ~= nil) then
-                    o.element:customEventHandler(...)
-                end
-            end
-        end,
-
-        loseFocusHandler = function(self)
-            base.loseFocusHandler(self)
-            if(focusedChild~=nil)then focusedChild:loseFocusHandler() focusedChild = nil end
-        end,
-
-        getBasalt = function(self)
-            return basalt
-        end,
-
-        setPalette = function(self, col, ...)
-            local parent = self:getParent()
-            parent:setPalette(col, ...)
-            return self
-        end,
-
-        eventHandler = function(self, ...)
-            if(base.eventHandler~=nil)then
-                base.eventHandler(self, ...)
-                if(events["other_event"]~=nil)then
-                    self:sortChildren()
-                    for _, obj in ipairs(events["other_event"]) do
-                        if (obj.element.eventHandler ~= nil) then
-                            obj.element.eventHandler(obj.element, ...)
-                        end
-                    end
-                end
-            end
-        end,
-    }
-
-    for k,v in pairs({mouse_click={"mouseHandler", true},mouse_up={"mouseUpHandler", false},mouse_drag={"dragHandler", false},mouse_scroll={"scrollHandler", true},mouse_hover={"hoverHandler", false}})do
-        container[v[1]] = function(self, btn, x, y, ...)
-            if(base[v[1]]~=nil)then
-                if(base[v[1]](self, btn, x, y, ...))then
-                    if(events[k]~=nil)then
-                        self:sortChildren()
-                        for _, obj in ipairs(events[k]) do
-                            if (obj.element[v[1]] ~= nil) then
-                                local xO, yO = 0, 0
-                                if(self.getOffset~=nil)then
-                                    xO, yO = self:getOffset()
-                                end
-                                if(obj.element.getIgnoreOffset~=nil)then
-                                    if(obj.element.getIgnoreOffset())then
-                                        xO, yO = 0, 0
-                                    end
-                                end
-                                if (obj.element[v[1]](obj.element, btn, x+xO, y+yO, ...)) then      
-                                    return true
-                                end
-                            end
-                        end
-                    if(v[2])then
-                        self:clearFocusedChild()
-                    end
-                    end
-                    return true
-                end
-            end
-        end
-    end
-
-    for k,v in pairs({key="keyHandler",key_up="keyUpHandler",char="charHandler"})do
-        container[v] = function(self, ...)
-            if(base[v]~=nil)then
-                if(base[v](self, ...))then
-                    if(events[k]~=nil)then
-                        self:sortChildren()
-                        for _, obj in ipairs(events[k]) do
-                            if (obj.element[v] ~= nil) then
-                                if (obj.element[v](obj.element, ...)) then
-                                    return true
-                                end
-                            end
-                        end
-                    end
-                end
-            end
-        end
-    end
-
-    for objectName, _ in pairs(basalt.getObjects()) do
-        container["add" .. objectName] = function(self, id)
-            return self:addChild(basalt:createObject(objectName, id))
-        end
-    end
-
-    container.__index = container
-    return setmetatable(container, base)
+function Container:new()
+  local newInstance = setmetatable({}, self)
+  self.__index = self
+  newInstance:setType("Container")
+  newInstance:addDefaultProperties("Container")
+  return newInstance
 end
+
+function Container.render(self)
+  VisualObject.render(self)
+    for _,v in pairs(self.Children) do
+      for _,element in pairs(v)do
+        element:render()
+      end
+    end
+end
+
+function Container.updateRender(self)
+  _basaltRender.update()
+end
+
+function Container.getChild(self, name)
+  local index = self.ChildrenByName[name]
+  if index then
+    return self.Children[index]
+  end
+end
+
+function Container.getDeepChild(self, name)
+  local index = self.ChildrenByName[name]
+  if index then
+    return self.Children[index]
+  end
+  for _,v in pairs(self.Children) do
+    if v:getType() == "Container" then
+      local child = v:getDeepChild(name)
+      if child then
+        return child
+      end
+    end
+  end
+end
+
+function Container:addChild(child)
+  child:setParent(self)
+  local zIndex = child:getZ()
+
+  if not self.Children[zIndex] then
+    self.Children[zIndex] = {}
+  end
+
+  table.insert(self.Children[zIndex], child)
+
+  self.ChildrenByName[child:getName()] = #self.Children[zIndex]
+  child:init()
+  if child.Load then
+    child:Load()
+  end
+  return child
+end
+
+
+function Container.removeChild(self, child)
+  if type(child) == "string" then
+    child = self:getChild(child)
+  end
+  local index = self.ChildrenByName[child:getName()]
+  if index then
+    child:setParent(nil)
+    table.remove(self.Children, index)
+    self.ChildrenByName[child:getName()] = nil
+  end
+end
+
+function Container.removeChildren(self)
+  for _,v in pairs(self.Children) do
+    self:removeChild(v)
+  end
+  self.Children = {}
+  self.ChildrenByName = {}
+end
+
+function Container.searchChildren(self, name)
+  local children = {}
+  for _,v in pairs(self.Children) do
+    if v:find(name) then
+      table.insert(children, v)
+    end
+  end
+  return children
+end
+
+function Container.getChildrenByType(self, type)
+  local children = {}
+  for _,v in pairs(self.Children) do
+    if v:getType() == type then
+      table.insert(children, v)
+    end
+  end
+  return children
+end
+
+function Container:prioritizeElement(element)
+  local zIndex = element:getZ()
+  local index = self.ChildrenByName[element:getName()]
+
+  table.remove(self.Children[zIndex], index)
+  table.insert(self.Children[zIndex], element)
+  self.ChildrenByName[element:getName()] = #self.Children[zIndex]
+
+  for event, _ in pairs(self.ChildrenEvents[zIndex]) do
+      local eventData = self:getEvent(event, element)
+      if eventData then
+          table.remove(self.ChildrenEvents[zIndex][event], eventData.index)
+          table.insert(self.ChildrenEvents[zIndex][event], eventData)
+          eventData.index = #self.ChildrenEvents[zIndex][event]
+      end
+  end
+end
+
+function Container:getEvent(event, child)
+  if type(child) == "string" then
+    child = self:getChild(child)
+  end
+
+  local zIndex = child:getZ()
+  local eventArray = self.ChildrenEvents[zIndex] and self.ChildrenEvents[zIndex][event]
+
+  if eventArray then
+    for index, eventData in ipairs(eventArray) do
+      if eventData == child then
+        return eventData, index
+      end
+    end
+  end
+end
+
+function Container:addEvent(event, child)
+  if type(child) == "string" then
+    child = self:getChild(child)
+  end
+
+  local zIndex = child:getZ()
+  if(self:getEvent(event, child)) then
+    return
+  end
+  if not self.ChildrenEvents[zIndex] then
+    self.ChildrenEvents[zIndex] = {}
+  end
+  if not self.ChildrenEvents[zIndex][event] then
+    self.ChildrenEvents[zIndex][event] = {}
+  end
+
+  table.insert(self.ChildrenEvents[zIndex][event], child)
+end
+
+function Container:removeEvent(event, child)
+  if type(child) == "string" then
+    child = self:getChild(child)
+  end
+
+  local zIndex = child:getZ()
+  if self.ChildrenEvents[zIndex] and self.ChildrenEvents[zIndex][event] then
+    for i, eventData in ipairs(self.ChildrenEvents[zIndex][event]) do
+      if eventData == child then
+        table.remove(self.ChildrenEvents[zIndex][event], i)
+        break
+      end
+    end
+    if #self.ChildrenEvents[zIndex][event] == 0 then
+      self.ChildrenEvents[zIndex][event] = nil
+    end
+    if next(self.ChildrenEvents[zIndex]) == nil then
+      self.ChildrenEvents[zIndex] = nil
+    end
+  end
+end
+
+function Container:updateChildZIndex(child, oldZ, newZ)
+  local index = self.ChildrenByName[child:getName()]
+  table.remove(self.Children[oldZ], index)
+  if #self.Children[oldZ] == 0 then
+    self.Children[oldZ] = nil
+  end
+  if not self.Children[newZ] then
+    self.Children[newZ] = {}
+  end
+  table.insert(self.Children[newZ], child)
+  self.ChildrenByName[child:getName()] = #self.Children[newZ]
+
+  for event, _ in pairs(self.ChildrenEvents[oldZ] or {}) do
+    for i, eventData in ipairs(self.ChildrenEvents[oldZ][event] or {}) do
+      if eventData.element == child then
+        table.remove(self.ChildrenEvents[oldZ][event], i)
+        if #self.ChildrenEvents[oldZ][event] == 0 then
+          self.ChildrenEvents[oldZ][event] = nil
+        end
+        if next(self.ChildrenEvents[oldZ]) == nil then
+          self.ChildrenEvents[oldZ] = nil
+        end
+        if not self.ChildrenEvents[newZ] then
+          self.ChildrenEvents[newZ] = {}
+        end
+        if not self.ChildrenEvents[newZ][event] then
+          self.ChildrenEvents[newZ][event] = {}
+        end
+        table.insert(self.ChildrenEvents[newZ][event], eventData)
+        break
+      end
+    end
+  end
+end
+
+Container.setCursor = function(self, blink, cursorX, cursorY, color)
+  if(self.parent~=nil) then
+    local obx, oby = self:getPosition()
+    local xO, yO = self:getOffset()
+    self.parent:setCursor(blink or false, (cursorX or 0)+obx-1 - xO, (cursorY or 0)+oby-1 - yO, color or colors.white)
+  else
+    local obx, oby = self:getAbsolutePosition()
+    local xO, yO = self:getOffset()
+    self.cursorBlink = blink or false
+    if (cursorX ~= nil) then
+        self.cursorX = obx + cursorX - 1 - xO
+    end
+    if (cursorY ~= nil) then
+        self.cursorY = oby + cursorY - 1 - yO
+    end
+    self.cursorColor = color or self.cursorColor
+    if (self.cursorBlink) then
+        self.term.setTextColor(self.cursorColor)
+        self.term.setCursorPos(self.cursorX, self.cursorY)
+        self.term.setCursorBlink(true)
+    else
+      self.term.setCursorBlink(false)
+    end
+  end
+    return self
+end
+
+for _,v in pairs({"setBg", "setFg", "setText"}) do
+  Container[v] = function(self, x, y, str)
+    local obx, oby, w, h = self.x, self.y, self.width, self.height
+      if (y >= 1) and (y <= h) then
+          local pos = max(x + (obx - 1), obx)
+          if self.parent then
+              self.parent[v](pos, oby + y - 1, str)
+          else
+              local str_visible = sub(str, max(1 - x + 1, 1), max(w - x + 1, 1))
+              _basaltRender[v](pos, oby + y - 1, str_visible)
+          end
+      end
+  end
+end
+
+for _,v in pairs({"drawBackgroundBox", "drawForegroundBox", "drawTextBox"})do
+  Container[v] = function(self, x, y, width, height, symbol)
+      local obx, oby, w, h = self.x, self.y, self.width, self.height
+      height = (y < 1 and (height + y > h and h or height + y - 1) or (height + y > h and h - y + 1 or height))
+      width = (x < 1 and (width + x > w and w or width + x - 1) or (width + x > w and w - x + 1 or width))
+      local pos = max(x + (obx - 1), obx)
+      if self.parent then
+          self.parent:drawBackgroundBox(pos, max(y + (oby - 1), oby), width, height, symbol)
+      else
+          _basaltRender[v](pos, max(y + (oby - 1), oby), width, height, symbol)
+      end
+  end
+end
+
+Container.blit = function(self, x, y, t, f, b)
+  local obx, oby, w, h = self.x, self.y, self.width, self.height
+  if y >= 1 and y <= h then
+      local pos = max(x + (obx - 1), obx)
+      if self.parent then
+          self.parent.blit(pos, oby + y - 1, t, f, b)
+      else
+          _basaltRender.blit(pos, oby + y - 1, t, f, b, x, w)
+      end
+  end
+end
+
+for k,v in pairs({mouse_click=true,mouse_up=false,mouse_drag=false,mouse_scroll=true,mouse_move=false})do
+  Container[k] = function(self, btn, x, y, ...)
+      if(VisualObject[k]~=nil)then
+          if(VisualObject[k](self, btn, x, y, ...))then
+            for _,event in pairs(self.ChildrenEvents)do
+              if(event and event[k]~=nil)then
+                  for _, obj in pairs(event[k]) do
+                      if (obj and obj[k] ~= nil) then
+                          local relX, relY = self:getRelativePosition(x, y)
+                          if (obj[k](obj, btn, relX, relY, ...)) then
+                              self:setFocusedChild(obj)
+                              return true
+                          end
+                      end
+                  end
+              if(v)then
+                  self:setFocusedChild(nil)
+              end
+              end
+            end
+            return true
+          end
+      end
+  end
+end
+
+for _,v in pairs({"key", "key_up", "char"})do
+  Container[v] = function(self, ...)
+      if(VisualObject[v]~=nil)then
+          if(VisualObject[v](self, ...))then
+            local focused = self:getFocusedChild()
+            if(focused)then
+                if(focused[v]~=nil)then
+                    if(focused[v](focused, ...))then
+                        return true
+                    end
+                end
+            end
+            return true
+          end
+      end
+  end
+end
+
+for _,v in pairs(objectLoader.getObjectList())do
+  local fName = v:gsub("^%l", string.upper)
+  Container["add"..fName] = function(self, id)
+    local obj = objectLoader.load(v):new()
+    self:addChild(obj)
+    return obj
+  end
+end
+
+return Container

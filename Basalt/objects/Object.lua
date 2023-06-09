@@ -1,287 +1,300 @@
-local basaltEvent = require("basaltEvent")
-local utils = require("utils")
-local uuid = utils.uuid
+local split = require("utils").splitString
+local deepcopy = require("utils").deepcopy
 
-local unpack,sub = table.unpack,string.sub
+local Object = {methods = {}, extensions = {}}
+setmetatable(Object, {__index = Object.methods})
 
-return function(name, basalt)
-    name = name or uuid()
-    assert(basalt~=nil, "Unable to find basalt instance! ID: "..name)
+local properties = {}
+local propertyType = "Object"
 
-    -- Base object
-    local objectType = "Object" -- not changeable
-    local isEnabled,initialized = true,false
-
-    local eventSystem = basaltEvent()
-    local registeredEvents = {}
-    local activeEvents = {}
-
-    local parent
-    
-    local object = {
-        init = function(self)
-            if(initialized)then return false end
-            initialized = true
-            return true
-        end,
-
-        load = function(self)
-        end,
-
-        getType = function(self)
-            return objectType
-        end,
-        isType = function(self, t)
-            return objectType==t
-        end,
-
-        getProperty = function(self, name)
-            local get = self["get" .. name:gsub("^%l", string.upper)]
-            if (get ~= nil) then
-                return get(self)
-            end
-        end,
-
-        setProperty = function(self, name, ...)
-            local set = self["set" .. name:gsub("^%l", string.upper)]
-            if (set ~= nil) then
-                return set(self, ...)
-            end
-        end,
-
-        getName = function(self)
-            return name
-        end,
-
-        getParent = function(self)
-            return parent
-        end,
-
-        setParent = function(self, newParent, noRemove)
-            if(noRemove)then parent = newParent return self end
-            if (newParent.getType ~= nil and newParent:isType("Container")) then
-                self:remove()
-                newParent:addChild(self)
-                if (self.show) then
-                    self:show()
-                end
-                parent = newParent
-            end
-            return self
-        end,
-
-        updateEvents = function(self)
-            for k,v in pairs(activeEvents)do
-                parent:removeEvent(k, self)
-                if(v)then
-                    parent:addEvent(k, self)
-                end
-            end
-            return self
-        end,
-
-        listenEvent = function(self, event, active)
-            if(parent~=nil)then
-                if(active)or(active==nil)then
-                    activeEvents[event] = true
-                    parent:addEvent(event, self)
-                elseif(active==false)then
-                    activeEvents[event] = false
-                    parent:removeEvent(event, self)
-                end
-            end
-            return self
-        end,
-
-        getZIndex = function(self)
-            return 1
-        end,
-
-        enable = function(self)
-            isEnabled = true
-            return self
-        end,
-
-        disable = function(self)
-            isEnabled = false
-            return self
-        end,
-
-        isEnabled = function(self)
-            return isEnabled
-        end,
-
-        remove = function(self)
-            if (parent ~= nil) then
-                parent:removeChild(self)
-            end
-            self:updateDraw()
-            return self
-        end,
-
-        getBaseFrame = function(self)
-            if(parent~=nil)then
-                return parent:getBaseFrame()
-            end
-            return self
-        end,
-
-        onEvent = function(self, ...)
-            for _,v in pairs(table.pack(...))do
-                if(type(v)=="function")then
-                    self:registerEvent("other_event", v)
-                end
-            end
-            return self
-        end,
-
-        getEventSystem = function(self)
-            return eventSystem
-        end,
-
-        getRegisteredEvents = function(self)
-            return registeredEvents
-        end,
-
-        registerEvent = function(self, event, func)
-            if(parent~=nil)then
-                parent:addEvent(event, self)
-                if(event=="mouse_drag")then
-                    parent:addEvent("mouse_click", self)
-                    parent:addEvent("mouse_up", self)
-                end
-            end
-            eventSystem:registerEvent(event, func)
-            if (registeredEvents[event] == nil) then
-                registeredEvents[event] = {}
-            end
-            table.insert(registeredEvents[event], func)
-        end,
-
-        removeEvent = function(self, event, index)
-            if(eventSystem:getEventCount(event)<1)then
-                if(parent~=nil)then
-                    parent:removeEvent(event, self)
-                end
-            end
-            eventSystem:removeEvent(event, index)
-            if (registeredEvents[event] ~= nil) then
-                table.remove(registeredEvents[event], index)
-                if (#registeredEvents[event] == 0) then
-                    registeredEvents[event] = nil
-                end
-            end
-        end,
-
-        eventHandler = function(self, event, ...)
-            local val = self:sendEvent("other_event", event, ...)
-            if(val~=nil)then return val end
-        end,
-
-        customEventHandler = function(self, event, ...)
-            local val = self:sendEvent("custom_event", event, ...)
-            if(val~=nil)then return val end
-            return true
-        end,
-
-        sendEvent = function(self, event, ...)
-            if(event=="other_event")or(event=="custom_event")then
-                return eventSystem:sendEvent(event, self, ...)
-            end
-            return eventSystem:sendEvent(event, self, event, ...)
-        end,
-
-        onClick = function(self, ...)
-            for _,v in pairs(table.pack(...))do
-                if(type(v)=="function")then
-                    self:registerEvent("mouse_click", v)
-                end
-            end
-            return self
-        end,
-
-        onClickUp = function(self, ...)
-                for _,v in pairs(table.pack(...))do
-                    if(type(v)=="function")then
-                        self:registerEvent("mouse_up", v)
-                    end
-                end
-            return self
-        end,
-
-        onRelease = function(self, ...)
-                for _,v in pairs(table.pack(...))do
-                    if(type(v)=="function")then
-                        self:registerEvent("mouse_release", v)
-                    end
-                end
-            return self
-        end,
-
-        onScroll = function(self, ...)
-            for _,v in pairs(table.pack(...))do
-                if(type(v)=="function")then
-                    self:registerEvent("mouse_scroll", v)
-                end
-            end
-            return self
-        end,
-
-        onHover = function(self, ...)
-            for _,v in pairs(table.pack(...))do
-                if(type(v)=="function")then
-                    self:registerEvent("mouse_hover", v)
-                end
-            end
-            return self
-        end,
-
-        onLeave = function(self, ...)
-            for _,v in pairs(table.pack(...))do
-                if(type(v)=="function")then
-                    self:registerEvent("mouse_leave", v)
-                end
-            end
-            return self
-        end,
-
-        onDrag = function(self, ...)
-            for _,v in pairs(table.pack(...))do
-                if(type(v)=="function")then
-                    self:registerEvent("mouse_drag", v)
-                end
-            end
-            return self
-        end,
-
-        onKey = function(self, ...)
-            for _,v in pairs(table.pack(...))do
-                if(type(v)=="function")then
-                    self:registerEvent("key", v)
-                end
-            end
-            return self
-        end,
-
-        onChar = function(self, ...)
-            for _,v in pairs(table.pack(...))do
-                if(type(v)=="function")then
-                    self:registerEvent("char", v)
-                end
-            end
-            return self
-        end,
-
-        onKeyUp = function(self, ...)
-            for _,v in pairs(table.pack(...))do
-                if(type(v)=="function")then
-                    self:registerEvent("key_up", v)
-                end
-            end
-            return self
-        end,
-    }
-
-    object.__index = object
-    return object
+function Object.new(self)
+    local newInstance = setmetatable({}, self)
+    self.__index = self
+    self.__noCopy = true
+    newInstance:addDefaultProperties("Object")
+    return newInstance
 end
+
+local function defaultRule(typ)
+    return function(self, name, value)
+        local isValid = false
+        if(type(typ)=="string")then
+        local types = split(typ, "|")
+
+            for _,v in pairs(types)do
+                if(type(value)==v)then
+                    isValid = true
+                end
+            end
+        end
+        if(typ=="color")then
+            if(type(value)=="string")then
+                if(colors[value]~=nil)then
+                    isValid = true
+                    value = colors[value]
+                end
+            else
+                for _,v in pairs(colors)do
+                    if(v==value)then
+                        isValid = true
+                    end
+                end
+            end
+        end
+        if(typ=="char")then
+            if(type(value)=="string")then
+                if(#value==1)then
+                    isValid = true
+                end
+            end
+        end
+        if(typ=="any")or(value==nil)or(type(value)=="function")then
+            isValid = true
+        end
+
+        if(not isValid)then
+            if(type(typ)=="table")then
+                typ = table.concat(typ, ", ")
+            end
+            error(self:getType()..": Invalid type for property "..name.."! Expected "..typ..", got "..type(value))
+        end
+        return value
+    end
+end
+
+function Object.setProperty(self, name, value, rule)
+    if(rule~=nil)then
+        value = rule(self, name, value)
+    end
+    if type(value) == 'table' then
+        value = deepcopy(value)
+    end
+
+    if(self[name]~=value)then
+        self[name] = value
+        if(self.updateDraw~=nil)then
+            self:updateDraw()
+        end
+    end
+    return self
+end
+
+function Object.getProperty(self, name)
+    local prop = self[name]
+    if(type(prop)=="function")then
+        return prop()
+    end
+    return prop
+end
+
+function Object.setProperties(self, properties)
+    for k,v in pairs(properties) do
+        self[k] = v
+    end
+    self.updateDraw = true
+    return self
+end
+
+function Object.getProperties(self)
+    local p = {}
+    for k,v in pairs(self)do
+        if(type(v)=="function")then
+            p[k] = v()
+        else
+            p[k] = v
+        end
+    end
+    return p
+end
+
+function Object.updateDraw(self, draw)
+    self.updateDraw = draw
+end
+
+function Object.addProperty(self, name, typ, defaultValue, readonly, setLogic, getLogic, alteredRule)
+    if(typ==nil)then typ = "any" end
+    if(readonly==nil)then readonly = false end
+    if(alteredRule==nil)then alteredRule = defaultRule(typ) end
+
+    local fName = name:gsub("^%l", string.upper)
+    if not properties[propertyType] then
+        properties[propertyType] = {}
+    end
+    if(type(defaultValue)=="table")then
+        defaultValue = deepcopy(defaultValue)
+    end
+    properties[propertyType][name] = defaultValue
+
+    if not(readonly)then
+        self["set"..fName] = function(self, value, ...)
+            if(setLogic~=nil)then
+                local modifiedVal = setLogic(self, value, ...)
+                if(modifiedVal~=nil)then
+                    value = modifiedVal
+                end
+            end
+            self:setProperty(name, value, alteredRule~=nil and alteredRule(typ) or defaultRule(typ))
+            return self
+        end
+    end
+    self["get"..fName] = function(self, ...)
+        local prop = self:getProperty(name)
+        if(getLogic~=nil)then
+            return getLogic(self, prop, ...)
+        end
+        return prop
+    end
+end
+
+function Object.combineProperty(self, name, ...)
+    name = name:gsub("^%l", string.upper)
+    local args = {...}
+    self["get" .. name] = function(self)
+        local result = {}
+        for _,v in pairs(args)do
+            result[#result+1] = self["get" .. v:gsub("^%l", string.upper)](self)
+        end
+        return unpack(result)
+    end
+    self["set" .. name] = function(self, ...)
+        local values = {...}
+        for k,v in pairs(args)do
+            self["set" .. v:gsub("^%l", string.upper)](self, values[k])
+        end
+        return self
+    end
+    return self
+end
+
+function Object.setPropertyType(self, typ)
+    propertyType = typ
+    return self
+end
+
+function Object.addDefaultProperties(self, typ)
+    if(properties[typ]~=nil)then
+        for k,v in pairs(properties[typ])do
+            if(type(v)=="table")then
+                self[k] = deepcopy(v)
+            else
+                self[k] = v
+            end
+        end
+    end
+end
+
+function Object.isType(self, typ)
+    for _,v in pairs(self.Type)do
+        if(v==typ)then
+            return true
+        end
+    end
+    return false
+end
+
+function Object.listenEvent(self, event, active)
+    if(self.parent~=nil)then
+        if(active)or(active==nil)then
+            self.parent:addEvent(event, self)
+            self.events[event] = true
+        elseif(active==false)then
+            self.parent:removeEvent(event, self)
+            self.events[event] = false
+        end
+    end
+    return self
+end
+
+function Object.updateEvents(self)
+    if(self.parent~=nil)then
+        for k,v in pairs(self.events)do
+            if(v)then
+                self.parent:addEvent(k, self)
+            else
+                self.parent:removeEvent(k, self)
+            end
+        end
+    end
+    return self
+end
+
+function Object.addListener(self, name, event)
+        self["on"..name:gsub("^%l", string.upper)] = function(self, ...)
+            for _,f in pairs({...})do
+                if(type(f)=="function")then
+                    if(self.listeners == nil) then
+                        self.listeners = {}
+                    end
+                    if(self.listeners[name]==nil)then
+                        self.listeners[name] = {}
+                    end
+                    table.insert(self.listeners[name], f)
+                end
+            end
+            self:listenEvent(event)
+            return self
+        end
+    return self
+end
+
+function Object.trigger(self, name, ...)
+    if(self.listeners~=nil)then
+        if(self.listeners[name]~=nil)then
+            for _,v in pairs(self.listeners[name])do
+                v(self, ...)
+            end
+        end
+    end
+    return self
+end
+
+function Object.extend(self, name, f)
+    local ext = Object.extensions
+    if(ext[name]~=nil)then
+        table.insert(ext[name], f)
+    else
+        if(Object.methods[name]~=nil)then
+            error(self:getType()..": Method "..name.." already exists!")
+        end
+        ext[name] = {f}
+        Object.methods[name] = function(self, ...)
+            for _,v in pairs(ext[name])do
+                v(self, ...)
+            end
+            return self
+        end
+    end
+    return self
+end
+
+Object:addProperty("Name", "string", "Object")
+
+Object:addProperty("Type", "string|table", {"Object"}, false, function(self, value)
+    if(type(value)=="string")then
+        table.insert(self.Type, 1, value)
+        return self.Type
+    end
+end,
+function(self, _, depth)
+    return self.Type[depth or 1]
+end)
+Object:addProperty("z", "number", 1, false, function(self, value)
+    if (self.parent ~= nil) then
+        self.parent:updateChildZIndex(self, value)
+    end
+    return value
+end)
+Object:addProperty("enabled", "boolean", true)
+Object:addProperty("parent", "table", nil)
+Object:addProperty("events", "table", {})
+Object:addProperty("Extensions", "table", {})
+Object:extend("Init", function(self, ...)
+    self:setProperty("Initialized", true)
+end)
+function Object.init(self)
+    if not(self.Initialized)then
+        self:Init()
+    end
+end
+
+return Object

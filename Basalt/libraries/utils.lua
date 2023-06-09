@@ -208,10 +208,27 @@ local function wrapRichText(text, width)
     return formattedLines
 end
 
+local function deepcopy(orig, seen)
+    seen = seen or {}
+    if orig == nil then return nil end
+    if type(orig) ~= 'table' then return orig end
+    if seen[orig] then return seen[orig] end
+    if orig.__noCopy then
+        return orig
+    end
 
-    
+    local copy = {}
+    seen[orig] = copy
+    for k, v in pairs(orig) do
+        copy[deepcopy(k, seen)] = deepcopy(v, seen)
+    end
+    setmetatable(copy, deepcopy(getmetatable(orig), seen))
+
+    return copy
+end
 
 return {
+deepcopy = deepcopy,
 getTextHorizontalAlign = function(text, width, textAlign, replaceChar)
     text = sub(text, 1, width)
     local offset = width - len(text)
