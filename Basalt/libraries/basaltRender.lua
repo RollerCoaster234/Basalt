@@ -1,25 +1,27 @@
 local tHex = require("tHex")
 local sub,rep,max,min,unpack = string.sub,string.rep,math.max,math.min,table.unpack
+local log = require("log")
 
-local subCache = {}
-local subCacheCount = 0
+local subrenderData = {}
+local subrenderDataCount = 0
 local function cSub(s, i, j)
     local key = s .. i .. j
-    if(subCacheCount > 100)then
-        subCache = {}
-        subCacheCount = 0
+    if(subrenderDataCount > 100)then
+        subrenderData = {}
+        subrenderDataCount = 0
     end
-    if not subCache[key] then
-        subCache[key] = string.sub(s, i, j)
-        subCacheCount = subCacheCount + 1
+    if not subrenderData[key] then
+        subrenderData[key] = string.sub(s, i, j)
+        subrenderDataCount = subrenderDataCount + 1
     end
-    return subCache[key]
+    return subrenderData[key]
 end
 
 return function(drawTerm)
     local terminal = drawTerm or term.current()
     local width, height = terminal.getSize()
     local cache = {}
+    local renderData = {}
     local modifiedLines = {}
 
     local emptySpaceLine
@@ -42,14 +44,15 @@ return function(drawTerm)
         local emptyFG = emptyColorLines[colors.white]
         local emptyBG = emptyColorLines[colors.black]
         for currentY = 1, height do
+            renderData[currentY] = renderData[currentY] or {}
             cache[currentY] = cache[currentY] or {}
-            cache[currentY][1] = sub(cache[currentY].t == nil and emptyText or cache[currentY].t .. emptyText:sub(1, width - cache[currentY].t:len()), 1, width)
-            cache[currentY][2] = sub(cache[currentY].fg == nil and emptyFG or cache[currentY].fg .. emptyFG:sub(1, width - cache[currentY].fg:len()), 1, width)
-            cache[currentY][3] = sub(cache[currentY].bg == nil and emptyBG or cache[currentY].bg .. emptyBG:sub(1, width - cache[currentY].bg:len()), 1, width)
+            renderData[currentY][1] = sub(renderData[currentY][1] == nil and emptyText or renderData[currentY][1] .. emptyText:sub(1, width - renderData[currentY][1]:len()), 1, width)
+            renderData[currentY][2] = sub(renderData[currentY][2] == nil and emptyFG or renderData[currentY][2] .. emptyFG:sub(1, width - renderData[currentY][2]:len()), 1, width)
+            renderData[currentY][3] = sub(renderData[currentY][3] == nil and emptyBG or renderData[currentY][3] .. emptyBG:sub(1, width - renderData[currentY][3]:len()), 1, width)
             modifiedLines[currentY] = true
         end
     end
-    
+
     recreateWindowArray()
 
     local function blit(x, y, t, fg, bg, pos, w)
@@ -63,7 +66,7 @@ return function(drawTerm)
                     local startN = x < 1 and 1 - x + 1 or 1
                     local endN = x + #t > width and width - x + 1 or #t
 
-                    local oldCache = cache[y]
+                    local oldCache = renderData[y]
 
                     local newCacheT = cSub(oldCache[1], 1, x - 1) .. cSub(t, startN, endN)
                     local newCacheFG = cSub(oldCache[2], 1, x - 1) .. cSub(fg, startN, endN)
@@ -74,25 +77,30 @@ return function(drawTerm)
                         newCacheFG = newCacheFG .. cSub(oldCache[2], x + #t, width)
                         newCacheBG = newCacheBG .. cSub(oldCache[3], x + #t, width)
                     end
-
-                    cache[y][1], cache[y][2], cache[y][3] = newCacheT,newCacheFG,newCacheBG
-                    modifiedLines[y] = true
+                    if(renderData[y][1]~=newCacheT or renderData[y][2]~=newCacheFG or renderData[y][3]~=newCacheBG)then
+                        renderData[y][1] = newCacheT
+                        renderData[y][2] = newCacheFG
+                        renderData[y][3] = newCacheBG
+                        modifiedLines[y] = true
+                    end
                 end
             end
         end
     end
 
-    local function setCache(cacheType, x, y, str)
+    local function setCache(renderDataType, x, y, str)
         if y >= 1 and y <= height and x + #str > 0 and x <= width then
             local startN = max(1, 1 - x + 1)
             local endN = min(#str, width - x + 1)
-            local oldCache = cache[y][cacheType]
+            local oldCache = renderData[y][renderDataType]
             local newCache = cSub(oldCache, 1, x - 1) .. cSub(str, startN, endN)
             if x + #str <= width then
                 newCache = newCache .. cSub(oldCache, x + #str, width)
             end
-            cache[y][cacheType] = newCache
-            modifiedLines[y] = true
+            if(renderData[y][renderDataType]~=newCache)then
+                renderData[y][renderDataType] = newCache
+                modifiedLines[y] = true
+            end
         end
     end
 
@@ -144,10 +152,17 @@ return function(drawTerm)
                 isBlinking = terminal.getCursorBlink()
             end
             terminal.setCursorBlink(false)
+            log("New Round:")
             for n = 1, height do
                 if(modifiedLines[n])then
-                    terminal.setCursorPos(1, n)
-                    terminal.blit(unpack(cache[n]))
+                    if(cache[n][1]~=renderData[n][1])or(cache[n][2]~=renderData[n][2])or(cache[n][3]~=renderData[n][3])then
+                        cache[n][1] = renderData[n][1]
+                        cache[n][2] = renderData[n][2]
+                        cache[n][3] = renderData[n][3]
+                        log("Line "..n)
+                        terminal.setCursorPos(1, n)
+                        terminal.blit(unpack(renderData[n]))
+                    end
                     modifiedLines[n] = false
                 end
             end

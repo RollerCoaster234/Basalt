@@ -2,34 +2,35 @@ local VisualObject = require("objectLoader").load("VisualObject")
 
 local Input = VisualObject.new(VisualObject)
 
-Input:setPropertyType("Input")
-
+Input:initialize("Input")
 Input:addProperty("value", "string", "")
 Input:addProperty("cursorIndex", "number", 1)
 Input:addProperty("scrollIndex", "number", 1)
 Input:addProperty("inputLimit", "number", nil)
 Input:addProperty("inputType", "string", "text")
 
+Input:addListener("change", "change_value")
+Input:addListener("enter", "enter_pressed")
+
 function Input:new()
   local newInstance = setmetatable({}, self)
   self.__index = self
   newInstance:setType("Input")
-  newInstance:addDefaultProperties("Input")
+  newInstance:create("Input")
   newInstance:setSize(10, 1)
   return newInstance
 end
 
-Input:extend("Init", function(self)
-    self:setRenderData(function(self)
-        local visibleValue = self.value:sub(self.scrollIndex, self.scrollIndex + self.width - 1)
-        if(self.inputType=="password")then
-            visibleValue = ("*"):rep(visibleValue:len())
-        end
-        local space = (" "):rep(self.width - visibleValue:len()-1)
-        visibleValue = visibleValue .. space
-        self:addText(1, 1, visibleValue)
-    end)
-end)
+function Input.render(self)
+    VisualObject.render(self)
+    local visibleValue = self.value:sub(self.scrollIndex, self.scrollIndex + self.width - 1)
+    if(self.inputType=="password")then
+        visibleValue = ("*"):rep(visibleValue:len())
+    end
+    local space = (" "):rep(self.width - visibleValue:len())
+    visibleValue = visibleValue .. space
+    self:addText(1, 1, visibleValue)
+end
 
 Input:extend("Load", function(self)
     self:listenEvent("mouse_click")
@@ -43,7 +44,7 @@ function Input:mouse_click(button, x, y)
     if(VisualObject.mouse_click(self, button, x, y))then
         if(button == 1)then
             self.cursorIndex = math.min(x - self.x + self.scrollIndex, self.value:len() + 1)
-            self.parent:setCursor(true, self.x + self.cursorIndex - 1, self.y, self.foreground)
+            self.parent:setCursor(true, self.x + self.cursorIndex - self.scrollIndex, self.y, self.foreground)
         end
         return true
     end
@@ -56,17 +57,22 @@ function Input:key(key)
             local after = self.value:sub(self.cursorIndex, -1)
             self.value = before .. after
             self.cursorIndex = self.cursorIndex - 1
+            self:updateRender()
         elseif key == keys.left then
             self.cursorIndex = math.max(1, self.cursorIndex - 1)
+            self:updateRender()
         elseif key == keys.right then
             self.cursorIndex = math.min(self.value:len() + 1, self.cursorIndex + 1)
+            self:updateRender()
         elseif key == keys.enter then
+            self:fireEvent("enter", self.value)
             self:setFocused(false)
             self:adjustScrollIndex()
+            self:updateRender()
             return
         end
         self:adjustScrollIndex()
-        self.parent:setCursor(true, self.x + self.cursorIndex - 1, self.y, self.foreground)
+        self.parent:setCursor(true, self.x + self.cursorIndex - self.scrollIndex, self.y, self.foreground)
         return true
     end
 end
@@ -87,8 +93,10 @@ function Input:char(char)
         local after = self.value:sub(self.cursorIndex, -1)
         self.value = before .. char .. after
         self.cursorIndex = self.cursorIndex + 1
+        self:fireEvent("change", self.value)
         self:adjustScrollIndex()
-        self.parent:setCursor(true, self.x + self.cursorIndex - 1, self.y, self.foreground)
+        self:updateRender()
+        self.parent:setCursor(true, self.x + self.cursorIndex - self.scrollIndex, self.y, self.foreground)
         return true
     end
 end
@@ -96,8 +104,8 @@ end
 function Input:adjustScrollIndex()
     if self.cursorIndex < self.scrollIndex then
         self.scrollIndex = self.cursorIndex
-    elseif self.cursorIndex > self.scrollIndex + self.width then
-        self.scrollIndex = self.cursorIndex - self.width
+    elseif self.cursorIndex > self.scrollIndex + self.width - 1 then
+        self.scrollIndex = self.cursorIndex - self.width + 1
     end
 end
 

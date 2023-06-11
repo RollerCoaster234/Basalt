@@ -8,7 +8,7 @@ local function BaseRender(self)
   self:addForegroundBox(1, 1, self.width, self.height, self.foreground)
 end
 
-VisualObject:setPropertyType("VisualObject")
+VisualObject:initialize("VisualObject")
 VisualObject:addProperty("background", "color", colors.black)
 VisualObject:addProperty("foreground", "color", colors.white)
 VisualObject:addProperty("x", "number", 1)
@@ -20,9 +20,10 @@ VisualObject:addProperty("height", "number", 1)
 VisualObject:addProperty("renderData", "table", {BaseRender}, false, function(self, value)
   if(type(value)=="function")then
     table.insert(self.renderData, value)
+    return self.renderData
   end
-  return self.renderData
 end)
+
 VisualObject:combineProperty("Size", "width", "height")
 VisualObject:addProperty("transparent", "boolean", false)
 VisualObject:addProperty("ignoreOffset", "boolean", false)
@@ -45,26 +46,24 @@ VisualObject:addListener("char", "char")
 VisualObject:addListener("getFocus", "get_focus")
 VisualObject:addListener("loseFocus", "lose_focus")
 
-
-
 function VisualObject:new()
   local newInstance = setmetatable({}, self)
   self.__index = self
-  newInstance:addDefaultProperties("VisualObject")
+  newInstance:create("VisualObject")
   newInstance:setType("VisualObject")
   return newInstance
 end
 
 function VisualObject.render(self)
-  for _,v in pairs(self.renderData)do
-    v(self)
-  end
+    for _,v in pairs(self.renderData)do
+      v(self)
+    end
 end
 
 for _,v in pairs({"BackgroundBox", "TextBox", "ForegroundBox"})do
   VisualObject["add"..v] = function(self, x, y, w, h, col)
     local obj = self.parent or self
-    local xPos,yPos = self.x, self.y
+    local xPos,yPos = self:getPosition()
     if(self.parent~=nil)then
         local xO, yO = self.parent:getOffset()
         local ignOffset = self:getIgnoreOffset()
@@ -110,7 +109,7 @@ function VisualObject.blit(self, x, y, t, fg, bg)
 end
 
 for _,v in pairs({"Text", "Bg", "Fg"})do
-    VisualObject["add"..v] = function(self, x, y, str, noText)
+    VisualObject["add"..v] = function(self, x, y, str)
       local obj = self.parent or self
       local xPos,yPos = self.x, self.y
       local transparent = self:getTransparent()
@@ -137,6 +136,40 @@ for _,v in pairs({"Text", "Bg", "Fg"})do
           end
       end
     end
+end
+
+function VisualObject.addBlit(self, x, y, t, f, b)
+  local obj = self.parent or self
+  local xPos,yPos = self.x, self.y
+  local transparent = self:getTransparent()
+  if(self.parent~=nil)then
+      local xO, yO = self.parent:getOffset()
+      local ignOffset = self:getIgnoreOffset()
+      xPos = ignOffset and xPos or xPos - xO
+      yPos = ignOffset and yPos or yPos - yO
+  end
+  if not(transparent)then
+      obj:blit(x+xPos-1, y+yPos-1, t, f, b)
+      return
+  end
+  local _text = split(t, "\0")
+  local _fg = split(f)
+  local _bg = split(b)
+  for _,v in pairs(_text)do
+      if(v.value~="")or(v.value~="\0")then
+          obj:setText(x+v.x+xPos-2, y+yPos-1, v.value)
+      end
+  end
+  for _,v in pairs(_bg)do
+      if(v.value~="")or(v.value~=" ")then
+          obj:setBg(x+v.x+xPos-2, y+yPos-1, v.value)
+      end
+  end
+  for _,v in pairs(_fg)do
+      if(v.value~="")or(v.value~=" ")then
+          obj:setFg(x+v.x+xPos-2, y+yPos-1, v.value)
+      end
+  end
 end
 
 function VisualObject.addRender(self, render, index)
@@ -190,37 +223,46 @@ VisualObject.isInside = isInside
 function VisualObject.mouse_click(self, btn, x, y)
   if isInside(self, x, y) then
     self:setProperty("Dragging", true)
-    self:trigger("click", btn, x, y)
+    self:fireEvent("click", btn, x, y)
     return true
   end
 end
 
 function VisualObject.mouse_drag(self, btn, x, y)
   if self:getProperty("Dragging") then
-    --print("Dragging", x, y)
+    self:fireEvent("drag", btn, x, y)
+    return true
   end
 end
 
 function VisualObject.mouse_up(self, btn, x, y)
   self:setProperty("Dragging", false)
   if isInside(self, x, y) then
-
+    self:fireEvent("clickUp", btn, x, y)
+    return true
   end
 end
 
+function VisualObject:mouse_scroll(direction, x, y)
+    if isInside(self, x, y) then
+      self:fireEvent("scroll")
+      return true
+    end
+end
+
 function VisualObject.get_focus(self)
-  self:trigger("getFocus")
+  self:fireEvent("getFocus")
 end
 
 function VisualObject.lose_focus(self)
-  self:trigger("loseFocus")
+  self:fireEvent("loseFocus")
 end
 
 for _,v in pairs({"key", "key_up", "char"})do
   VisualObject[v] = function(self, ...)
     if(self.enabled)and(self.visible)then
       if(self.parent==nil)or(self.focused)then
-        self:trigger(v, ...)
+        self:fireEvent(v, ...)
         return true
       end
     end

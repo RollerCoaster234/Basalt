@@ -13,11 +13,11 @@ local function drawFrames()
     if(updaterActive==false)then return end
     if(mainFrame~=nil)then
         mainFrame:render()
-        mainFrame:updateRender()
+        mainFrame:processRender()
     end
     for _,v in pairs(monFrames)do
         v:render()
-        v:updateRender()
+        v:processRender()
     end
 end
 
@@ -25,6 +25,8 @@ end
 local throttle = {mouse_move = 0.1}
 local lastEventTimes = {}
 local lastEventArgs = {}
+
+local events = {mouse_click=true,mouse_up=true,mouse_drag=true,mouse_scroll=true,mouse_move=true,key=true,key_up=true,char=true}
 local function updateEvent(event, ...)
     local p = {...}
     if(event=="terminate")then basalt.stop() end
@@ -57,12 +59,23 @@ local function updateEvent(event, ...)
         lastEventArgs[event] = p
         return
     else
-        if mainFrame ~= nil and mainFrame[event] ~= nil then
-            mainFrame[event](mainFrame, unpack(p))
-        end
-        for _,v in pairs(monFrames) do
-            if v[event] ~= nil then
-                v[event](v, unpack(p))
+        if(events[event])then
+            if mainFrame ~= nil and mainFrame[event] ~= nil then
+                mainFrame[event](mainFrame, unpack(p))
+            end
+            for _,v in pairs(monFrames) do
+                if v[event] ~= nil then
+                    v[event](v, unpack(p))
+                end
+            end
+        else
+            if mainFrame ~= nil and mainFrame.event ~= nil then
+                mainFrame:event(event, unpack(p))
+            end
+            for _,v in pairs(monFrames) do
+                if v.event ~= nil then
+                    v:event(event, unpack(p))
+                end
             end
         end
         drawFrames()
@@ -72,6 +85,7 @@ end
 function basalt.createFrame(id)
     id = id or utils.uuid()
     local frame = loader.load("BaseFrame"):new()
+    frame:init()
     if(mainFrame==nil)then
         mainFrame = frame
     end

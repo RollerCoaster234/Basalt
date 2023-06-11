@@ -2,13 +2,15 @@ local objectLoader = require("objectLoader")
 local VisualObject = objectLoader.load("VisualObject")
 local Container = VisualObject.new(VisualObject)
 
-local basaltRender = require("Basalt2.libraries.basaltRender")
+local basaltRender = require("basaltRender")
 
 local basaltTerm = term.current()
 basaltTerm.__noCopy = true
 
-Container:setPropertyType("Container")
-Container:addProperty("term", "table", basaltTerm)
+Container:initialize("Container")
+Container:addProperty("term", "table", basaltTerm, false, function(self, value)
+  self.basaltRender = basaltRender(value)
+end)
 Container:addProperty("Children", "table", {})
 Container:addProperty("ChildrenByName", "table", {})
 Container:addProperty("ChildrenEvents", "table", {})
@@ -20,10 +22,10 @@ Container:addProperty("focusedChild", "table", nil, false, function(self, value)
   local curFocus = self:getFocusedChild()
   if(curFocus~=value)then
     if(curFocus~=nil)then
-      curFocus:setFocused(false)
+      curFocus:setFocused(false, true)
     end
     if(value~=nil)then
-      value:setFocused(true)
+      value:setFocused(true, true)
     end
   end
   return value
@@ -32,29 +34,43 @@ Container:addProperty("ElementsSorted", "boolean", true)
 Container:addProperty("XOffset", "number", 0)
 Container:addProperty("YOffset", "number", 0)
 Container:combineProperty("Offset", "XOffset", "YOffset")
-local _basaltRender = basaltRender(basaltTerm)
 
 local sub, max = string.sub, math.max
 
 function Container:new()
   local newInstance = setmetatable({}, self)
   self.__index = self
+  newInstance:create("Container")
   newInstance:setType("Container")
-  newInstance:addDefaultProperties("Container")
+  self.basaltRender = basaltRender(basaltTerm)
   return newInstance
 end
 
 function Container.render(self)
-  VisualObject.render(self)
+  if(self.parent==nil)then
+    if(self.updateRendering)then
+      VisualObject.render(self)
+      for _,v in pairs(self.Children) do
+        for _,element in pairs(v)do
+          element:render()
+        end
+      end
+    end
+  else
+    VisualObject.render(self)
     for _,v in pairs(self.Children) do
       for _,element in pairs(v)do
         element:render()
       end
     end
+  end
 end
 
-function Container.updateRender(self)
-  _basaltRender.update()
+function Container.processRender(self)
+  if(self.updateRendering)then
+    self.basaltRender.update()
+    self.updateRendering = false
+  end
 end
 
 function Container.getChild(self, name)
@@ -88,12 +104,8 @@ function Container:addChild(child)
   end
 
   table.insert(self.Children[zIndex], child)
-
-  self.ChildrenByName[child:getName()] = #self.Children[zIndex]
   child:init()
-  if child.Load then
-    child:Load()
-  end
+  self.ChildrenByName[child:getName()] = #self.Children[zIndex]
   return child
 end
 
@@ -253,7 +265,7 @@ Container.setCursor = function(self, blink, cursorX, cursorY, color)
   if(self.parent~=nil) then
     local obx, oby = self:getPosition()
     local xO, yO = self:getOffset()
-    self.parent:setCursor(blink or false, (cursorX or 0)+obx-1 - xO, (cursorY or 0)+oby-1 - yO, color or colors.white)
+    self.parent:setCursor(blink or false, (cursorX or 0)+obx-1 - xO, (cursorY or 0)+oby-1 - yO, color or self.foreground)
   else
     local obx, oby = self:getAbsolutePosition()
     local xO, yO = self:getOffset()
@@ -285,7 +297,7 @@ for _,v in pairs({"setBg", "setFg", "setText"}) do
               self.parent[v](pos, oby + y - 1, str)
           else
               local str_visible = sub(str, max(1 - x + 1, 1), max(w - x + 1, 1))
-              _basaltRender[v](pos, oby + y - 1, str_visible)
+              self.basaltRender[v](pos, oby + y - 1, str_visible)
           end
       end
   end
@@ -300,7 +312,7 @@ for _,v in pairs({"drawBackgroundBox", "drawForegroundBox", "drawTextBox"})do
       if self.parent then
           self.parent:drawBackgroundBox(pos, max(y + (oby - 1), oby), width, height, symbol)
       else
-          _basaltRender[v](pos, max(y + (oby - 1), oby), width, height, symbol)
+        self.basaltRender[v](pos, max(y + (oby - 1), oby), width, height, symbol)
       end
   end
 end
@@ -312,7 +324,7 @@ Container.blit = function(self, x, y, t, f, b)
       if self.parent then
           self.parent.blit(pos, oby + y - 1, t, f, b)
       else
-          _basaltRender.blit(pos, oby + y - 1, t, f, b, x, w)
+        self.basaltRender.blit(pos, oby + y - 1, t, f, b, x, w)
       end
   end
 end
@@ -327,13 +339,13 @@ for k,v in pairs({mouse_click=true,mouse_up=false,mouse_drag=false,mouse_scroll=
                       if (obj and obj[k] ~= nil) then
                           local relX, relY = self:getRelativePosition(x, y)
                           if (obj[k](obj, btn, relX, relY, ...)) then
-                              self:setFocusedChild(obj)
+                              self:setFocusedChild(obj, true)
                               return true
                           end
                       end
                   end
               if(v)then
-                  self:setFocusedChild(nil)
+                  self:setFocusedChild(nil, true)
               end
               end
             end

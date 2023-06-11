@@ -8,8 +8,8 @@ local objectLoader = {}
 
 local _OBJECTS = {}
 local _PLUGINS = {}
-
 local pluginNames = {}
+
 if(packaged)then
     for k,v in pairs(getProject("plugins"))do
         table.insert(pluginNames, k)
@@ -56,26 +56,29 @@ function objectLoader.load(objectName)
     local plugFolder = format:gsub("path", dir.."/plugins")
     local libFolder = format:gsub("path", dir.."/libraries")
 
-
     package.path = main..objFolder..plugFolder..libFolder..defaultPath
     _OBJECTS[objectName] = require(fs.combine(dir, "objects", objectName))
-    package.path = defaultPath
 
     if _PLUGINS[objectName] then
         for _, plugin in ipairs(_PLUGINS[objectName]) do
-            local extendedObject = {super = _OBJECTS[objectName]}
-            for k,v in pairs(plugin) do
-                extendedObject[k] = v
+            if(plugin.pluginProperties~=nil)then
+                plugin.pluginProperties(_OBJECTS[objectName])
             end
-
-            setmetatable(extendedObject, {__index = _OBJECTS[objectName]})
-            if(extendedObject.init~=nil)then
-                extendedObject:init()
+            plugin.pluginProperties = nil
+            if(plugin.init~=nil)then
+                plugin.init(_OBJECTS[objectName])
             end
-            _OBJECTS[objectName] = extendedObject
+            plugin.init = nil
+    
+            for a,b in pairs(plugin)do
+                if(type(a)=="string")then
+                    _OBJECTS[objectName][a] = b
+                end
+            end
         end
     end
 
+    package.path = defaultPath
     return _OBJECTS[objectName]
 end
 
@@ -91,6 +94,5 @@ function objectLoader.getObjectList()
     end
     return objects
 end
-
 
 return objectLoader
