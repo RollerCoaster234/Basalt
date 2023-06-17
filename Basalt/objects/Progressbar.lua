@@ -1,15 +1,18 @@
-local VisualObject = require("objectLoader").load("VisualObject")
+local objectLoader = require("objectLoader")
+local Object = objectLoader.load("Object")
+local VisualObject = objectLoader.load("VisualObject")
 
-local Progressbar = VisualObject:new()
+local Progressbar = setmetatable({}, VisualObject)
 
-Progressbar:initialize("Progressbar")
-Progressbar:addProperty("progress", "number", 0)
-Progressbar:addProperty("progressBackground", "color", colors.cyan)
-Progressbar:addProperty("minValue", "number", 0)
-Progressbar:addProperty("maxValue", "number", 100)
+Object:initialize("Progressbar")
+Object:addProperty("progress", "number", 0)
+Object:addProperty("progressBackground", "color", colors.cyan)
+Object:addProperty("minValue", "number", 0)
+Object:addProperty("maxValue", "number", 100)
 
 function Progressbar:new()
-  local newInstance = setmetatable({}, self)
+  local newInstance = VisualObject:new()
+  setmetatable(newInstance, self)
   self.__index = self
   newInstance:setType("Progressbar")
   newInstance:create("Progressbar")

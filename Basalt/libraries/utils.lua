@@ -227,36 +227,18 @@ local function deepcopy(orig, seen)
     return copy
 end
 
+local function getCenteredPosition(text, totalWidth, totalHeight)
+    local textLength = string.len(text)
+
+    local x = math.floor((totalWidth - textLength+1) / 2 + 0.5)
+    local y = math.floor(totalHeight / 2 + 0.5)
+
+    return x, y
+  end
+
 return {
 deepcopy = deepcopy,
-getTextHorizontalAlign = function(text, width, textAlign, replaceChar)
-    text = sub(text, 1, width)
-    local offset = width - len(text)
-    if (textAlign == "right") then
-        text = rep(replaceChar or " ", offset) .. text
-    elseif (textAlign == "center") then
-        text = rep(replaceChar or " ", math.floor(offset / 2)) .. text .. rep(replaceChar or " ", math.floor(offset / 2))
-        text = text .. (len(text) < width and (replaceChar or " ") or "")
-    else
-        text = text .. rep(replaceChar or " ", offset)
-    end
-    return text
-end,
-
-getTextVerticalAlign = function(h, textAlign)
-    local offset = 0
-    if (textAlign == "center") then
-        offset = math.ceil(h / 2)
-        if (offset < 1) then
-            offset = 1
-        end
-    end
-    if (textAlign == "bottom") then
-        offset = h
-    end
-    if(offset<1)then offset=1 end
-    return offset
-end,
+getCenteredPosition = getCenteredPosition,
 
 orderedTable = function(t)
     local newTable = {}

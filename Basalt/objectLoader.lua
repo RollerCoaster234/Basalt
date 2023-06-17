@@ -9,6 +9,7 @@ local objectLoader = {}
 local _OBJECTS = {}
 local _PLUGINS = {}
 local pluginNames = {}
+local basalt
 
 if(packaged)then
     for k,v in pairs(getProject("plugins"))do
@@ -66,7 +67,7 @@ function objectLoader.load(objectName)
             end
             plugin.pluginProperties = nil
             if(plugin.init~=nil)then
-                plugin.init(_OBJECTS[objectName])
+                plugin.init(_OBJECTS[objectName], basalt)
             end
             plugin.init = nil
     
@@ -86,13 +87,24 @@ function objectLoader.getObjectList()
     local objects = {}
     for _,v in pairs(fs.list(fs.combine(dir, "objects")))do
         if(fs.isDir(fs.combine(fs.combine(dir, "objects"), v)))then
-            table.insert(objects, v)
+            objects[v] = true
         else
             local obj = v:gsub(".lua", "")
-            table.insert(objects, obj)
+            objects[obj] = true
         end
     end
     return objects
+end
+
+function objectLoader.getPlugin(pluginName)
+    if(_PLUGINS[pluginName]~=nil)then
+        return _PLUGINS[pluginName]
+    end
+    return pluginName==nil and _PLUGINS or nil
+end
+
+function objectLoader.setBasalt(basaltInstance)
+    basalt = basaltInstance
 end
 
 return objectLoader

@@ -1,21 +1,23 @@
-local VisualObject = require("objectLoader").load("VisualObject")
+local objectLoader = require("objectLoader")
+local Object = objectLoader.load("Object")
+local VisualObject = objectLoader.load("VisualObject")
 
-local Label = VisualObject:new()
+local Label = setmetatable({}, VisualObject)
 
-Label:initialize("Label")
-Label:addProperty("autoSize", "boolean", true)
-Label:addProperty("text", "string", "My Label", nil, function(self, value)
+Object:initialize("Label")
+Object:addProperty("autoSize", "boolean", true)
+Object:addProperty("text", "string", "My Label", nil, function(self, value)
     if(self.autoSize)then
         self:setSize(value:len(), 1)
     end
 end)
 
 function Label:new()
-  local newInstance = setmetatable({}, self)
-  self.__index = self
-  newInstance:setType("Label")
-  newInstance:create("Label")
-  newInstance:setSize(8, 1)
+    local newInstance = VisualObject:new()
+    setmetatable(newInstance, self)
+    self.__index = self
+    newInstance:setType("Label")
+    newInstance:create("Label")
   return newInstance
 end
 

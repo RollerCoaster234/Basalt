@@ -1,32 +1,31 @@
-local VisualObject = require("objectLoader").load("VisualObject")
+local objectLoader = require("objectLoader")
+local Object = objectLoader.load("Object")
+local VisualObject = objectLoader.load("VisualObject")
 local tHex = require("tHex")
 
-local Slider = VisualObject:new()
+local Slider = setmetatable({}, VisualObject)
 
-Slider:initialize("Slider")
-Slider:addProperty("knobSymbol", "string", "#")
-Slider:addProperty("knobBackground", "color", colors.black)
-Slider:addProperty("knobForeground", "color", colors.black)
-Slider:addProperty("bgSymbol", "string", "\140")
-Slider:addProperty("value", "number", 0)
-Slider:addProperty("minValue", "number", 0)
-Slider:addProperty("maxValue", "number", 100)
-Slider:addProperty("step", "number", 1)
+Object:initialize("Slider")
+Object:addProperty("knobSymbol", "string", " ")
+Object:addProperty("knobBackground", "color", colors.black)
+Object:addProperty("knobForeground", "color", colors.black)
+Object:addProperty("bgSymbol", "string", "\140")
+Object:addProperty("value", "number", 0)
+Object:addProperty("minValue", "number", 0)
+Object:addProperty("maxValue", "number", 100)
+Object:addProperty("step", "number", 1)
 
 Slider:addListener("change", "value_change")
 
 function Slider:new()
-  local newInstance = setmetatable({}, self)
+  local newInstance = VisualObject:new()
+  setmetatable(newInstance, self)
   self.__index = self
   newInstance:setType("Slider")
   newInstance:create("Slider")
   newInstance:setSize(20, 1)
   return newInstance
 end
-
-Slider:extend("Init", function(self)
-    self:setBackground(self.parent.background)
-end)
 
 Slider:extend("Load", function(self)
     self:listenEvent("mouse_click")
@@ -78,8 +77,8 @@ function Slider:render()
     local knobPosition = math.floor((self.value - self.minValue) / (self.maxValue - self.minValue) * (self.width - 1) + 0.5)
     bar = bar:sub(1, knobPosition) .. self.knobSymbol .. bar:sub(knobPosition + 2, -1)
     self:addText(1, 1, bar)
-    self:addBg(knobPosition + 1, 1, tHex[self.knobBackground])
-    self:addFg(knobPosition + 1, 1, tHex[self.knobForeground])
+    self:addBg(knobPosition + 1, 1, tHex[self:getKnobBackground()])
+    self:addFg(knobPosition + 1, 1, tHex[self:getKnobForeground()])
 end
 
 return Slider

@@ -5,8 +5,8 @@ local basalt, threads = {}, {}
 local updaterActive = false
 local mainFrame, monFrames = nil, {}
 local baseTerm = term.current()
-
--- Private functions
+local registeredEvents = {}
+loader.setBasalt(basalt)
 
 ---- Frame Rendering
 local function drawFrames()
@@ -22,7 +22,7 @@ local function drawFrames()
 end
 
 ---- Event Handling
-local throttle = {mouse_move = 0.1}
+local throttle = {}
 local lastEventTimes = {}
 local lastEventArgs = {}
 
@@ -32,6 +32,17 @@ local function updateEvent(event, ...)
     if(event=="terminate")then basalt.stop() end
     if(event=="monitor_touch")then
         event = "mouse_click"
+    end
+    if(event=="mouse_move")then
+        if(p[1]==nil)or(p[2]==nil)then return end
+    end
+
+    for _,v in pairs(registeredEvents)do
+        if(v==event)then
+            if not v(event, unpack(p)) then
+                return
+            end
+        end
     end
 
     if event == "timer" then
@@ -84,7 +95,7 @@ end
 
 function basalt.createFrame(id)
     id = id or utils.uuid()
-    local frame = loader.load("BaseFrame"):new()
+    local frame = loader.load("BaseFrame"):new(id, basalt)
     frame:init()
     if(mainFrame==nil)then
         mainFrame = frame
@@ -124,6 +135,26 @@ function basalt.autoUpdate(isActive)
     end
 end
 
+function basalt.getObjects()
+    return loader.getObjectList()
+end
+
+function basalt.onEvent(event, func)
+    if(registeredEvents[event]==nil)then
+        registeredEvents[event] = {}
+    end
+    table.insert(registeredEvents[event], func)
+end
+
+function basalt.removeEvent(event, func)
+    if(registeredEvents[event]==nil)then return end
+    for k,v in pairs(registeredEvents[event])do
+        if(v==func)then
+            table.remove(registeredEvents[event], k)
+        end
+    end
+end
+
 -- not finished
 function basalt.thread(func, ...)
     local t = coroutine.create(func)
@@ -135,6 +166,15 @@ end
 
 function basalt.stop()
     updaterActive = false
+end
+
+local plugins = loader.getPlugin("Basalt")
+if(plugins~=nil)then
+    for _,v in pairs(plugins)do
+        for a,b in pairs(v)do
+            basalt[a] = b
+        end
+    end
 end
 
 return basalt

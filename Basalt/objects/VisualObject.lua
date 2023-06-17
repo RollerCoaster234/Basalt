@@ -1,33 +1,34 @@
 local Object = require("objectLoader").load("Object")
 local split = require("utils").splitString
 
-local VisualObject = Object.new(Object)
+local VisualObject = setmetatable({}, Object)
 
 local function BaseRender(self)
-  self:addBackgroundBox(1, 1, self.width, self.height, self.background)
-  self:addForegroundBox(1, 1, self.width, self.height, self.foreground)
+  local w, h = self:getSize()
+  self:addBackgroundBox(1, 1, w, h, self:getBackground())
+  self:addForegroundBox(1, 1, w, h, self:getForeground())
 end
 
-VisualObject:initialize("VisualObject")
-VisualObject:addProperty("background", "color", colors.black)
-VisualObject:addProperty("foreground", "color", colors.white)
-VisualObject:addProperty("x", "number", 1)
-VisualObject:addProperty("y", "number", 1)
-VisualObject:combineProperty("Position", "X", "Y")
-VisualObject:addProperty("visible", "boolean", true)
-VisualObject:addProperty("width", "number", 1)
-VisualObject:addProperty("height", "number", 1)
-VisualObject:addProperty("renderData", "table", {BaseRender}, false, function(self, value)
+Object:initialize("VisualObject")
+Object:addProperty("background", "color", colors.black)
+Object:addProperty("foreground", "color", colors.white)
+Object:addProperty("x", "number", 1)
+Object:addProperty("y", "number", 1)
+Object:combineProperty("Position", "X", "Y")
+Object:addProperty("visible", "boolean", true)
+Object:addProperty("width", "number", 1)
+Object:addProperty("height", "number", 1)
+Object:addProperty("renderData", "table", {BaseRender}, false, function(self, value)
   if(type(value)=="function")then
     table.insert(self.renderData, value)
     return self.renderData
   end
 end)
 
-VisualObject:combineProperty("Size", "width", "height")
-VisualObject:addProperty("transparent", "boolean", false)
-VisualObject:addProperty("ignoreOffset", "boolean", false)
-VisualObject:addProperty("focused", "boolean", false, nil, function(self, value)
+Object:combineProperty("Size", "width", "height")
+Object:addProperty("transparent", "boolean", false)
+Object:addProperty("ignoreOffset", "boolean", false)
+Object:addProperty("focused", "boolean", false, nil, function(self, value)
   if(value)then
     self:get_focus()
   else
@@ -35,19 +36,21 @@ VisualObject:addProperty("focused", "boolean", false, nil, function(self, value)
   end
 end)
 
-VisualObject:addListener("click", "mouse_click")
-VisualObject:addListener("drag", "mouse_drag")
-VisualObject:addListener("scroll", "mouse_scroll")
-VisualObject:addListener("hover", "mouse_hover")
-VisualObject:addListener("clickUp", "mouse_up")
-VisualObject:addListener("key", "key")
-VisualObject:addListener("keyUp", "key_up")
-VisualObject:addListener("char", "char")
-VisualObject:addListener("getFocus", "get_focus")
-VisualObject:addListener("loseFocus", "lose_focus")
+Object:addListener("click", "mouse_click")
+Object:addListener("drag", "mouse_drag")
+Object:addListener("scroll", "mouse_scroll")
+Object:addListener("hover", "mouse_move")
+Object:addListener("leave", "mouse_move2")
+Object:addListener("clickUp", "mouse_up")
+Object:addListener("key", "key")
+Object:addListener("keyUp", "key_up")
+Object:addListener("char", "char")
+Object:addListener("getFocus", "get_focus")
+Object:addListener("loseFocus", "lose_focus")
 
 function VisualObject:new()
-  local newInstance = setmetatable({}, self)
+  local newInstance = Object:new()
+  setmetatable(newInstance, self)
   self.__index = self
   newInstance:create("VisualObject")
   newInstance:setType("VisualObject")
@@ -222,23 +225,27 @@ VisualObject.isInside = isInside
 
 function VisualObject.mouse_click(self, btn, x, y)
   if isInside(self, x, y) then
-    self:setProperty("Dragging", true)
+    self:setProperty("clicked", true)
+    self:setProperty("dragging", true)
+    self:updateRender()
     self:fireEvent("click", btn, x, y)
     return true
   end
 end
 
 function VisualObject.mouse_drag(self, btn, x, y)
-  if self:getProperty("Dragging") then
+  if self:getProperty("dragging") then
     self:fireEvent("drag", btn, x, y)
     return true
   end
 end
 
 function VisualObject.mouse_up(self, btn, x, y)
-  self:setProperty("Dragging", false)
+  self:setProperty("dragging", false)
+  self:setProperty("clicked", false)
   if isInside(self, x, y) then
     self:fireEvent("clickUp", btn, x, y)
+    self:updateRender()
     return true
   end
 end
@@ -248,6 +255,21 @@ function VisualObject:mouse_scroll(direction, x, y)
       self:fireEvent("scroll")
       return true
     end
+end
+
+function VisualObject:mouse_move(_, x, y)
+  if isInside(self, x, y) then
+    self:setProperty("hovered", true)
+    self:updateRender()
+    self:fireEvent("hover", x, y)
+    return true
+  end
+  if(self:getProperty("hovered"))then
+    self:setProperty("hovered", false)
+    self:updateRender()
+    self:fireEvent("leave", x, y)
+    return true
+  end
 end
 
 function VisualObject.get_focus(self)
@@ -261,7 +283,7 @@ end
 for _,v in pairs({"key", "key_up", "char"})do
   VisualObject[v] = function(self, ...)
     if(self.enabled)and(self.visible)then
-      if(self.parent==nil)or(self.focused)then
+      if(self.parent==nil)or(self:getFocused())then
         self:fireEvent(v, ...)
         return true
       end

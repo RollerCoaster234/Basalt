@@ -73,8 +73,7 @@ local function dynamicValue(object, name, dynamicString)
                         object:listenEvent("mouse_drag")
                     end
                     if(b=="hovered")then
-                        --object:listenEvent("mouse_enter")
-                        --object:listenEvent("mouse_exit")
+                        object:listenEvent("mouse_move")
                     end
                     table.insert(observers, {obj=object, name=b})
                 else
@@ -85,8 +84,8 @@ local function dynamicValue(object, name, dynamicString)
 
         if(k=="parent") then
             for _, b in pairs(v) do
-                object:getParent():addPropertyObserver(b, updateFunc)
-                table.insert(observers, {obj=object:getParent(), name=b})
+                object.parent:addPropertyObserver(b, updateFunc)
+                table.insert(observers, {obj=object.parent, name=b})
             end
         end
 
@@ -137,7 +136,8 @@ local function dynamicValue(object, name, dynamicString)
             if(needsUpdate)then
                 cachedValue = calculate()
                 needsUpdate = false
-                --object:updatePropertyObservers(name)
+                object:forcePropertyObserverUpdate(name)
+                object:updateRender()
             end
             return cachedValue
         end,
@@ -151,9 +151,6 @@ end
 
 local function filterDynValues(self, name, value)
     if(type(value)=="string")and(value:sub(1,1)=="{")and(value:sub(-1)=="}")then
-        if(self.dynValues[name]~=nil)then
-            self.dynValues[name].removeObservers()
-        end
         self.dynValues[name] = dynamicValue(self, name, value)
         value = self.dynValues[name].get
     end
@@ -164,14 +161,22 @@ end
 local DynExtension = {}
 
 function DynExtension.pluginProperties(original)
+    original:initialize("Object")
     original:addProperty("dynValues", "table", {})
 end
 
 function DynExtension.init(original)
     local setProp = original.setProperty
-    original.setProperty = function(self, name, value)
+    original.setProperty = function(self, name, value, rule)
+        if(self.dynValues==nil)then
+            self.dynValues = {}
+        end
+        if(self.dynValues[name]~=nil)then
+            self.dynValues[name].removeObservers()
+        end
+        self.dynValues[name] = nil
         value = filterDynValues(self, name, value)
-        setProp(self, name, value)
+        setProp(self, name, value, rule)
     end
 end
 

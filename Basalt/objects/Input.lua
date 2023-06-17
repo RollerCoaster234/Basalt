@@ -1,19 +1,22 @@
-local VisualObject = require("objectLoader").load("VisualObject")
+local objectLoader = require("objectLoader")
+local Object = objectLoader.load("Object")
+local VisualObject = objectLoader.load("VisualObject")
 
-local Input = VisualObject.new(VisualObject)
+local Input = setmetatable({}, VisualObject)
 
-Input:initialize("Input")
-Input:addProperty("value", "string", "")
-Input:addProperty("cursorIndex", "number", 1)
-Input:addProperty("scrollIndex", "number", 1)
-Input:addProperty("inputLimit", "number", nil)
-Input:addProperty("inputType", "string", "text")
+Object:initialize("Input")
+Object:addProperty("value", "string", "")
+Object:addProperty("cursorIndex", "number", 1)
+Object:addProperty("scrollIndex", "number", 1)
+Object:addProperty("inputLimit", "number", nil)
+Object:addProperty("inputType", "string", "text")
 
-Input:addListener("change", "change_value")
-Input:addListener("enter", "enter_pressed")
+Object:addListener("change", "change_value")
+Object:addListener("enter", "enter_pressed")
 
 function Input:new()
-  local newInstance = setmetatable({}, self)
+  local newInstance = VisualObject:new()
+  setmetatable(newInstance, self)
   self.__index = self
   newInstance:setType("Input")
   newInstance:create("Input")
@@ -37,6 +40,7 @@ Input:extend("Load", function(self)
 end)
 
 function Input:lose_focus()
+    VisualObject.lose_focus(self)
     self.parent:setCursor(false)
 end
 
@@ -44,7 +48,7 @@ function Input:mouse_click(button, x, y)
     if(VisualObject.mouse_click(self, button, x, y))then
         if(button == 1)then
             self.cursorIndex = math.min(x - self.x + self.scrollIndex, self.value:len() + 1)
-            self.parent:setCursor(true, self.x + self.cursorIndex - self.scrollIndex, self.y, self.foreground)
+            self.parent:setCursor(true, self.x + self.cursorIndex - self.scrollIndex, self.y, self:getForeground())
         end
         return true
     end
@@ -72,7 +76,7 @@ function Input:key(key)
             return
         end
         self:adjustScrollIndex()
-        self.parent:setCursor(true, self.x + self.cursorIndex - self.scrollIndex, self.y, self.foreground)
+        self.parent:setCursor(true, self.x + self.cursorIndex - self.scrollIndex, self.y, self:getForeground())
         return true
     end
 end
@@ -96,7 +100,7 @@ function Input:char(char)
         self:fireEvent("change", self.value)
         self:adjustScrollIndex()
         self:updateRender()
-        self.parent:setCursor(true, self.x + self.cursorIndex - self.scrollIndex, self.y, self.foreground)
+        self.parent:setCursor(true, self.x + self.cursorIndex - self.scrollIndex, self.y, self:getForeground())
         return true
     end
 end

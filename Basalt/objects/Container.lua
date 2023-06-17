@@ -1,24 +1,25 @@
 local objectLoader = require("objectLoader")
+local Object = objectLoader.load("Object")
 local VisualObject = objectLoader.load("VisualObject")
-local Container = VisualObject.new(VisualObject)
+local Container = setmetatable({}, VisualObject)
 
 local basaltRender = require("basaltRender")
 
 local basaltTerm = term.current()
 basaltTerm.__noCopy = true
 
-Container:initialize("Container")
-Container:addProperty("term", "table", basaltTerm, false, function(self, value)
+Object:initialize("Container")
+Object:addProperty("term", "table", basaltTerm, false, function(self, value)
   self.basaltRender = basaltRender(value)
 end)
-Container:addProperty("Children", "table", {})
-Container:addProperty("ChildrenByName", "table", {})
-Container:addProperty("ChildrenEvents", "table", {})
-Container:addProperty("cursorBlink", "boolean", false)
-Container:addProperty("cursorColor", "color", colors.white)
-Container:addProperty("cursorX", "number", 1)
-Container:addProperty("cursorY", "number", 1)
-Container:addProperty("focusedChild", "table", nil, false, function(self, value)
+Object:addProperty("Children", "table", {})
+Object:addProperty("ChildrenByName", "table", {})
+Object:addProperty("ChildrenEvents", "table", {})
+Object:addProperty("cursorBlink", "boolean", false)
+Object:addProperty("cursorColor", "color", colors.white)
+Object:addProperty("cursorX", "number", 1)
+Object:addProperty("cursorY", "number", 1)
+Object:addProperty("focusedChild", "table", nil, false, function(self, value)
   local curFocus = self:getFocusedChild()
   if(curFocus~=value)then
     if(curFocus~=nil)then
@@ -30,19 +31,21 @@ Container:addProperty("focusedChild", "table", nil, false, function(self, value)
   end
   return value
 end)
-Container:addProperty("ElementsSorted", "boolean", true)
-Container:addProperty("XOffset", "number", 0)
-Container:addProperty("YOffset", "number", 0)
-Container:combineProperty("Offset", "XOffset", "YOffset")
+Object:addProperty("ElementsSorted", "boolean", true)
+Object:addProperty("XOffset", "number", 0)
+Object:addProperty("YOffset", "number", 0)
+Object:combineProperty("Offset", "XOffset", "YOffset")
 
 local sub, max = string.sub, math.max
 
-function Container:new()
-  local newInstance = setmetatable({}, self)
+function Container:new(id, basalt)
+  local newInstance = VisualObject:new()
+  setmetatable(newInstance, self)
   self.__index = self
   newInstance:create("Container")
   newInstance:setType("Container")
-  self.basaltRender = basaltRender(basaltTerm)
+  newInstance.basaltRender = basaltRender(basaltTerm)
+  newInstance.basalt = basalt
   return newInstance
 end
 
@@ -265,7 +268,7 @@ Container.setCursor = function(self, blink, cursorX, cursorY, color)
   if(self.parent~=nil) then
     local obx, oby = self:getPosition()
     local xO, yO = self:getOffset()
-    self.parent:setCursor(blink or false, (cursorX or 0)+obx-1 - xO, (cursorY or 0)+oby-1 - yO, color or self.foreground)
+    self.parent:setCursor(blink or false, (cursorX or 0)+obx-1 - xO, (cursorY or 0)+oby-1 - yO, color or self:getForeground())
   else
     local obx, oby = self:getAbsolutePosition()
     local xO, yO = self:getOffset()
@@ -373,10 +376,10 @@ for _,v in pairs({"key", "key_up", "char"})do
   end
 end
 
-for _,v in pairs(objectLoader.getObjectList())do
-  local fName = v:gsub("^%l", string.upper)
+for k,_ in pairs(objectLoader.getObjectList())do
+  local fName = k:gsub("^%l", string.upper)
   Container["add"..fName] = function(self, id)
-    local obj = objectLoader.load(v):new()
+    local obj = objectLoader.load(k):new(id, self.basalt)
     self:addChild(obj)
     return obj
   end

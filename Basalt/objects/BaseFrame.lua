@@ -1,11 +1,14 @@
-local Container = require("objectLoader").load("Container")
+local objectLoader = require("objectLoader")
+local Object = objectLoader.load("Object")
+local Container = objectLoader.load("Container")
 
-local BaseFrame = Container.new(Container)
+local BaseFrame = setmetatable({}, Container)
 
-BaseFrame:initialize("BaseFrame")
+Object:initialize("BaseFrame")
 
 function BaseFrame:new()
-  local newInstance = setmetatable({}, self)
+  local newInstance = Container:new()
+  setmetatable(newInstance, self)
   self.__index = self
   newInstance:setType("BaseFrame")
   newInstance:create("BaseFrame")
@@ -14,7 +17,7 @@ function BaseFrame:new()
 end
 
 function BaseFrame.getSize(self)
-  return self:getProperty("Term").getSize()
+  return self:getProperty("term").getSize()
 end
 
 function BaseFrame.getWidth(self)

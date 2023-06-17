@@ -152,14 +152,12 @@ return function(drawTerm)
                 isBlinking = terminal.getCursorBlink()
             end
             terminal.setCursorBlink(false)
-            log("New Round:")
             for n = 1, height do
                 if(modifiedLines[n])then
                     if(cache[n][1]~=renderData[n][1])or(cache[n][2]~=renderData[n][2])or(cache[n][3]~=renderData[n][3])then
                         cache[n][1] = renderData[n][1]
                         cache[n][2] = renderData[n][2]
                         cache[n][3] = renderData[n][3]
-                        log("Line "..n)
                         terminal.setCursorPos(1, n)
                         terminal.blit(unpack(renderData[n]))
                     end

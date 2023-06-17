@@ -1,31 +1,36 @@
-local VisualObject = require("objectLoader").load("VisualObject")
+local objectLoader = require("objectLoader")
+local Object = objectLoader.load("Object")
+local VisualObject = objectLoader.load("VisualObject")
+local getCenteredPosition = require("utils").getCenteredPosition
 
-local Checkbox = VisualObject:new()
+local Checkbox = setmetatable({}, VisualObject)
 
-Checkbox:initialize("Checkbox")
-Checkbox:addProperty("checked", "boolean", false)
-Checkbox:addProperty("checkedSymbol", "string", "\42")
-Checkbox:addProperty("checkedColor", "color", colors.white)
-Checkbox:addProperty("checkedBgColor", "color", colors.black)
-Checkbox:combineProperty("Symbol", "checkedSymbol", "checkedColor", "checkedBgColor")
+Object:initialize("Checkbox")
+Object:addProperty("checked", "boolean", false)
+Object:addProperty("checkedSymbol", "string", "\42")
+Object:addProperty("checkedColor", "color", colors.white)
+Object:addProperty("checkedBgColor", "color", colors.black)
+Object:combineProperty("Symbol", "checkedSymbol", "checkedColor", "checkedBgColor")
 
-Checkbox:addListener("check", "checked_value")
+Object:addListener("check", "checked_value")
 
 function Checkbox:new()
-  local newInstance = setmetatable({}, self)
-  self.__index = self
-  newInstance:setType("Checkbox")
-  newInstance:create("Checkbox")
-  newInstance:setSize(1, 1)
+    local newInstance = VisualObject:new()
+    setmetatable(newInstance, self)
+    self.__index = self
+    newInstance:setType("Checkbox")
+    newInstance:create("Checkbox")
+    newInstance:setSize(1, 1)
   return newInstance
 end
 
 function Checkbox:render()
     VisualObject.render(self)
+    local xO, yO = getCenteredPosition(self.checkedSymbol, self:getWidth(), self:getHeight())
     if self.checked then
-        self:addText(1, 1, self.checkedSymbol)
+        self:addText(xO, yO, self.checkedSymbol)
     else
-        self:addText(1, 1, " ")
+        self:addText(xO, yO, " ")
     end
 end
 

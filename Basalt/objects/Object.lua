@@ -1,20 +1,31 @@
 local split = require("utils").splitString
 local deepcopy = require("utils").deepcopy
 
-local Object = {methods = {}}
-setmetatable(Object, {__index = Object.methods})
+local Object = {}
 
 local properties = {}
 local extensions = {}
 local activeType = "Object"
 
-function Object.new(self)
-    local newInstance = setmetatable({}, self)
+function Object:new()
+    local newInstance = {}
+    setmetatable(newInstance, self)
     self.__index = self
-    self.__noCopy = true
+    newInstance.__noCopy = true
     newInstance:create("Object")
     return newInstance
 end
+
+--[[
+    setmetatable(proxy, {
+    __index = function(_, key)
+        return t[key]
+    end,
+    __newindex = function(_, key, value)
+        t[key] = value
+    end
+})
+]]
 
 local function defaultRule(typ)
     return function(self, name, value)
@@ -95,6 +106,9 @@ function Object.forcePropertyObserverUpdate(self, propertyName)
 end
 
 function Object.setProperty(self, name, value, rule)
+    if(name==nil)then
+        error(self:getType()..": Property name cannot be nil!")
+    end
     if(rule~=nil)then
         value = rule(self, name, value)
     end
@@ -149,10 +163,9 @@ function Object.updateRender(self)
     end
 end
 
-function Object.addProperty(self, name, typ, defaultValue, readonly, setLogic, getLogic, alteredRule)
+function Object.addProperty(self, name, typ, defaultValue, readonly, setLogic, getLogic)
     if(typ==nil)then typ = "any" end
     if(readonly==nil)then readonly = false end
-    if(alteredRule==nil)then alteredRule = defaultRule(typ) end
 
     local fName = name:gsub("^%l", string.upper)
     if not properties[activeType] then
@@ -174,7 +187,7 @@ function Object.addProperty(self, name, typ, defaultValue, readonly, setLogic, g
             if ignRenderUpdate~=true then
                 self:updateRender()
             end
-            self:setProperty(name, value, alteredRule~=nil and alteredRule(typ) or defaultRule(typ))
+            self:setProperty(name, value, defaultRule(typ))
             return self
         end
     end
@@ -212,14 +225,19 @@ function Object.initialize(self, typ)
     return self
 end
 
-function Object.create(self, typ)
+function Object:create(typ)
+    --log(typ)
     if(properties[typ]~=nil)then
         for k,v in pairs(properties[typ])do
             if(type(v)=="table")then
                 self[k] = deepcopy(v)
+                if(k=="dynValues")then
+                    --log(v, self[k])
+                end
             else
                 self[k] = v
             end
+            --log(k)
         end
     end
 end
@@ -301,7 +319,7 @@ function Object.extend(self, name, f)
 end
 
 function Object.callExtension(self, name)
-    for k,t in pairs(self.type)do
+    for _,t in pairs(self.type)do
         if(extensions[t]~=nil)then
             if(extensions[t][name]~=nil)then
                 for _,v in pairs(extensions[t][name])do
