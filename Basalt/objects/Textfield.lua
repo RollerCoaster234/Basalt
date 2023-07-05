@@ -41,9 +41,12 @@ function TextField:render()
     end
   end
 
+  function TextField:lose_focus()
+    self.parent:setCursor(false)
+  end
+
   function TextField:adjustScrollIndices(updateAccordingToCursor)
     if updateAccordingToCursor then
-      -- Adjust according to cursor position
       if self.cursorIndex < self.scrollIndexX then
         self.scrollIndexX = self.cursorIndex
       elseif self.cursorIndex >= self.scrollIndexX + self.width then
@@ -55,7 +58,6 @@ function TextField:render()
         self.scrollIndexY = self.lineIndex - self.height + 1
       end
     end
-    -- Ensure scroll indices are within valid range
     self.scrollIndexX = math.max(1, self.scrollIndexX)
     self.scrollIndexY = math.max(1, self.scrollIndexY)
   end
@@ -88,14 +90,12 @@ function TextField:mouse_click(button, x, y)
 
   function TextField:mouse_scroll(direction, x, y)
     if (VisualObject.mouse_scroll(self, direction, x, y)) then
-      -- Scrolling down
       if direction == 1 then
         self.scrollIndexY = math.min(#self.lines - self.height + 1, self.scrollIndexY + 1)
-      -- Scrolling up
       elseif direction == -1 then
         self.scrollIndexY = math.max(1, self.scrollIndexY - 1)
       end
-      self:adjustScrollIndices(false)  -- Update scroll indices without focusing the cursor
+      self:adjustScrollIndices(false)
       self:updateCursor()
       self:updateRender()
       return true

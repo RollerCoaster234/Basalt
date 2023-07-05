@@ -7,12 +7,13 @@ local properties = {}
 local extensions = {}
 local activeType = "Object"
 
-function Object:new()
+function Object:new(id, basalt)
     local newInstance = {}
     setmetatable(newInstance, self)
     self.__index = self
     newInstance.__noCopy = true
     newInstance:create("Object")
+    newInstance.basalt = basalt
     return newInstance
 end
 

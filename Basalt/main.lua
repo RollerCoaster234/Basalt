@@ -168,6 +168,10 @@ function basalt.stop()
     updaterActive = false
 end
 
+function basalt.getTerm()
+    return baseTerm
+end
+
 local plugins = loader.getPlugin("Basalt")
 if(plugins~=nil)then
     for _,v in pairs(plugins)do

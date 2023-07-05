@@ -8,7 +8,6 @@ local List = setmetatable({}, VisualObject)
 Object:initialize("List")
 Object:addProperty("items", "table", {}) -- now each item is a ListItem object
 Object:addProperty("selectedIndex", "number", 1)
-Object:addProperty("selectedItem", "ListItem", nil)
 Object:addProperty("selectionBackground", "color", colors.black)
 Object:addProperty("selectionForeground", "color", colors.cyan)
 Object:combineProperty("selectionColor", "selectionBackground", "selectionForeground")

@@ -39,17 +39,16 @@ Object:combineProperty("Offset", "XOffset", "YOffset")
 local sub, max = string.sub, math.max
 
 function Container:new(id, basalt)
-  local newInstance = VisualObject:new()
+  local newInstance = VisualObject:new(id, basalt)
   setmetatable(newInstance, self)
   self.__index = self
   newInstance:create("Container")
   newInstance:setType("Container")
   newInstance.basaltRender = basaltRender(basaltTerm)
-  newInstance.basalt = basalt
   return newInstance
 end
 
-function Container.render(self)
+function Container:render()
   if(self.parent==nil)then
     if(self.updateRendering)then
       VisualObject.render(self)
@@ -69,21 +68,21 @@ function Container.render(self)
   end
 end
 
-function Container.processRender(self)
+function Container:processRender()
   if(self.updateRendering)then
     self.basaltRender.update()
     self.updateRendering = false
   end
 end
 
-function Container.getChild(self, name)
+function Container:getChild(name)
   local index = self.ChildrenByName[name]
   if index then
     return self.Children[index]
   end
 end
 
-function Container.getDeepChild(self, name)
+function Container:getDeepChild(name)
   local index = self.ChildrenByName[name]
   if index then
     return self.Children[index]
@@ -107,13 +106,14 @@ function Container:addChild(child)
   end
 
   table.insert(self.Children[zIndex], child)
+  child.basalt = self.basalt
   child:init()
   self.ChildrenByName[child:getName()] = #self.Children[zIndex]
   return child
 end
 
 
-function Container.removeChild(self, child)
+function Container:removeChild(child)
   if type(child) == "string" then
     child = self:getChild(child)
   end
@@ -125,7 +125,7 @@ function Container.removeChild(self, child)
   end
 end
 
-function Container.removeChildren(self)
+function Container:removeChildren()
   for _,v in pairs(self.Children) do
     self:removeChild(v)
   end
@@ -133,7 +133,7 @@ function Container.removeChildren(self)
   self.ChildrenByName = {}
 end
 
-function Container.searchChildren(self, name)
+function Container:searchChildren(name)
   local children = {}
   for _,v in pairs(self.Children) do
     if v:find(name) then
@@ -143,7 +143,7 @@ function Container.searchChildren(self, name)
   return children
 end
 
-function Container.getChildrenByType(self, type)
+function Container:getChildrenByType(type)
   local children = {}
   for _,v in pairs(self.Children) do
     if v:getType() == type then
@@ -264,7 +264,7 @@ function Container:updateChildZIndex(child, oldZ, newZ)
   end
 end
 
-Container.setCursor = function(self, blink, cursorX, cursorY, color)
+function Container:setCursor(blink, cursorX, cursorY, color)
   if(self.parent~=nil) then
     local obx, oby = self:getPosition()
     local xO, yO = self:getOffset()
@@ -320,7 +320,7 @@ for _,v in pairs({"drawBackgroundBox", "drawForegroundBox", "drawTextBox"})do
   end
 end
 
-Container.blit = function(self, x, y, t, f, b)
+function Container:blit(x, y, t, f, b)
   local obx, oby, w, h = self.x, self.y, self.width, self.height
   if y >= 1 and y <= h then
       local pos = max(x + (obx - 1), obx)
@@ -328,6 +328,16 @@ Container.blit = function(self, x, y, t, f, b)
           self.parent.blit(pos, oby + y - 1, t, f, b)
       else
         self.basaltRender.blit(pos, oby + y - 1, t, f, b, x, w)
+      end
+  end
+end
+
+function Container:event(event, ...)
+  for _, child in pairs(self.Children) do
+      for _, obj in pairs(child) do
+          if obj.event then
+              obj:event(event, ...)
+          end
       end
   end
 end

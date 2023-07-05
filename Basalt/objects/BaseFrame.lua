@@ -6,8 +6,8 @@ local BaseFrame = setmetatable({}, Container)
 
 Object:initialize("BaseFrame")
 
-function BaseFrame:new()
-  local newInstance = Container:new()
+function BaseFrame:new(id, basalt)
+  local newInstance = Container:new(id, basalt)
   setmetatable(newInstance, self)
   self.__index = self
   newInstance:setType("BaseFrame")
@@ -33,6 +33,7 @@ function BaseFrame.getPosition(self)
 end
 
 function BaseFrame.event(self, event, ...)
+  Container.event(self, event, ...)
   if(event=="term_resize")then
     self:setSize(term.getSize())
     self:setTerm(term.current())

@@ -5,6 +5,7 @@ local VisualObject = setmetatable({}, Object)
 
 local function BaseRender(self)
   local w, h = self:getSize()
+  self:addTextBox(1, 1, w, h, " ")
   self:addBackgroundBox(1, 1, w, h, self:getBackground())
   self:addForegroundBox(1, 1, w, h, self:getForeground())
 end
@@ -48,8 +49,8 @@ Object:addListener("char", "char")
 Object:addListener("getFocus", "get_focus")
 Object:addListener("loseFocus", "lose_focus")
 
-function VisualObject:new()
-  local newInstance = Object:new()
+function VisualObject:new(id, basalt)
+  local newInstance = Object:new(id, basalt)
   setmetatable(newInstance, self)
   self.__index = self
   newInstance:create("VisualObject")
