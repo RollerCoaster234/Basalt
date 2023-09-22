@@ -3,7 +3,7 @@ local utils = require("utils")
 
 local basalt, threads = {}, {}
 local updaterActive = false
-local mainFrame, monFrames = nil, {}
+local mainFrame, focusedFrame, monFrames = nil, nil, {}
 local baseTerm = term.current()
 local registeredEvents = {}
 loader.setBasalt(basalt)
@@ -26,13 +26,13 @@ local throttle = {}
 local lastEventTimes = {}
 local lastEventArgs = {}
 
-local events = {mouse_click=true,mouse_up=true,mouse_drag=true,mouse_scroll=true,mouse_move=true,key=true,key_up=true,char=true}
+local events = {
+    mouse = {mouse_click=true,mouse_up=true,mouse_drag=true,mouse_scroll=true,mouse_move=true,monitor_touch=true},
+    keyboard = {key=true,key_up=true,char=true}
+}
 local function updateEvent(event, ...)
     local p = {...}
     if(event=="terminate")then basalt.stop() end
-    if(event=="monitor_touch")then
-        event = "mouse_click"
-    end
     if(event=="mouse_move")then
         if(p[1]==nil)or(p[2]==nil)then return end
     end
@@ -70,22 +70,29 @@ local function updateEvent(event, ...)
         lastEventArgs[event] = p
         return
     else
-        if(events[event])then
-            if mainFrame ~= nil and mainFrame[event] ~= nil then
-                mainFrame[event](mainFrame, unpack(p))
-            end
-            for _,v in pairs(monFrames) do
-                if v[event] ~= nil then
-                    v[event](v, unpack(p))
+        if(events.mouse[event])then
+            if(event=="monitor_touch")then
+                for _,v in pairs(monFrames) do
+                    if v[event] ~= nil then
+                        v[event](v, unpack(p))
+                    end
                 end
+            else
+                if mainFrame ~= nil and mainFrame.event ~= nil then
+                    mainFrame[event](mainFrame, unpack(p))
+                end
+            end
+        elseif(events.keyboard[event])then
+            if focusedFrame ~= nil and focusedFrame[event] ~= nil then
+                focusedFrame[event](focusedFrame, unpack(p))
             end
         else
             if mainFrame ~= nil and mainFrame.event ~= nil then
                 mainFrame:event(event, unpack(p))
             end
             for _,v in pairs(monFrames) do
-                if v.event ~= nil then
-                    v:event(event, unpack(p))
+                if v[event] ~= nil then
+                    v[event](v, unpack(p))
                 end
             end
         end
@@ -93,7 +100,7 @@ local function updateEvent(event, ...)
     end
 end
 
-function basalt.createFrame(id)
+function basalt.addFrame(id)
     id = id or utils.uuid()
     local frame = loader.load("BaseFrame"):new(id, basalt)
     frame:init()
@@ -103,6 +110,30 @@ function basalt.createFrame(id)
     return frame
 end
 
+function basalt.addMonitor(id)
+    id = id or utils.uuid()
+    local frame = loader.load("Monitor"):new(id, basalt)
+    frame:init()
+    table.insert(monFrames, frame)
+    return frame
+end
+
+function basalt.addBigMonitor(id)
+    id = id or utils.uuid()
+    local frame = loader.load("BigMonitor"):new(id, basalt)
+    frame:init()
+    table.insert(monFrames, frame)
+    return frame
+end
+
+function basalt.create(id, typ)
+    local obj = loader.load(typ):new(id, basalt)
+    if(obj~=nil)then
+        obj:init()
+    end
+    return obj
+end
+
 ---- Error Handling
 function basalt.errorHandler(errMsg)
     baseTerm.clear()
@@ -110,7 +141,7 @@ function basalt.errorHandler(errMsg)
     baseTerm.setBackgroundColor(colors.black)
     baseTerm.setTextColor(colors.red)
     if(basalt.logging)then
-        log(errMsg, "Error")
+        --log(errMsg, "Error")
     end
     print(errMsg)
     baseTerm.setTextColor(colors.white)
@@ -153,6 +184,16 @@ function basalt.removeEvent(event, func)
             table.remove(registeredEvents[event], k)
         end
     end
+end
+
+function basalt.setFocusedFrame(frame)
+    if(focusedFrame~=nil)then
+        focusedFrame:lose_focus()
+    end
+    if(frame~=nil)then
+        frame:get_focus()
+    end
+    focusedFrame = frame
 end
 
 -- not finished

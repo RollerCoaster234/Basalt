@@ -3,13 +3,24 @@ local Object = objectLoader.load("Object")
 local VisualObject = objectLoader.load("VisualObject")
 local Container = setmetatable({}, VisualObject)
 
+local function reverse(tbl)
+  local size = #tbl
+  local new_table = {}
+
+  for i, v in pairs(tbl) do
+    new_table[size - i + 1] = v
+  end
+
+  return new_table
+end
+
 local basaltRender = require("basaltRender")
 
-local basaltTerm = term.current()
-basaltTerm.__noCopy = true
-
 Object:initialize("Container")
-Object:addProperty("term", "table", basaltTerm, false, function(self, value)
+Object:addProperty("term", "table", nil, false, function(self, value)
+  if(value~=nil)then
+    value.__noCopy = true
+  end
   self.basaltRender = basaltRender(value)
 end)
 Object:addProperty("Children", "table", {})
@@ -44,34 +55,48 @@ function Container:new(id, basalt)
   self.__index = self
   newInstance:create("Container")
   newInstance:setType("Container")
-  newInstance.basaltRender = basaltRender(basaltTerm)
   return newInstance
 end
 
 function Container:render()
-  if(self.parent==nil)then
-    if(self.updateRendering)then
+  if(self:getTerm()==nil)then
+    return
+  end
+  if not self.ElementsSorted then
+    self.sortedZIndices = {}
+    for zIndex, _ in pairs(self.Children) do
+      table.insert(self.sortedZIndices, zIndex)
+    end
+    table.sort(self.sortedZIndices)
+    self.ElementsSorted = true
+  end
+
+  if self.parent == nil then
+    if self.updateRendering then
       VisualObject.render(self)
-      for _,v in pairs(self.Children) do
-        for _,element in pairs(v)do
+      for _, zIndex in ipairs(self.sortedZIndices) do
+        for _, element in pairs(self.Children[zIndex]) do
           element:render()
         end
       end
     end
   else
     VisualObject.render(self)
-    for _,v in pairs(self.Children) do
-      for _,element in pairs(v)do
+    for _, zIndex in ipairs(self.sortedZIndices) do
+      for _, element in pairs(self.Children[zIndex]) do
         element:render()
       end
     end
   end
 end
 
+
 function Container:processRender()
   if(self.updateRendering)then
-    self.basaltRender.update()
-    self.updateRendering = false
+    if(self.basaltRender~=nil)then
+      self.basaltRender.update()
+      self.updateRendering = false
+    end
   end
 end
 
@@ -102,6 +127,7 @@ function Container:addChild(child)
   local zIndex = child:getZ()
 
   if not self.Children[zIndex] then
+    --table.insert(self.Children, zIndex, {})
     self.Children[zIndex] = {}
   end
 
@@ -109,9 +135,9 @@ function Container:addChild(child)
   child.basalt = self.basalt
   child:init()
   self.ChildrenByName[child:getName()] = #self.Children[zIndex]
+  self.ElementsSorted = false
   return child
 end
-
 
 function Container:removeChild(child)
   if type(child) == "string" then
@@ -123,6 +149,7 @@ function Container:removeChild(child)
     table.remove(self.Children, index)
     self.ChildrenByName[child:getName()] = nil
   end
+  self.ElementsSorted = false
 end
 
 function Container:removeChildren()
@@ -131,6 +158,7 @@ function Container:removeChildren()
   end
   self.Children = {}
   self.ChildrenByName = {}
+  self.ElementsSorted = false
 end
 
 function Container:searchChildren(name)
@@ -169,6 +197,7 @@ function Container:prioritizeElement(element)
           eventData.index = #self.ChildrenEvents[zIndex][event]
       end
   end
+  self.ElementsSorted = false
 end
 
 function Container:getEvent(event, child)
@@ -346,9 +375,9 @@ for k,v in pairs({mouse_click=true,mouse_up=false,mouse_drag=false,mouse_scroll=
   Container[k] = function(self, btn, x, y, ...)
       if(VisualObject[k]~=nil)then
           if(VisualObject[k](self, btn, x, y, ...))then
-            for _,event in pairs(self.ChildrenEvents)do
+            for _,event in pairs(reverse(self.ChildrenEvents))do
               if(event and event[k]~=nil)then
-                  for _, obj in pairs(event[k]) do
+                  for _, obj in pairs(reverse(event[k])) do
                       if (obj and obj[k] ~= nil) then
                           local relX, relY = self:getRelativePosition(x, y)
                           if (obj[k](obj, btn, relX, relY, ...)) then

@@ -21,6 +21,7 @@ function Input:new()
   newInstance:setType("Input")
   newInstance:create("Input")
   newInstance:setSize(10, 1)
+  newInstance:setZ(5)
   return newInstance
 end
 

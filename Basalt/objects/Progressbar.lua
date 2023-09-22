@@ -6,7 +6,7 @@ local Progressbar = setmetatable({}, VisualObject)
 
 Object:initialize("Progressbar")
 Object:addProperty("progress", "number", 0)
-Object:addProperty("progressBackground", "color", colors.cyan)
+Object:addProperty("progressBackground", "color", colors.black)
 Object:addProperty("minValue", "number", 0)
 Object:addProperty("maxValue", "number", 100)
 

@@ -18,6 +18,7 @@ function Dropdown:new()
     newInstance:setType("Dropdown")
     newInstance:create("Dropdown")
     newInstance:setSize(10, 1)
+    newInstance:setZ(7)
     return newInstance
 end
 
@@ -34,7 +35,7 @@ function Dropdown:render()
         for i = 1, self.dropdownHeight do
             local item = self.items[i + scrollIndex - 1]
             if item then
-                self:addText(1, i+1, item)
+                self:addText(1, i+1, item..(" "):rep(self.dropdownWidth - item:len()))
                 if(i + scrollIndex - 1 == selectedIndex) then
                     self:addBg(1, i+1, tHex[self.selectionBackground]:rep(self.dropdownWidth))
                     self:addFg(1, i+1, tHex[self.selectionForeground]:rep(self.dropdownWidth))
@@ -50,6 +51,7 @@ end
 function Dropdown:mouse_click(button, x, y)
     if(VisualObject.mouse_click(self, button, x, y)) then
         self.opened = not self.opened
+        return true
     end
     if self.opened then
         if(x >= self.x and x <= self.x + self.dropdownWidth and y >= self.y + 1 and y <= self.y + self.dropdownHeight) then
@@ -57,6 +59,7 @@ function Dropdown:mouse_click(button, x, y)
             self.opened = false
             self:fireEvent("change", self.items[self.selectedIndex])
             self:updateRender()
+            return true
         end
     end
 end

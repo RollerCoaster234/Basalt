@@ -112,6 +112,7 @@ function List:mouse_scroll(direction, x, y)
     elseif direction == -1 and self.scrollIndex > 1 then
       self.scrollIndex = self.scrollIndex - 1
     end
+    self:updateRender()
     return true
   end
 end

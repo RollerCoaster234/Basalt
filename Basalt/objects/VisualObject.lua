@@ -184,7 +184,7 @@ function VisualObject.addRender(self, render, index)
   return self
 end
 
-function VisualObject.getRelativePosition(self, x, y)
+function VisualObject:getRelativePosition(x, y)
   if(x==nil)and(y==nil)then
     x, y = self:getPosition()
   end
