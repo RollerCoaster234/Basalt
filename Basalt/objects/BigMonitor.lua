@@ -2,42 +2,43 @@ local type,len,rep,sub = type,string.len,string.rep,string.sub
 local tHex = require("tHex")
 
 local function MassiveMonitor(monitors)
-    local x,y,monX,monY,monW,monH,w,h = 1,1,1,1,0,0,0,0
+    local globalX, globalY,monX,monY,w,h = 1,1,1,1,0,0
     local blink,scale = false,1
     local fg,bg = colors.white,colors.black
 
-    local function updatePosition()
-        for k,v in pairs(monitors)do
-            for a,b in pairs(v)do
-                local wM,hM = b.getSize()
-                if(x <= wM)then
-                    monX = a
-                    monY = k
-                    monW = wM
-                    monH = hM
-                    return
-                else
-                    x = x - wM
+    for k,v in pairs(monitors)do
+        for a,b in pairs(v)do
+            if(type(b)=="string")then
+                local mon = peripheral.wrap(b)
+                if(mon==nil)then
+                    error("Unable to find monitor "..b)
                 end
+                monitors[k][a] = mon
+                monitors[k][a].name = b
             end
         end
     end
-    updatePosition()
 
-    local function updateSize()
-        w,h = 0,0
-        for k,v in pairs(monitors)do
-            local maxY,newW = 0, 0
-            for a,b in pairs(v)do
-                local wM,hM = b.getSize()
-                newW = newW + wM
-                if(hM > maxY)then maxY = hM end
-                if(newW > w)then w = newW end
+    local function getCombinedSize()
+        local totalWidth = 0
+        local maxHeight = 0
+
+        for _, monitorList in pairs(monitors) do
+            local width = 0
+            local height = 0
+
+            for _, mon in pairs(monitorList) do
+                local w, h = mon.getSize()
+                width = width + w
+                height = h
             end
-            h = h + maxY
+
+            totalWidth = math.max(totalWidth, width)
+            maxHeight = maxHeight + height
         end
+
+        return totalWidth, maxHeight
     end
-    updateSize()
 
     local function call(f, ...)
         local t = {...}
@@ -59,18 +60,53 @@ local function MassiveMonitor(monitors)
         mon.setCursorBlink(blink)
     end
 
-    local function blit(text, tCol, bCol)
-        updatePosition()
-        local mon = monitors[monY][monX]
-        if(mon==nil)then return end
-        local wM,hM = mon.getSize()
-    local l = len(text)
-        mon.setCursorPos(1, y)
-        mon.blit(text, tCol, bCol)
-        print(monX, monY)
-        if(x + l > wM)then
-            x = x + wM - 1
-            blit(sub(text, wM - x + 2), sub(tCol, wM - x + 2), sub(bCol, wM - x + 2))
+    local function getMaxHeightForRow(row)
+        local maxHeight = 0
+        for _, monitor in pairs(monitors[row]) do
+            local _, height = monitor.getSize()
+            maxHeight = math.max(maxHeight, height)
+        end
+        return maxHeight
+    end
+
+    local function blit(globalX, globalY, text, tCol, bCol)
+        local remainingText = text
+        local remainingTCol = tCol
+        local remainingBCol = bCol
+
+        local currentRow = 1
+        local maxHeight = getMaxHeightForRow(currentRow)
+
+        while globalY > maxHeight and currentRow <= #monitors do
+            globalY = globalY - maxHeight
+            currentRow = currentRow + 1
+            if currentRow <= #monitors then
+                maxHeight = getMaxHeightForRow(currentRow)
+            end
+        end
+        if currentRow > #monitors then
+            return
+        end
+
+        local currentMonitorList = monitors[currentRow]
+        local monIndex = 1
+
+        while len(remainingText) > 0 and monIndex <= #currentMonitorList do
+            local currentMonitor = currentMonitorList[monIndex]
+            local monW, _ = currentMonitor.getSize()
+
+            local localX = globalX
+            local lengthToWrite = math.min(monW - localX + 1, len(remainingText))
+
+            currentMonitor.setCursorPos(localX, globalY)
+            currentMonitor.blit(sub(remainingText, 1, lengthToWrite), sub(remainingTCol, 1, lengthToWrite), sub(remainingBCol, 1, lengthToWrite))
+
+            remainingText = sub(remainingText, lengthToWrite + 1)
+            remainingTCol = sub(remainingTCol, lengthToWrite + 1)
+            remainingBCol = sub(remainingBCol, lengthToWrite + 1)
+            globalX = 1
+
+            monIndex = monIndex + 1
         end
     end
 
@@ -87,19 +123,16 @@ local function MassiveMonitor(monitors)
         end,
 
         getCursorPos = function()
-            return x, y
+            return globalX, globalY
         end,
 
         setCursorPos = function(newX,newY)
-            x, y = newX, newY
-            updatePosition()
+            globalX, globalY = newX, newY
             cursorBlink()
         end,
 
         setTextScale = function(_scale)
             call("setTextScale", _scale)()
-            updatePosition()
-            updateSize()
             scale = _scale
         end,
 
@@ -108,18 +141,16 @@ local function MassiveMonitor(monitors)
         end,
 
         blit = function(text,fgCol,bgCol)
-            blit(text,fgCol,bgCol)
+            blit(globalX, globalY, text,fgCol,bgCol)
         end,
 
         write = function(text)
             text = tostring(text)
             local l = len(text)
-            blit(text, rep(tHex[fg], l), rep(tHex[bg], l))
+            blit(globalX, globalY, text, rep(tHex[fg], l), rep(tHex[bg], l))
         end,
 
-        getSize = function()
-            return w,h
-        end,
+        getSize = getCombinedSize,
 
         setBackgroundColor = function(col)
             call("setBackgroundColor", col)()
@@ -178,13 +209,6 @@ function BigMonitor:event(event, ...)
   end
 end
 
-function BigMonitor:monitor_touch(side, ...)
-  --if(side==self:getSide())then
-    --self.basalt.setFocusedFrame(self)
-    --self:mouse_click(1, ...)
-  --end
-end
-
 function BigMonitor:setGroup(group)
     if(type(group)~="table")then
         error("Expected table, got "..type(group))
@@ -219,6 +243,10 @@ end
 function BigMonitor:lose_focus()
     Container.lose_focus(self)
     self:setCursor(false)
+end
+
+function BigMonitor:monitor_touch(side, x, y)
+    self:mouse_click(1, self.massiveMon.calculateClick(side, x, y))
 end
 
 return BigMonitor
