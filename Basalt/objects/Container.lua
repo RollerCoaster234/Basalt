@@ -2,16 +2,27 @@ local objectLoader = require("objectLoader")
 local Object = objectLoader.load("Object")
 local VisualObject = objectLoader.load("VisualObject")
 local Container = setmetatable({}, VisualObject)
+local uuid = require("utils").uuid
+local log = require("log")
 
-local function reverse(tbl)
-  local size = #tbl
-  local new_table = {}
+local function rpairs(t)
+  local keys = {}
+  for k in pairs(t) do
+      if type(k) == "number" then
+          table.insert(keys, k)
+      end
+  end
+  table.sort(keys, function(a, b) return a > b end)
 
-  for i, v in pairs(tbl) do
-    new_table[size - i + 1] = v
+  local i = 0
+  local function iter(tbl)
+      i = i + 1
+      if keys[i] then
+          return keys[i], tbl[keys[i]]
+      end
   end
 
-  return new_table
+  return iter, t
 end
 
 local basaltRender = require("basaltRender")
@@ -62,10 +73,13 @@ function Container:render()
   if(self:getTerm()==nil)then
     return
   end
+  local visibleChildren = self:getVisibleChildren()
   if not self.ElementsSorted then
     self.sortedZIndices = {}
-    for zIndex, _ in pairs(self.Children) do
-      table.insert(self.sortedZIndices, zIndex)
+    for zIndex, obj in pairs(visibleChildren) do
+      if not obj.isProxy then
+        table.insert(self.sortedZIndices, zIndex)
+      end
     end
     table.sort(self.sortedZIndices)
     self.ElementsSorted = true
@@ -74,18 +88,24 @@ function Container:render()
   if self.parent == nil then
     if self.updateRendering then
       VisualObject.render(self)
+      if(self.sortedZIndices==nil)or(#self.sortedZIndices==0)then
+        return
+      end
       for _, zIndex in ipairs(self.sortedZIndices) do
-        for _, element in pairs(self.Children[zIndex]) do
-          element:render()
-        end
+          for _, element in pairs(visibleChildren[zIndex]) do
+              element:render()
+          end
       end
     end
   else
     VisualObject.render(self)
+    if(self.sortedZIndices==nil)or(#self.sortedZIndices==0)then
+      return
+    end
     for _, zIndex in ipairs(self.sortedZIndices) do
-      for _, element in pairs(self.Children[zIndex]) do
-        element:render()
-      end
+        for _, element in pairs(visibleChildren[zIndex]) do
+            element:render()
+        end
     end
   end
 end
@@ -122,12 +142,75 @@ function Container:getDeepChild(name)
   end
 end
 
+function Container:getVisibleChildren()
+  if(self.visibleChildrenUpdated)then
+    return self.visibleChildren
+  end
+  local children = {}
+  for k,v in pairs(self.Children) do
+    for a,b in pairs(v) do
+      if not b.isProxy then
+        if b:getVisible() then
+          local x, y = b:getPosition()
+          local w, h = b:getSize()
+          if x + w - 1 >= 1 and x <= self.width and y + h - 1 >= 1 and y <= self.height then
+            if(children[k]==nil)then
+              children[k] = {}
+            end
+            table.insert(children[k], b)
+          end
+        end
+      end
+    end
+  end
+  self.visibleChildren = children
+  self.visibleChildrenUpdated = true
+  return children
+end
+
+function Container:getVisibleChildrenEvents()
+  if(self.visibleChildrenEventsUpdated)then
+    return self.visibleChildrenEvents
+  end
+  local children = {}
+    for zIndex,v in pairs(self.ChildrenEvents) do
+      for a,b in pairs(v) do
+        for c,d in pairs(b) do
+          if not d.isProxy then
+            if d:getVisible() then
+              local x, y = d:getPosition()
+              local w, h = d:getSize()
+              if x + w - 1 >= 1 and x <= self.width and y + h - 1 >= 1 and y <= self.height then
+                if(children[zIndex]==nil)then
+                  children[zIndex] = {}
+                end
+                if(children[zIndex][a]==nil)then
+                  children[zIndex][a] = {}
+                end
+                table.insert(children[zIndex][a], d)
+              end
+            end
+          end
+        end
+      end
+    end
+    self.visibleChildrenEvents = children
+    self.visibleChildrenEventsUpdated = true
+  return children
+end
+
+function Container:childVisibiltyChanged()
+  self.visibleChildrenUpdated = false
+  self.visibleChildrenEventsUpdated = false
+  self.updateRendering = true
+  self.ElementsSorted = false
+end
+
 function Container:addChild(child)
   child:setParent(self)
   local zIndex = child:getZ()
 
   if not self.Children[zIndex] then
-    --table.insert(self.Children, zIndex, {})
     self.Children[zIndex] = {}
   end
 
@@ -135,6 +218,7 @@ function Container:addChild(child)
   child.basalt = self.basalt
   child:init()
   self.ChildrenByName[child:getName()] = #self.Children[zIndex]
+  self.visibleChildrenUpdated = false
   self.ElementsSorted = false
   return child
 end
@@ -149,6 +233,7 @@ function Container:removeChild(child)
     table.remove(self.Children, index)
     self.ChildrenByName[child:getName()] = nil
   end
+  self.visibleChildrenUpdated = false
   self.ElementsSorted = false
 end
 
@@ -159,6 +244,7 @@ function Container:removeChildren()
   self.Children = {}
   self.ChildrenByName = {}
   self.ElementsSorted = false
+  self.visibleChildrenUpdated = false
 end
 
 function Container:searchChildren(name)
@@ -198,6 +284,8 @@ function Container:prioritizeElement(element)
       end
   end
   self.ElementsSorted = false
+  self.visibleChildrenUpdated = false
+  self.visibleChildrenEventsUpdated = false
 end
 
 function Container:getEvent(event, child)
@@ -232,7 +320,7 @@ function Container:addEvent(event, child)
   if not self.ChildrenEvents[zIndex][event] then
     self.ChildrenEvents[zIndex][event] = {}
   end
-
+  self.visibleChildrenEventsUpdated = false
   table.insert(self.ChildrenEvents[zIndex][event], child)
 end
 
@@ -256,6 +344,7 @@ function Container:removeEvent(event, child)
       self.ChildrenEvents[zIndex] = nil
     end
   end
+  self.visibleChildrenEventsUpdated = false
 end
 
 function Container:updateChildZIndex(child, oldZ, newZ)
@@ -291,6 +380,8 @@ function Container:updateChildZIndex(child, oldZ, newZ)
       end
     end
   end
+  self.visibleChildrenUpdated = false
+  self.visibleChildrenEventsUpdated = false
 end
 
 function Container:setCursor(blink, cursorX, cursorY, color)
@@ -375,10 +466,11 @@ for k,v in pairs({mouse_click=true,mouse_up=false,mouse_drag=false,mouse_scroll=
   Container[k] = function(self, btn, x, y, ...)
       if(VisualObject[k]~=nil)then
           if(VisualObject[k](self, btn, x, y, ...))then
-            for _,event in pairs(reverse(self.ChildrenEvents))do
+            for z,event in rpairs(self:getVisibleChildrenEvents())do
               if(event and event[k]~=nil)then
-                  for _, obj in pairs(reverse(event[k])) do
+                  for _, obj in pairs(event[k]) do
                       if (obj and obj[k] ~= nil) then
+                        local objX, objY = obj:getPosition()
                           local relX, relY = self:getRelativePosition(x, y)
                           if (obj[k](obj, btn, relX, relY, ...)) then
                               self:setFocusedChild(obj, true)
@@ -386,10 +478,10 @@ for k,v in pairs({mouse_click=true,mouse_up=false,mouse_drag=false,mouse_scroll=
                           end
                       end
                   end
-              if(v)then
-                  self:setFocusedChild(nil, true)
               end
-              end
+            end
+            if(v)then
+              self:setFocusedChild(nil, true)
             end
             return true
           end
@@ -418,7 +510,7 @@ end
 for k,_ in pairs(objectLoader.getObjectList())do
   local fName = k:gsub("^%l", string.upper)
   Container["add"..fName] = function(self, id)
-    local obj = objectLoader.load(k):new(id, self.basalt)
+    local obj = self.basalt.create(id or uuid(), k)
     self:addChild(obj)
     return obj
   end

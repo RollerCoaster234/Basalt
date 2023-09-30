@@ -18,7 +18,7 @@ function Dropdown:new()
     newInstance:setType("Dropdown")
     newInstance:create("Dropdown")
     newInstance:setSize(10, 1)
-    newInstance:setZ(7)
+    newInstance:setZ(10)
     return newInstance
 end
 
@@ -56,9 +56,12 @@ function Dropdown:mouse_click(button, x, y)
     if self.opened then
         if(x >= self.x and x <= self.x + self.dropdownWidth and y >= self.y + 1 and y <= self.y + self.dropdownHeight) then
             self.selectedIndex = y - self.y + self.scrollIndex - 1
-            self.opened = false
             self:fireEvent("change", self.items[self.selectedIndex])
-            self:updateRender()
+            self.basalt.thread(function()
+                sleep(0.1)
+                self.opened = false
+                self:updateRender()
+            end)
             return true
         end
     end

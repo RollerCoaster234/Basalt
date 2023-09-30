@@ -16,6 +16,7 @@ function Button:new()
   newInstance:setType("Button")
   newInstance:create("Button")
   newInstance:setSize(10, 3)
+  newInstance:setZ(5)
   return newInstance
 end
 

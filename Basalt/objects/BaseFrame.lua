@@ -41,6 +41,7 @@ end
 function BaseFrame:event(event, ...)
   Container.event(self, event, ...)
   if(event=="term_resize")then
+    self:childVisibiltyChanged()
     self:setSize(term.getSize())
     self:setTerm(term.current())
   end

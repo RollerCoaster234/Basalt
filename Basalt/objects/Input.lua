@@ -38,6 +38,7 @@ end
 
 Input:extend("Load", function(self)
     self:listenEvent("mouse_click")
+    self:listenEvent("mouse_up")
 end)
 
 function Input:lose_focus()
@@ -45,8 +46,8 @@ function Input:lose_focus()
     self.parent:setCursor(false)
 end
 
-function Input:mouse_click(button, x, y)
-    if(VisualObject.mouse_click(self, button, x, y))then
+function Input:mouse_up(button, x, y)
+    if(VisualObject.mouse_up(self, button, x, y))then
         if(button == 1)then
             self.cursorIndex = math.min(x - self.x + self.scrollIndex, self.value:len() + 1)
             self.parent:setCursor(true, self.x + self.cursorIndex - self.scrollIndex, self.y, self:getForeground())

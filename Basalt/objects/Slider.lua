@@ -63,7 +63,7 @@ end
 
 function Slider:mouse_scroll(direction, x, y)
     if(VisualObject.mouse_scroll(self, direction, x, y))then
-        self.value = self.value + self.step * direction
+        self.value = self.value + direction * (self.maxValue / self.width)
         self.value = math.max(self.minValue, math.min(self.maxValue, self.value))
         self:fireEvent("value_change", self.value)
         self:updateRender()

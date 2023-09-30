@@ -305,10 +305,9 @@ local function BasaltProgram(object)
                     file.close()
                     local program = load(content, path, "bt", env)
                     if(program~=nil)then
-                        local cur = term.current()
                         term.redirect(process.window)
                         local result = program(path, table.unpack(args))
-                        term.redirect(cur)
+                        term.redirect(object.basalt.getTerm())
                         return result
                     end
                 end
@@ -327,7 +326,6 @@ local function BasaltProgram(object)
         end,
 
         resume = function(event, ...)
-            local cur = term.current()
             term.redirect(process.window)
             if(process.filter~=nil)then
                 if(event~=process.filter)then return end
@@ -340,7 +338,7 @@ local function BasaltProgram(object)
             else
                 --error(result)
             end
-            term.redirect(cur)
+            term.redirect(object.basalt.getTerm())
             return ok, result
         end,
 
@@ -376,6 +374,7 @@ function Program:new(id, basalt)
   newInstance:setSize(20, 8)
   newInstance:setProgram(BasaltProgram(newInstance))
   newInstance.program.setSize(20, 8)
+  newInstance:setZ(5)
   return newInstance
 end
 
@@ -447,8 +446,5 @@ function Program:char(...)
         return true
     end
 end
-
-
-
 
 return Program

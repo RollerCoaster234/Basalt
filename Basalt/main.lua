@@ -1,11 +1,13 @@
 local loader = require("objectLoader")
 local utils = require("utils")
+local log = require("log")
 
-local basalt, threads = {}, {}
+local basalt, threads = {log=log}, {}
 local updaterActive = false
 local mainFrame, focusedFrame, monFrames = nil, nil, {}
 local baseTerm = term.current()
 local registeredEvents = {}
+local objectQueue = {}
 loader.setBasalt(basalt)
 
 ---- Frame Rendering
@@ -43,6 +45,14 @@ local function updateEvent(event, ...)
                 return
             end
         end
+    end
+
+    if(#objectQueue>0)then
+        for _=1,math.min(#objectQueue,50) do
+            local obj = table.remove(objectQueue, 1)
+            obj:load()
+        end
+        os.startTimer(0.05)
     end
 
     if event == "timer" then
@@ -96,6 +106,27 @@ local function updateEvent(event, ...)
                 end
             end
         end
+        if(#threads>0)then
+            for k,v in pairs(threads)do
+                if(coroutine.status(v.thread)=="dead")then
+                    table.remove(threads, k)
+                else
+                    if(v.filter~=nil)then
+                        if(event~=v.filter)then
+                            drawFrames()
+                            return
+                        end
+                        v.filter=nil
+                    end
+                    local ok, filter = coroutine.resume(v.thread, event, ...)
+                    if(ok)then
+                        v.filter = filter
+                    else
+                        basalt.errorHandler(filter)
+                    end
+                end
+            end
+        end
         drawFrames()
     end
 end
@@ -126,25 +157,83 @@ function basalt.addBigMonitor(id)
     return frame
 end
 
-function basalt.create(id, typ)
-    local obj = loader.load(typ):new(id, basalt)
-    if(obj~=nil)then
-        obj:init()
+local ObjectManager = {}
+local proxyData = {}
+
+local function getObjectZIndex(objectType)
+    if proxyData[objectType] == nil then
+        proxyData[objectType] = {}
+        proxyData[objectType].zIndex = loader.load(objectType):new(nil, basalt):getZ()
     end
-    return obj
+    return proxyData[objectType].zIndex
+end
+
+local function createProxy(container, id, objectType)
+    return setmetatable({
+        calls = {},
+        isProxy = true,
+        getZ = function(self)
+            return getObjectZIndex(objectType)
+        end,
+        getName = function(self)
+            return id
+        end,
+        load = function(self)
+            self.isProxy = false
+            local calls = self.calls
+            container.real = loader.load(objectType):new(id, basalt)
+            for _, call in ipairs(calls) do
+                if(container.real[call.method]~=nil)then
+                    container.real[call.method](container.real, unpack(call.args))
+                end
+            end
+            if container.real.init then
+                container.real:init()
+                container.real.basalt = basalt
+            end
+            local parent = self:getParent()
+            if(parent~=nil)then
+                parent:childVisibiltyChanged()
+            end
+        end
+    }, {
+        __index = function(_, methodName)
+            if container.real then
+                return container.real[methodName]
+            end
+
+            return function(self, ...)
+                table.insert(self.calls, {method = methodName, args = {...}})
+                return self
+            end
+        end
+    })
+end
+
+function ObjectManager.create(id, objectType)
+    local container = {}
+    container.proxy = createProxy(container, id, objectType)
+    return container.proxy
+end
+
+function basalt.create(id, typ)
+    local proxy = ObjectManager.create(id, typ)
+    table.insert(objectQueue, proxy)
+    return proxy
 end
 
 ---- Error Handling
 function basalt.errorHandler(errMsg)
     baseTerm.clear()
-    term.setCursorPos(1,1)
+    baseTerm.setCursorPos(1,1)
     baseTerm.setBackgroundColor(colors.black)
     baseTerm.setTextColor(colors.red)
     if(basalt.logging)then
-        --log(errMsg, "Error")
+        log(errMsg, "Error")
     end
     print(errMsg)
     baseTerm.setTextColor(colors.white)
+    sleep(2)
     updaterActive = false
 end
 
@@ -198,11 +287,15 @@ end
 
 -- not finished
 function basalt.thread(func, ...)
-    local t = coroutine.create(func)
-    local threadData = {thread = t, func = func, timer = nil, args = {}}
-    table.insert(threads, threadData)
-    threadData.timer = coroutine.resume(t, ...)
-    return t
+    local threadData = {}
+    threadData.thread = coroutine.create(func)
+    local ok, filter = coroutine.resume(threadData.thread, ...)
+    if(ok)then
+        threadData.filter = filter
+        table.insert(threads, threadData)
+        return threadData
+    end
+    basalt.errorHandler(filter)
 end
 
 function basalt.stop()

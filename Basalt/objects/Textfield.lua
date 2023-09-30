@@ -1,6 +1,7 @@
 local objectLoader = require("objectLoader")
 local Object = objectLoader.load("Object")
 local VisualObject = objectLoader.load("VisualObject")
+local log = require("log")
 
 local TextField = setmetatable({}, VisualObject)
 
@@ -24,6 +25,7 @@ end
 
 TextField:extend("Load", function(self)
     self:listenEvent("mouse_click")
+    self:listenEvent("mouse_up")
     self:listenEvent("mouse_scroll")
 end)
 
@@ -42,6 +44,7 @@ function TextField:render()
   end
 
   function TextField:lose_focus()
+    VisualObject.lose_focus(self)
     self.parent:setCursor(false)
   end
 
@@ -82,7 +85,15 @@ function TextField:mouse_click(button, x, y)
               self.lineIndex = 1
               self.cursorIndex = 1
           end
-          self:updateCursor()
+      end
+      return true
+    end
+  end
+
+  function TextField:mouse_up(button, x, y)
+    if(VisualObject.mouse_up(self, button, x, y))then
+      if(button == 1)then
+        self:updateCursor()
       end
       return true
     end
@@ -100,7 +111,7 @@ function TextField:mouse_click(button, x, y)
       self:updateRender()
       return true
     end
-  end  
+  end
 
 function TextField:key(key)
     if(VisualObject.key(self, key)) then
