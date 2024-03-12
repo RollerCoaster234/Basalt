@@ -5,12 +5,12 @@ if not(packed)then
     local format = "path;/path/?.lua;/path/?/init.lua;"
 
     local main = format:gsub("path", curDir)
-    local objFolder = format:gsub("path", curDir.."/objects")
-    local plugFolder = format:gsub("path", curDir.."/plugins")
+    local eleFolder = format:gsub("path", curDir.."/elements")
+    local extFolder = format:gsub("path", curDir.."/extensions")
     local libFolder = format:gsub("path", curDir.."/libraries")
 
 
-    package.path = main..objFolder..plugFolder..libFolder..defaultPath
+    package.path = main..eleFolder..extFolder..libFolder..defaultPath
 end
 local Basalt = require("main")
 package.path = defaultPath

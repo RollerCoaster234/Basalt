@@ -183,18 +183,18 @@ local function MassiveMonitor(monitors)
    }
 end
 
-local objectLoader = require("objectLoader")
-local Object = objectLoader.load("Object")
-local Container = objectLoader.load("Container")
+local loader = require("basaltLoader")
+local Element = loader.load("BasicElement")
+local Container = loader.load("Container")
 
 
 local BigMonitor = setmetatable({}, Container)
 
-Object:initialize("BigMonitor")
+Element:initialize("BigMonitor")
 
 
-function BigMonitor:new(id, basalt)
-  local newInstance = Container:new(id, basalt)
+function BigMonitor:new(id, parent, basalt)
+  local newInstance = Container:new(id, parent, basalt)
   setmetatable(newInstance, self)
   self.__index = self
   newInstance:setType("BigMonitor")

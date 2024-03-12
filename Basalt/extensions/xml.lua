@@ -2,5 +2,5 @@ local Xml = {}
 
 
 return {
-    Object = Xml,
+    BasicElement = Xml,
 }

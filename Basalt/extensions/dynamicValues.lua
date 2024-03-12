@@ -40,8 +40,8 @@ local function processString(str, env)
     return f()
 end
 
-local function dynamicValue(object, name, dynamicString)
-    local objectGroup = {}
+local function dynamicValue(element, name, dynamicString)
+    local elementGroup = {}
     local observers = {}
     dynamicString = parseString(dynamicString)
     local cachedValue = nil
@@ -54,28 +54,28 @@ local function dynamicValue(object, name, dynamicString)
     for v in dynamicString:gmatch("%a+%.%a+")do
         local name = v:gsub("%.%a+", "")
         local prop = v:gsub("%a+%.", "")
-        if(objectGroup[name]==nil)then
-            objectGroup[name] = {}
+        if(elementGroup[name]==nil)then
+            elementGroup[name] = {}
         end
-        table.insert(objectGroup[name], prop)
+        table.insert(elementGroup[name], prop)
     end
 
-    for k,v in pairs(objectGroup) do
+    for k,v in pairs(elementGroup) do
         if(k=="self") then
             for _, b in pairs(v) do
                 if(name~=b)then
-                    object:addPropertyObserver(b, updateFunc)
+                    element:addPropertyObserver(b, updateFunc)
                     if(b=="clicked")or(b=="dragging")then
-                        object:listenEvent("mouse_click")
-                        object:listenEvent("mouse_up")
+                        element:listenEvent("mouse_click")
+                        element:listenEvent("mouse_up")
                     end
                     if(b=="dragging")then
-                        object:listenEvent("mouse_drag")
+                        element:listenEvent("mouse_drag")
                     end
                     if(b=="hovered")then
-                        object:listenEvent("mouse_move")
+                        element:listenEvent("mouse_move")
                     end
-                    table.insert(observers, {obj=object, name=b})
+                    table.insert(observers, {ele=element, name=b})
                 else
                     error("Dynamic Values - self reference to self")
                 end
@@ -84,16 +84,16 @@ local function dynamicValue(object, name, dynamicString)
 
         if(k=="parent") then
             for _, b in pairs(v) do
-                object.parent:addPropertyObserver(b, updateFunc)
-                table.insert(observers, {obj=object.parent, name=b})
+                element.parent:addPropertyObserver(b, updateFunc)
+                table.insert(observers, {ele=element.parent, name=b})
             end
         end
 
         if(k~="self" and k~="parent")and(protectedNames[k]==nil)then
-            local obj = object:getParent():getChild(k)
+            local ele = element:getParent():getChild(k)
             for _, b in pairs(v) do
-                obj:addPropertyObserver(b, updateFunc)
-                table.insert(observers, {obj=obj, name=b})
+                ele:addPropertyObserver(b, updateFunc)
+                table.insert(observers, {ele=ele, name=b})
             end
         end
     end
@@ -101,32 +101,32 @@ local function dynamicValue(object, name, dynamicString)
 
     local function calculate()
         local env = {}
-        local parent = object:getParent()
-        for k,v in pairs(objectGroup)do
-            local objTable = {}
+        local parent = element:getParent()
+        for k,v in pairs(elementGroup)do
+            local eleTable = {}
 
             if(k=="self")then
                 for _,b in pairs(v)do
-                    objTable[b] = object:getProperty(b)
+                    eleTable[b] = element:getProperty(b)
                 end
             end
 
             if(k=="parent")then
                 for _,b in pairs(v)do
-                    objTable[b] = parent:getProperty(b)
+                    eleTable[b] = parent:getProperty(b)
                 end
             end
 
             if(k~="self")and(k~="parent")and(protectedNames[k]==nil)then
-                local obj = parent:getChild(k)
-                if(obj==nil)then
-                    error("Dynamic Values - unable to find object: "..k)
+                local ele = parent:getChild(k)
+                if(ele==nil)then
+                    error("Dynamic Values - unable to find element: "..k)
                 end
                 for _,b in pairs(v)do
-                    objTable[b] = obj:getProperty(b)
+                    eleTable[b] = ele:getProperty(b)
                 end
             end
-            env[k] = objTable
+            env[k] = eleTable
         end
         return processString(dynamicString, env)
     end
@@ -136,14 +136,14 @@ local function dynamicValue(object, name, dynamicString)
             if(needsUpdate)then
                 cachedValue = calculate()
                 needsUpdate = false
-                object:forcePropertyObserverUpdate(name)
-                object:updateRender()
+                element:forcePropertyObserverUpdate(name)
+                element:updateRender()
             end
             return cachedValue
         end,
         removeObservers = function(self)
             for _,v in pairs(observers)do
-                v.obj:removePropertyObserver(v.name, updateFunc)
+                v.ele:removePropertyObserver(v.name, updateFunc)
             end
         end,
     }
@@ -157,11 +157,11 @@ local function filterDynValues(self, name, value)
     return value
 end
 
--- The Object Extension API
+-- The Element Extension API
 local DynExtension = {}
 
-function DynExtension.pluginProperties(original)
-    original:initialize("Object")
+function DynExtension.extensionProperties(original)
+    original:initialize("BasicElement")
     original:addProperty("dynValues", "table", {})
 end
 
@@ -181,5 +181,5 @@ function DynExtension.init(original)
 end
 
 return {
-    Object = DynExtension
+    BasicElement = DynExtension
 }

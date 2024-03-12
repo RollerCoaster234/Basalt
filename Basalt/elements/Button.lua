@@ -1,16 +1,16 @@
-local objectLoader = require("objectLoader")
-local Object = objectLoader.load("Object")
-local VisualObject = objectLoader.load("VisualObject")
+local loader = require("basaltLoader")
+local Element = loader.load("BasicElement")
+local VisualElement = loader.load("VisualElement")
 local getCenteredPosition = require("utils").getCenteredPosition
 
 
-local Button = setmetatable({}, VisualObject)
+local Button = setmetatable({}, VisualElement)
 
-Object:initialize("Button")
-Object:addProperty("text", "string", "Button")
+Element:initialize("Button")
+Element:addProperty("text", "string", "Button")
 
-function Button:new()
-  local newInstance = VisualObject:new()
+function Button:new(id, parent, basalt)
+  local newInstance = VisualElement:new(id, parent, basalt)
   setmetatable(newInstance, self)
   self.__index = self
   newInstance:setType("Button")
@@ -21,7 +21,7 @@ function Button:new()
 end
 
 function Button:render()
-  VisualObject.render(self)
+  VisualElement.render(self)
   local text = self:getText()
   local xO, yO = getCenteredPosition(text, self:getWidth(), self:getHeight())
   self:addText(xO, yO, text)

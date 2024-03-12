@@ -1,6 +1,6 @@
 local floor,sin,cos,pi,sqrt,pow = math.floor,math.sin,math.cos,math.pi,math.sqrt,math.pow
 
--- You can find the easing curves here https://easings.net
+-- You can find the easings here https://easings.net
 
 local function lerp(s, e, pct)
     return s + (e - s) * pct
@@ -35,7 +35,7 @@ local function easeInSine(t)
 end
 
 local function easeInOutSine(t)
-    return -(cos(pi * x) - 1) / 2
+    return -(cos(pi * t) - 1) / 2
 end
 
 local function easeInBack(t)
@@ -213,64 +213,174 @@ local lerp = {
 
 local CustomAnimation = {}
 
-function CustomAnimation.new(name)
-    local self = setmetatable({}, CustomAnimation)
-    self.name = name
+CustomAnimation.__index = CustomAnimation
+
+function CustomAnimation:new()
+    local self = {}
+    setmetatable(self, CustomAnimation)
+    self.duration = 0
     self.curTime = 0
-    self.activeTime = 0
-    self._animations = {[0]={}}
+    self.timeIncrement = 0.05
+    self.ease = "linear"
+    self._animations = {}
+    self._animationCache = {}
     return self
 end
 
-function CustomAnimation:on(time)
-    self.curTime = time
-    self._animations[time] = {}
+function CustomAnimation.setEase(self, ease)
+    if(lerp[ease]==nil)then
+        error("Ease "..ease.." does not exist")
+    end
+    self.ease = ease
     return self
 end
 
-function CustomAnimation:change(...)
-    self._animations[self.curTime].value = ...
+function CustomAnimation.setIncrement(self, increment)
+    self.timeIncrement = math.max(increment, 0.05)
     return self
 end
 
-function CustomAnimation:ease(ease)
-    self._animations[self.curTime].ease = ease
+function CustomAnimation.on(self, time)
+    time = floor(time * 20) / 20
+    self.duration = time
     return self
 end
 
-function CustomAnimation:callback(callback)
-    self._animations[self.curTime].callback = callback
+function CustomAnimation.run(self, func)
+    local inserted = false
+    for k,v in pairs(self._animations)do
+        if(v.time==self.duration)then
+            table.insert(v.anims, func)
+            inserted = true
+            break
+        end
+    end
+    if(not inserted)then
+        table.insert(self._animations, {time=self.duration, anims={func}})
+    end
     return self
 end
 
-function CustomAnimation:loop(loop)
-    self._animations[self.curTime].loop = loop
+function CustomAnimation.wait(self, time)
+    time = floor(time * 20) / 20
+    self.duration = self.duration + time
     return self
 end
 
-function CustomAnimation:start()
-    for i, v in pairs(self._animations) do
-        if(i == self.activeTime)then
-            if(self._animations[self.activeTime].callback)then
-                self._animations[self.activeTime].callback(table.unpack(self._animations[self.activeTime].value))
+function CustomAnimation.update(self, timerId)
+    if(timerId==self.timerId)then
+        self.curTime = self.curTime + self.timeIncrement
+        if(self.curTime>=self.duration)then
+            if(self.doneHandler)then
+                self.doneHandler()
             end
+            self._animationCache = {}
+            os.cancelTimer(self.timerId)
+            return
+        end
+        for k,v in pairs(self._animationCache)do
+            if(v.time<=self.curTime)then
+                for _,anim in pairs(v.anims)do
+                    anim(self)
+                end
+                table.remove(self._animationCache, k)
+            end
+        end
+        self.timerId = os.startTimer(self.timeIncrement)
+    end
+end
+
+function CustomAnimation.play(self)
+    self.curTime = 0
+    self.timerId = os.startTimer(self.timeIncrement)
+    for k,v in pairs(self._animations)do
+        self._animationCache[k] = {time=v.time, anims={}}
+        for _,anim in pairs(v.anims)do
+            table.insert(self._animationCache[k].anims, anim)
         end
     end
 end
 
+function CustomAnimation.stop(self)
+    os.cancelTimer(self.timerId)
+end
 
-
+function CustomAnimation.onDone(self, func)
+    self.doneHandler = func
+    return self
+end
 
 local Animation = {}
 
-function Animation.pluginProperties(original)
-    original:initialize("Object")
+local function animationMoveHelper(element, v3, v4, duration, offset, ease, get, set)
+    local animation = CustomAnimation:new()
+    animation:setEase(ease or "linear")
+    if(offset~=nil)then
+        animation:wait(offset)
+    end
+    local v1, v2 = get(element)
+    for i=0.05, duration, 0.05 do
+        animation:run(function(self)
+            local pct = lerp[self.ease](i/duration)
+            local newV1 = math.floor(lerp.lerp(v1, v3, pct)+0.5)
+            local newV2 = math.floor(lerp.lerp(v2, v4, pct)+0.5)
+            element:setPosition(newV1, newV2)
+        end):wait(0.05)
+    end
+    animation:onDone(function()
+        set(element, v3, v4)
+        for k,v in pairs(element.animations)do
+            if(v==posAnimation)then
+                table.remove(element.animations, k)
+                break
+            end
+        end
+    end):play()
+    table.insert(element.animations, animation)
+    return animation
+end 
+
+function Animation.animatePosition(element, x, y, duration, offset, ease)
+    return animationMoveHelper(element, x, y, duration, offset, ease, element.getPosition, element.setPosition)
+end
+
+function Animation.animateSize(element, x, y, duration, offset, ease)
+    return animationMoveHelper(element, x, y, duration, offset, ease, element.getSize, element.setSize)
+end
+
+function Animation.animateOffset(element, x, y, duration, offset, ease)
+    if(element.getOffset==nil or element.setOffset==nil)then
+        error("Element "..element:getType().." does not have offset")
+    end
+    return animationMoveHelper(element, x, y, duration, offset, ease, element.getOffset, element.setOffset)
+end
+
+function Animation.newAnimation(element)
+    return CustomAnimation:new()
+end
+
+function Animation.extensionProperties(original)
+    local Element = require("basaltLoader").load("BasicElement")
+    Element:initialize("VisualElement")
+    Element:addProperty("animations", "table", {})
 end
 
 function Animation.init(original)
+    local baseEvent = original.event
+    
+    original.event = function(self, event, timerId, ...)
+        if(event=="timer")then
+            for _,v in pairs(self.animations)do
+                v:update(timerId)
+            end
+        end
 
+        if(baseEvent)then
+            return baseEvent(self, event, timerId, ...)
+        end
+    end
 end
 
 return {
-    Object = Animation,
+    VisualElement = Animation,
 }

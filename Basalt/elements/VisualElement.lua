@@ -1,7 +1,7 @@
-local Object = require("objectLoader").load("Object")
+local Element = require("basaltLoader").load("BasicElement")
 local split = require("utils").splitString
 
-local VisualObject = setmetatable({}, Object)
+local VisualElement = setmetatable({}, Element)
 
 local function BaseRender(self)
   local w, h = self:getSize()
@@ -10,26 +10,26 @@ local function BaseRender(self)
   self:addForegroundBox(1, 1, w, h, self:getForeground())
 end
 
-Object:initialize("VisualObject")
-Object:addProperty("background", "color", colors.black)
-Object:addProperty("foreground", "color", colors.white)
-Object:addProperty("x", "number", 1)
-Object:addProperty("y", "number", 1)
-Object:combineProperty("Position", "X", "Y")
-Object:addProperty("visible", "boolean", true)
-Object:addProperty("width", "number", 1)
-Object:addProperty("height", "number", 1)
-Object:addProperty("renderData", "table", {BaseRender}, false, function(self, value)
+Element:initialize("VisualElement")
+Element:addProperty("background", "color", colors.black)
+Element:addProperty("foreground", "color", colors.white)
+Element:addProperty("x", "number", 1)
+Element:addProperty("y", "number", 1)
+Element:combineProperty("Position", "X", "Y")
+Element:addProperty("visible", "boolean", true)
+Element:addProperty("width", "number", 1)
+Element:addProperty("height", "number", 1)
+Element:addProperty("renderData", "table", {BaseRender}, false, function(self, value)
   if(type(value)=="function")then
     table.insert(self.renderData, value)
     return self.renderData
   end
 end)
 
-Object:combineProperty("Size", "width", "height")
-Object:addProperty("transparent", "boolean", false)
-Object:addProperty("ignoreOffset", "boolean", false)
-Object:addProperty("focused", "boolean", false, nil, function(self, value)
+Element:combineProperty("Size", "width", "height")
+Element:addProperty("transparent", "boolean", false)
+Element:addProperty("ignoreOffset", "boolean", false)
+Element:addProperty("focused", "boolean", false, nil, function(self, value)
   if(value)then
     self:get_focus()
   else
@@ -37,35 +37,35 @@ Object:addProperty("focused", "boolean", false, nil, function(self, value)
   end
 end)
 
-Object:addListener("click", "mouse_click")
-Object:addListener("drag", "mouse_drag")
-Object:addListener("scroll", "mouse_scroll")
-Object:addListener("hover", "mouse_move")
-Object:addListener("leave", "mouse_move2")
-Object:addListener("clickUp", "mouse_up")
-Object:addListener("key", "key")
-Object:addListener("keyUp", "key_up")
-Object:addListener("char", "char")
-Object:addListener("getFocus", "get_focus")
-Object:addListener("loseFocus", "lose_focus")
+Element:addListener("click", "mouse_click")
+Element:addListener("drag", "mouse_drag")
+Element:addListener("scroll", "mouse_scroll")
+Element:addListener("hover", "mouse_move")
+Element:addListener("leave", "mouse_move2")
+Element:addListener("clickUp", "mouse_up")
+Element:addListener("key", "key")
+Element:addListener("keyUp", "key_up")
+Element:addListener("char", "char")
+Element:addListener("getFocus", "get_focus")
+Element:addListener("loseFocus", "lose_focus")
 
-function VisualObject:new(id, basalt)
-  local newInstance = Object:new(id, basalt)
+function VisualElement:new(id, parent, basalt)
+  local newInstance = Element:new(id, parent, basalt)
   setmetatable(newInstance, self)
   self.__index = self
-  newInstance:create("VisualObject")
-  newInstance:setType("VisualObject")
+  newInstance:create("VisualElement")
+  newInstance:setType("VisualElement")
   return newInstance
 end
 
-function VisualObject.render(self)
+function VisualElement.render(self)
     for _,v in pairs(self.renderData)do
       v(self)
     end
 end
 
 for _,v in pairs({"BackgroundBox", "TextBox", "ForegroundBox"})do
-  VisualObject["add"..v] = function(self, x, y, w, h, col)
+  VisualElement["add"..v] = function(self, x, y, w, h, col)
     local obj = self.parent or self
     local xPos,yPos = self:getPosition()
     if(self.parent~=nil)then
@@ -78,7 +78,7 @@ for _,v in pairs({"BackgroundBox", "TextBox", "ForegroundBox"})do
   end
 end
 
-function VisualObject.blit(self, x, y, t, fg, bg)
+function VisualElement.blit(self, x, y, t, fg, bg)
   local obj = self.parent or self
   local xPos,yPos = self:getPosition()
   local transparent = self:getTransparent()
@@ -113,9 +113,9 @@ function VisualObject.blit(self, x, y, t, fg, bg)
 end
 
 for _,v in pairs({"Text", "Bg", "Fg"})do
-    VisualObject["add"..v] = function(self, x, y, str)
+    VisualElement["add"..v] = function(self, x, y, str)
       local obj = self.parent or self
-      local xPos,yPos = self.x, self.y
+      local xPos,yPos = self:getPosition()
       local transparent = self:getTransparent()
       if(self.parent~=nil)then
           local xO, yO = self.parent:getOffset()
@@ -123,6 +123,7 @@ for _,v in pairs({"Text", "Bg", "Fg"})do
           xPos = ignOffset and xPos or xPos - xO
           yPos = ignOffset and yPos or yPos - yO
       end
+      str = str:sub(1, self:getWidth()-x)
       if not(transparent)then
           obj["set"..v](obj, x+xPos-1, y+yPos-1, str)
           return
@@ -142,7 +143,7 @@ for _,v in pairs({"Text", "Bg", "Fg"})do
     end
 end
 
-function VisualObject.addBlit(self, x, y, t, f, b)
+function VisualElement.addBlit(self, x, y, t, f, b)
   local obj = self.parent or self
   local xPos,yPos = self.x, self.y
   local transparent = self:getTransparent()
@@ -176,20 +177,21 @@ function VisualObject.addBlit(self, x, y, t, f, b)
   end
 end
 
-function VisualObject.addRender(self, render, index)
-  if(type(render) == "function")then
-    local renderRef = self:getRender()
-    table.insert(renderRef, index or #renderRef+1, render)
+function VisualElement.addRender(self, renderF, index)
+  if(type(renderF) == "function")then
+    local renderRef = self:getRenderData()
+    table.insert(renderRef, index or #renderRef+1, renderF)
   end
   return self
 end
 
-function VisualObject:getRelativePosition(x, y)
+function VisualElement:getRelativePosition(x, y)
   if(x==nil)and(y==nil)then
     x, y = self:getPosition()
   end
-  local newX = x - (self.x-1)
-  local newY = y - (self.y-1)
+  local xObj, yObj = self:getPosition()
+  local newX = x - (xObj-1)
+  local newY = y - (yObj-1)
   if self:isType("Container") then
     local xO, yO = self:getOffset()
     newX = newX - xO
@@ -201,12 +203,13 @@ function VisualObject:getRelativePosition(x, y)
   return newX, newY
 end
 
-function VisualObject.getAbsolutePosition(self, x, y)
+function VisualElement.getAbsolutePosition(self, x, y)
   if(x==nil)and(y==nil)then
     x, y = self:getPosition()
   end
-  local newX = x + (self.x-1)
-  local newY = y + (self.y-1)
+  local xObj, yObj = self:getPosition()
+  local newX = x + (xObj-1)
+  local newY = y + (yObj-1)
   if self:isType("Container") then
     local xO, yO = self:getOffset()
     newX = newX + xO
@@ -219,12 +222,14 @@ function VisualObject.getAbsolutePosition(self, x, y)
 end
 
 local function isInside(self, x, y)
-  local p = self
-  return x >= p.x and x <= p.x + p.width-1 and y >= p.y and y <= p.y + p.height-1 and p.visible and p.enabled
+  local pX, pY = self:getPosition()
+  local pW, pH = self:getSize()
+  local visible, enabled = self:getVisible(), self:getEnabled()
+  return x >= pX and x <= pX + pW-1 and y >= pY and y <= pY + pH-1 and visible and enabled
 end
-VisualObject.isInside = isInside
+VisualElement.isInside = isInside
 
-function VisualObject.mouse_click(self, btn, x, y)
+function VisualElement.mouse_click(self, btn, x, y)
   if isInside(self, x, y) then
     self:setProperty("clicked", true)
     self:setProperty("dragging", true)
@@ -234,14 +239,14 @@ function VisualObject.mouse_click(self, btn, x, y)
   end
 end
 
-function VisualObject.mouse_drag(self, btn, x, y)
+function VisualElement.mouse_drag(self, btn, x, y)
   if self:getProperty("dragging") then
     self:fireEvent("drag", btn, x, y)
     return true
   end
 end
 
-function VisualObject.mouse_up(self, btn, x, y)
+function VisualElement.mouse_up(self, btn, x, y)
   self:setProperty("dragging", false)
   self:setProperty("clicked", false)
   if isInside(self, x, y) then
@@ -251,14 +256,14 @@ function VisualObject.mouse_up(self, btn, x, y)
   end
 end
 
-function VisualObject:mouse_scroll(direction, x, y)
+function VisualElement:mouse_scroll(direction, x, y)
     if isInside(self, x, y) then
       self:fireEvent("scroll")
       return true
     end
 end
 
-function VisualObject:mouse_move(_, x, y)
+function VisualElement:mouse_move(_, x, y)
   if isInside(self, x, y) then
     self:setProperty("hovered", true)
     self:updateRender()
@@ -273,16 +278,16 @@ function VisualObject:mouse_move(_, x, y)
   end
 end
 
-function VisualObject.get_focus(self)
+function VisualElement.get_focus(self)
   self:fireEvent("getFocus")
 end
 
-function VisualObject.lose_focus(self)
+function VisualElement.lose_focus(self)
   self:fireEvent("loseFocus")
 end
 
 for _,v in pairs({"key", "key_up", "char"})do
-  VisualObject[v] = function(self, ...)
+  VisualElement[v] = function(self, ...)
     if(self.enabled)and(self.visible)then
       if(self.parent==nil)or(self:getFocused())then
         self:fireEvent(v, ...)
@@ -292,4 +297,4 @@ for _,v in pairs({"key", "key_up", "char"})do
   end
 end
 
-return VisualObject
+return VisualElement

@@ -1,21 +1,21 @@
-local objectLoader = require("objectLoader")
-local Object = objectLoader.load("Object")
-local VisualObject = objectLoader.load("VisualObject")
+local loader = require("basaltLoader")
+local Element = loader.load("BasicElement")
+local VisualElement = loader.load("VisualElement")
 
-local Input = setmetatable({}, VisualObject)
+local Input = setmetatable({}, VisualElement)
 
-Object:initialize("Input")
-Object:addProperty("value", "string", "")
-Object:addProperty("cursorIndex", "number", 1)
-Object:addProperty("scrollIndex", "number", 1)
-Object:addProperty("inputLimit", "number", nil)
-Object:addProperty("inputType", "string", "text")
+Element:initialize("Input")
+Element:addProperty("value", "string", "")
+Element:addProperty("cursorIndex", "number", 1)
+Element:addProperty("scrollIndex", "number", 1)
+Element:addProperty("inputLimit", "number", nil)
+Element:addProperty("inputType", "string", "text")
 
-Object:addListener("change", "change_value")
-Object:addListener("enter", "enter_pressed")
+Element:addListener("change", "change_value")
+Element:addListener("enter", "enter_pressed")
 
-function Input:new()
-  local newInstance = VisualObject:new()
+function Input:new(id, parent, basalt)
+  local newInstance = VisualElement:new(id, parent, basalt)
   setmetatable(newInstance, self)
   self.__index = self
   newInstance:setType("Input")
@@ -26,7 +26,7 @@ function Input:new()
 end
 
 function Input.render(self)
-    VisualObject.render(self)
+    VisualElement.render(self)
     local visibleValue = self.value:sub(self.scrollIndex, self.scrollIndex + self.width - 1)
     if(self.inputType=="password")then
         visibleValue = ("*"):rep(visibleValue:len())
@@ -42,12 +42,12 @@ Input:extend("Load", function(self)
 end)
 
 function Input:lose_focus()
-    VisualObject.lose_focus(self)
+    VisualElement.lose_focus(self)
     self.parent:setCursor(false)
 end
 
 function Input:mouse_up(button, x, y)
-    if(VisualObject.mouse_up(self, button, x, y))then
+    if(VisualElement.mouse_up(self, button, x, y))then
         if(button == 1)then
             self.cursorIndex = math.min(x - self.x + self.scrollIndex, self.value:len() + 1)
             self.parent:setCursor(true, self.x + self.cursorIndex - self.scrollIndex, self.y, self:getForeground())
@@ -57,7 +57,7 @@ function Input:mouse_up(button, x, y)
 end
 
 function Input:key(key)
-    if(VisualObject.key(self, key))then
+    if(VisualElement.key(self, key))then
         if key == keys.backspace and self.value ~= "" and self.cursorIndex > 1 then
             local before = self.value:sub(1, self.cursorIndex-2)
             local after = self.value:sub(self.cursorIndex, -1)
@@ -84,7 +84,7 @@ function Input:key(key)
 end
 
 function Input:char(char)
-    if(VisualObject.char(self, char))then
+    if(VisualElement.char(self, char))then
         if self.inputLimit and self.value:len() >= self.inputLimit then
             return true
         end

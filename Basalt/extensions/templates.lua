@@ -48,10 +48,10 @@ local TempExtension = {}
 function TempExtension.init(original, basalt)
     original:extend("Init", function(self)
         local template = basalt.getTemplate(self)
-        local objects = basalt.getObjects()
+        local elements = basalt.getElements()
         if(template~=nil)then
             for k,v in pairs(template)do
-                if(objects[k]==nil)then
+                if(elements[k]==nil)then
                     if(colors[v]~=nil)then
                         self:setProperty(k, colors[v])
                     else
@@ -132,6 +132,6 @@ function Basalt.setTemplate(newTemplate)
 end
 
 return {
-    Object = TempExtension,
+    BasicElement = TempExtension,
     Basalt = Basalt,
 }

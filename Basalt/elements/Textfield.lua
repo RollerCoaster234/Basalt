@@ -1,20 +1,20 @@
-local objectLoader = require("objectLoader")
-local Object = objectLoader.load("Object")
-local VisualObject = objectLoader.load("VisualObject")
+local loader = require("basaltLoader")
+local Element = loader.load("BasicElement")
+local VisualElement = loader.load("VisualElement")
 local log = require("log")
 
-local TextField = setmetatable({}, VisualObject)
+local TextField = setmetatable({}, VisualElement)
 
-Object:initialize("TextField")
-Object:addProperty("lines", "table", {""})
-Object:addProperty("lineIndex", "number", 1)
-Object:addProperty("scrollIndexX", "number", 1)
-Object:addProperty("scrollIndexY", "number", 1)
-Object:addProperty("cursorIndex", "number", 1)
+Element:initialize("TextField")
+Element:addProperty("lines", "table", {""})
+Element:addProperty("lineIndex", "number", 1)
+Element:addProperty("scrollIndexX", "number", 1)
+Element:addProperty("scrollIndexY", "number", 1)
+Element:addProperty("cursorIndex", "number", 1)
 
 
-function TextField:new()
-  local newInstance = VisualObject:new()
+function TextField:new(id, parent, basalt)
+  local newInstance = VisualElement:new(id, parent, basalt)
   setmetatable(newInstance, self)
   self.__index = self
   newInstance:setType("TextField")
@@ -30,7 +30,7 @@ TextField:extend("Load", function(self)
 end)
 
 function TextField:render()
-    VisualObject.render(self)
+    VisualElement.render(self)
     for i = 1, self.height do
       local visibleLine = ""
       if self.lines[i+self.scrollIndexY-1] ~= nil then
@@ -44,7 +44,7 @@ function TextField:render()
   end
 
   function TextField:lose_focus()
-    VisualObject.lose_focus(self)
+    VisualElement.lose_focus(self)
     self.parent:setCursor(false)
   end
 
@@ -75,7 +75,7 @@ function TextField:render()
   end
 
 function TextField:mouse_click(button, x, y)
-    if(VisualObject.mouse_click(self, button, x, y)) then
+    if(VisualElement.mouse_click(self, button, x, y)) then
       if(button == 1) then
           if(#self.lines > 0)then
               self.lineIndex = math.min(y - self.y + self.scrollIndexY, #self.lines)
@@ -91,7 +91,7 @@ function TextField:mouse_click(button, x, y)
   end
 
   function TextField:mouse_up(button, x, y)
-    if(VisualObject.mouse_up(self, button, x, y))then
+    if(VisualElement.mouse_up(self, button, x, y))then
       if(button == 1)then
         self:updateCursor()
       end
@@ -100,7 +100,7 @@ function TextField:mouse_click(button, x, y)
   end
 
   function TextField:mouse_scroll(direction, x, y)
-    if (VisualObject.mouse_scroll(self, direction, x, y)) then
+    if (VisualElement.mouse_scroll(self, direction, x, y)) then
       if direction == 1 then
         self.scrollIndexY = math.min(#self.lines - self.height + 1, self.scrollIndexY + 1)
       elseif direction == -1 then
@@ -114,7 +114,7 @@ function TextField:mouse_click(button, x, y)
   end
 
 function TextField:key(key)
-    if(VisualObject.key(self, key)) then
+    if(VisualElement.key(self, key)) then
       local line = self.lines[self.lineIndex]
       if key == keys.enter then
         local before = line:sub(1, self.cursorIndex-1)
@@ -171,7 +171,7 @@ function TextField:key(key)
 
 
 function TextField:char(char)
-  if(VisualObject.char(self, char))then
+  if(VisualElement.char(self, char))then
     local line = self.lines[self.lineIndex]
     local before = line:sub(1, self.cursorIndex-1)
     local after = line:sub(self.cursorIndex, -1)

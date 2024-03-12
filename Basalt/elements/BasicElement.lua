@@ -1,19 +1,22 @@
 local split = require("utils").splitString
 local deepcopy = require("utils").deepcopy
+local uuid = require("utils").uuid
 
-local Object = {}
+local Element = {}
 
 local properties = {}
 local extensions = {}
-local activeType = "Object"
+local activeType = "BasicElement"
 
-function Object:new(id, basalt)
+function Element:new(id, parent, basalt)
     local newInstance = {}
     setmetatable(newInstance, self)
     self.__index = self
     newInstance.__noCopy = true
-    newInstance:create("Object")
+    newInstance:create("BasicElement")
+    newInstance.parent = parent
     newInstance.basalt = basalt
+    newInstance.Name = id or uuid()
     return newInstance
 end
 
@@ -75,14 +78,14 @@ local function defaultRule(typ)
     end
 end
 
-function Object.addPropertyObserver(self, propertyName, observerFunction)
+function Element.addPropertyObserver(self, propertyName, observerFunction)
     if not self.propertyObservers[propertyName] then
         self.propertyObservers[propertyName] = {}
     end
     table.insert(self.propertyObservers[propertyName], observerFunction)
 end
 
-function Object.removePropertyObserver(self, propertyName, index)
+function Element.removePropertyObserver(self, propertyName, index)
     if not self.propertyObservers[propertyName] then
         return
     end
@@ -97,7 +100,7 @@ function Object.removePropertyObserver(self, propertyName, index)
     end
 end
 
-function Object.forcePropertyObserverUpdate(self, propertyName)
+function Element.forcePropertyObserverUpdate(self, propertyName)
     if not self.propertyObservers[propertyName] then
         return
     end
@@ -106,7 +109,7 @@ function Object.forcePropertyObserverUpdate(self, propertyName)
     end
 end
 
-function Object.setProperty(self, name, value, rule)
+function Element.setProperty(self, name, value, rule)
     if(name==nil)then
         error(self:getType()..": Property name cannot be nil!")
     end
@@ -129,7 +132,7 @@ function Object.setProperty(self, name, value, rule)
     return self
 end
 
-function Object.getProperty(self, name)
+function Element.getProperty(self, name)
     local prop = self[name]
     if(type(prop)=="function")then
         return prop()
@@ -137,14 +140,14 @@ function Object.getProperty(self, name)
     return prop
 end
 
-function Object.setProperties(self, properties)
+function Element.setProperties(self, properties)
     for k,v in pairs(properties) do
         self[k] = v
     end
     return self
 end
 
-function Object.getProperties(self)
+function Element.getProperties(self)
     local p = {}
     for k,v in pairs(self)do
         if(type(v)=="function")then
@@ -156,15 +159,15 @@ function Object.getProperties(self)
     return p
 end
 
-function Object.updateRender(self)
+function Element.updateRender(self)
     if(self.parent~=nil)then
+        self.parent:forceVisibleChildrenUpdate()
         self.parent:updateRender()
     else
         self.updateRendering = true
     end
 end
-
-function Object.addProperty(self, name, typ, defaultValue, readonly, setLogic, getLogic)
+function Element.addProperty(self, name, typ, defaultValue, readonly, setLogic, getLogic)
     if(typ==nil)then typ = "any" end
     if(readonly==nil)then readonly = false end
 
@@ -201,7 +204,8 @@ function Object.addProperty(self, name, typ, defaultValue, readonly, setLogic, g
     end
 end
 
-function Object.combineProperty(self, name, ...)
+local log = require("log")
+function Element.combineProperty(self, name, ...)
     name = name:gsub("^%l", string.upper)
     local args = {...}
     self["get" .. name] = function(self)
@@ -221,13 +225,12 @@ function Object.combineProperty(self, name, ...)
     return self
 end
 
-function Object.initialize(self, typ)
+function Element.initialize(self, typ)
     activeType = typ
     return self
 end
 
-function Object:create(typ)
-    --log(typ)
+function Element:create(typ)
     if(properties[typ]~=nil)then
         for k,v in pairs(properties[typ])do
             if(type(v)=="table")then
@@ -238,12 +241,11 @@ function Object:create(typ)
             else
                 self[k] = v
             end
-            --log(k)
         end
     end
 end
 
-function Object.addListener(self, name, event)
+function Element.addListener(self, name, event)
     self["on"..name:gsub("^%l", string.upper)] = function(self, ...)
         for _,f in pairs({...})do
             if(type(f)=="function")then
@@ -262,7 +264,7 @@ function Object.addListener(self, name, event)
 return self
 end
 
-function Object.fireEvent(self, name, ...)
+function Element.fireEvent(self, name, ...)
     if(self.listeners~=nil)then
         if(self.listeners[name]~=nil)then
             for _,v in pairs(self.listeners[name])do
@@ -273,7 +275,7 @@ function Object.fireEvent(self, name, ...)
     return self
 end
 
-function Object.isType(self, typ)
+function Element.isType(self, typ)
     for _,v in pairs(self.type)do
         if(v==typ)then
             return true
@@ -282,7 +284,7 @@ function Object.isType(self, typ)
     return false
 end
 
-function Object.listenEvent(self, event, active)
+function Element.listenEvent(self, event, active)
     if(self.parent~=nil)then
         if(active)or(active==nil)then
             self.parent:addEvent(event, self)
@@ -295,7 +297,7 @@ function Object.listenEvent(self, event, active)
     return self
 end
 
-function Object.updateEvents(self)
+function Element.updateEvents(self)
     if(self.parent~=nil)then
         for k,v in pairs(self.events)do
             if(v)then
@@ -308,7 +310,7 @@ function Object.updateEvents(self)
     return self
 end
 
-function Object.extend(self, name, f)
+function Element.extend(self, name, f)
     if(extensions[activeType]==nil)then
         extensions[activeType] = {}
     end
@@ -319,7 +321,7 @@ function Object.extend(self, name, f)
     return self
 end
 
-function Object.callExtension(self, name)
+function Element.callExtension(self, name)
     for _,t in pairs(self.type)do
         if(extensions[t]~=nil)then
             if(extensions[t][name]~=nil)then
@@ -332,9 +334,9 @@ function Object.callExtension(self, name)
     return self
 end
 
-Object:addProperty("Name", "string", "Object")
+Element:addProperty("Name", "string", "BasicElement")
 
-Object:addProperty("type", "string|table", {"Object"}, false, function(self, value)
+Element:addProperty("type", "string|table", {"BasicElement"}, false, function(self, value)
     if(type(value)=="string")then
         table.insert(self.type, 1, value)
         return self.type
@@ -343,18 +345,19 @@ end,
 function(self, _, depth)
     return self.type[depth or 1]
 end)
-Object:addProperty("z", "number", 1, false, function(self, value)
+Element:addProperty("z", "number", 1, false, function(self, value)
+    self.z = value
     if (self.parent ~= nil) then
-        self.parent:updateChildZIndex(self, value)
+        self.parent:updateChild(self)
     end
     return value
 end)
-Object:addProperty("enabled", "boolean", true)
-Object:addProperty("parent", "table", nil)
-Object:addProperty("events", "table", {})
-Object:addProperty("propertyObservers", "table", {})
+Element:addProperty("enabled", "boolean", true)
+Element:addProperty("parent", "table", nil)
+Element:addProperty("events", "table", {})
+Element:addProperty("propertyObservers", "table", {})
 
-function Object.init(self)
+function Element.init(self)
     if not self.initialized then
         self:callExtension("Init")
     end
@@ -362,4 +365,4 @@ function Object.init(self)
     self:callExtension("Load")
 end
 
-return Object
+return Element

@@ -1,15 +1,15 @@
-local objectLoader = require("objectLoader")
-local Object = objectLoader.load("Object")
-local VisualObject = objectLoader.load("VisualObject")
-local List = objectLoader.load("List")
+local loader = require("basaltLoader")
+local Element = loader.load("BasicElement")
+local VisualElement = loader.load("VisualElement")
+local List = loader.load("List")
 local Menubar = setmetatable({}, List)
 local tHex = require("tHex")
 
-Object:initialize("Menubar")
-Object:addProperty("spacing", "number", 1)
+Element:initialize("Menubar")
+Element:addProperty("spacing", "number", 1)
 
-function Menubar:new()
-    local newInstance = List:new()
+function Menubar:new(id, parent, basalt)
+    local newInstance = List:new(id, parent, basalt)
     setmetatable(newInstance, self)
     self.__index = self
     newInstance:setType("Menubar")
@@ -19,7 +19,7 @@ function Menubar:new()
 end
 
 function Menubar:mouse_click(button, x, y)
-    if(VisualObject.mouse_click(self, button, x, y)) then
+    if(VisualElement.mouse_click(self, button, x, y)) then
         if(button == 1) then
             local cumulativeWidth = self.x
             for i = self.scrollIndex, #self.items do
@@ -37,7 +37,7 @@ function Menubar:mouse_click(button, x, y)
 end
 
   function Menubar:render()
-    VisualObject.render(self)
+    VisualElement.render(self)
     local currentIndex = self.scrollIndex
     local currentX = 1
     self:addText(1, 1, (" "):rep(self.width))
@@ -60,7 +60,7 @@ end
 end
 
 function Menubar:mouse_scroll(direction, x, y)
-    if(VisualObject.mouse_scroll(self, direction, x, y)) then
+    if(VisualElement.mouse_scroll(self, direction, x, y)) then
         if direction == 1 and self.scrollIndex < #self.items - self:getVisibleItems() + 1 then
             self.scrollIndex = self.scrollIndex + 1
         elseif direction == -1 and self.scrollIndex > 1 then

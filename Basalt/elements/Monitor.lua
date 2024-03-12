@@ -1,16 +1,16 @@
 local type,len,rep,sub = type,string.len,string.rep,string.sub
 local tHex = require("tHex")
 
-local objectLoader = require("objectLoader")
-local Object = objectLoader.load("Object")
-local Container = objectLoader.load("Container")
+local loader = require("basaltLoader")
+local Element = loader.load("BasicElement")
+local Container = loader.load("Container")
 
 
 local Monitor = setmetatable({}, Container)
 
-Object:initialize("Monitor")
+Element:initialize("Monitor")
 
-Object:addProperty("Monitor", "any", nil, nil, function(self, value)
+Element:addProperty("Monitor", "any", nil, nil, function(self, value)
     if(type(value=="string"))then
        value = peripheral.wrap(value)
     end
@@ -19,7 +19,7 @@ Object:addProperty("Monitor", "any", nil, nil, function(self, value)
     self:setTerm(value)
     return value
 end)
-Object:addProperty("Side", "string", nil, nil, function(self, value)
+Element:addProperty("Side", "string", nil, nil, function(self, value)
     if(value==nil)then
       return nil
     end
@@ -33,8 +33,8 @@ Object:addProperty("Side", "string", nil, nil, function(self, value)
 end)
 
 
-function Monitor:new(id, basalt)
-  local newInstance = Container:new(id, basalt)
+function Monitor:new(id, parent, basalt)
+  local newInstance = Container:new(id, parent, basalt)
   setmetatable(newInstance, self)
   self.__index = self
   newInstance:setType("Monitor")

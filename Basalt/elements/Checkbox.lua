@@ -1,21 +1,21 @@
-local objectLoader = require("objectLoader")
-local Object = objectLoader.load("Object")
-local VisualObject = objectLoader.load("VisualObject")
+local loader = require("basaltLoader")
+local Element = loader.load("BasicElement")
+local VisualElement = loader.load("VisualElement")
 local getCenteredPosition = require("utils").getCenteredPosition
 
-local Checkbox = setmetatable({}, VisualObject)
+local Checkbox = setmetatable({}, VisualElement)
 
-Object:initialize("Checkbox")
-Object:addProperty("checked", "boolean", false)
-Object:addProperty("checkedSymbol", "string", "\42")
-Object:addProperty("checkedColor", "color", colors.white)
-Object:addProperty("checkedBgColor", "color", colors.black)
-Object:combineProperty("Symbol", "checkedSymbol", "checkedColor", "checkedBgColor")
+Element:initialize("Checkbox")
+Element:addProperty("checked", "boolean", false)
+Element:addProperty("checkedSymbol", "string", "\42")
+Element:addProperty("checkedColor", "color", colors.white)
+Element:addProperty("checkedBgColor", "color", colors.black)
+Element:combineProperty("Symbol", "checkedSymbol", "checkedColor", "checkedBgColor")
 
-Object:addListener("check", "checked_value")
+Element:addListener("check", "checked_value")
 
-function Checkbox:new()
-    local newInstance = VisualObject:new()
+function Checkbox:new(id, parent, basalt)
+    local newInstance = VisualElement:new(id, parent, basalt)
     setmetatable(newInstance, self)
     self.__index = self
     newInstance:setType("Checkbox")
@@ -25,7 +25,7 @@ function Checkbox:new()
 end
 
 function Checkbox:render()
-    VisualObject.render(self)
+    VisualElement.render(self)
     local xO, yO = getCenteredPosition(self.checkedSymbol, self:getWidth(), self:getHeight())
     if self.checked then
         self:addText(xO, yO, self.checkedSymbol)
@@ -39,7 +39,7 @@ Checkbox:extend("Load", function(self)
 end)
 
 function Checkbox:mouse_click(button, x, y)
-    if(VisualObject.mouse_click(self, button, x, y))then
+    if(VisualElement.mouse_click(self, button, x, y))then
         if(button == 1)then
             self.checked = not self.checked
             self:fireEvent("check", self.checked)

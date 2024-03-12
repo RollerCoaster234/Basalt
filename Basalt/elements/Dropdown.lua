@@ -1,18 +1,18 @@
-local objectLoader = require("objectLoader")
-local Object = objectLoader.load("Object")
-local VisualObject = objectLoader.load("VisualObject")
-local List = objectLoader.load("List")
+local loader = require("basaltLoader")
+local Element = loader.load("BasicElement")
+local VisualElement = loader.load("VisualElement")
+local List = loader.load("List")
 local Dropdown = setmetatable({}, List)
 local tHex = require("tHex")
 
-Object:initialize("Dropdown")
-Object:addProperty("opened", "boolean", false)
-Object:addProperty("dropdownHeight", "number", 5)
-Object:addProperty("dropdownWidth", "number", 15)
-Object:combineProperty("dropdownSize", "dropdownWidth", "dropdownHeight")
+Element:initialize("Dropdown")
+Element:addProperty("opened", "boolean", false)
+Element:addProperty("dropdownHeight", "number", 5)
+Element:addProperty("dropdownWidth", "number", 15)
+Element:combineProperty("dropdownSize", "dropdownWidth", "dropdownHeight")
 
-function Dropdown:new()
-    local newInstance = List:new()
+function Dropdown:new(id, parent, basalt)
+    local newInstance = List:new(id, parent, basalt)
     setmetatable(newInstance, self)
     self.__index = self
     newInstance:setType("Dropdown")
@@ -23,7 +23,7 @@ function Dropdown:new()
 end
 
 function Dropdown:render()
-    VisualObject.render(self)
+    VisualElement.render(self)
     local selectedIndex = self:getSelectedIndex()
     local scrollIndex = self:getScrollIndex()
     if self.items[selectedIndex] then
@@ -49,7 +49,7 @@ function Dropdown:render()
 end
 
 function Dropdown:mouse_click(button, x, y)
-    if(VisualObject.mouse_click(self, button, x, y)) then
+    if(VisualElement.mouse_click(self, button, x, y)) then
         self.opened = not self.opened
         return true
     end
@@ -68,7 +68,7 @@ function Dropdown:mouse_click(button, x, y)
 end
 
 function Dropdown:mouse_scroll(direction, x, y)
-    if(VisualObject.mouse_scroll(self, direction, x, y)) then
+    if(VisualElement.mouse_scroll(self, direction, x, y)) then
         self.selectedIndex = math.max(math.min(self.selectedIndex + direction, #self.items), 1)
         self:updateRender()
     end

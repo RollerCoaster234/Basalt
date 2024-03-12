@@ -1,13 +1,13 @@
-local objectLoader = require("objectLoader")
-local Object = objectLoader.load("Object")
-local Container = objectLoader.load("Container")
+local loader = require("basaltLoader")
+local Element = loader.load("BasicElement")
+local Container = loader.load("Container")
 
 local BaseFrame = setmetatable({}, Container)
 
-Object:initialize("BaseFrame")
+Element:initialize("BaseFrame")
 
-function BaseFrame:new(id, basalt)
-  local newInstance = Container:new(id, basalt)
+function BaseFrame:new(id, parent, basalt)
+  local newInstance = Container:new(id, parent, basalt)
   setmetatable(newInstance, self)
   self.__index = self
   newInstance:setType("BaseFrame")
@@ -21,9 +21,8 @@ function BaseFrame:getSize()
   local baseTerm = self:getProperty("term")
   if(baseTerm~=nil)then
     return baseTerm.getSize()
-  else
-    return 1, 1
   end
+  return 1, 1
 end
 
 function BaseFrame:getWidth()
@@ -41,7 +40,7 @@ end
 function BaseFrame:event(event, ...)
   Container.event(self, event, ...)
   if(event=="term_resize")then
-    self:childVisibiltyChanged()
+    self:forceVisibleChildrenUpdate()
     self:setSize(term.getSize())
     self:setTerm(term.current())
   end

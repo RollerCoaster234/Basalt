@@ -1,4 +1,4 @@
-local loader = require("objectLoader")
+local loader = require("basaltLoader")
 local utils = require("utils")
 local log = require("log")
 
@@ -7,7 +7,7 @@ local updaterActive = false
 local mainFrame, focusedFrame, monFrames = nil, nil, {}
 local baseTerm = term.current()
 local registeredEvents = {}
-local objectQueue = {}
+local elementQueue = {}
 loader.setBasalt(basalt)
 
 ---- Frame Rendering
@@ -47,9 +47,9 @@ local function updateEvent(event, ...)
         end
     end
 
-    if(#objectQueue>0)then
-        for _=1,math.min(#objectQueue,50) do
-            local obj = table.remove(objectQueue, 1)
+    if(#elementQueue>0)then
+        for _=1,math.min(#elementQueue,50) do
+            local obj = table.remove(elementQueue, 1)
             obj:load()
         end
         os.startTimer(0.05)
@@ -131,9 +131,17 @@ local function updateEvent(event, ...)
     end
 end
 
+function basalt.getMainFrame(id)
+    if(mainFrame==nil)then
+        mainFrame = loader.load("BaseFrame"):new(id or "Basalt_Mainframe", nil, basalt)
+        mainFrame:init()
+    end
+    return mainFrame
+end
+
 function basalt.addFrame(id)
     id = id or utils.uuid()
-    local frame = loader.load("BaseFrame"):new(id, basalt)
+    local frame = loader.load("BaseFrame"):new(id, nil, basalt)
     frame:init()
     if(mainFrame==nil)then
         mainFrame = frame
@@ -143,7 +151,7 @@ end
 
 function basalt.addMonitor(id)
     id = id or utils.uuid()
-    local frame = loader.load("Monitor"):new(id, basalt)
+    local frame = loader.load("Monitor"):new(id, nil, basalt)
     frame:init()
     table.insert(monFrames, frame)
     return frame
@@ -151,29 +159,29 @@ end
 
 function basalt.addBigMonitor(id)
     id = id or utils.uuid()
-    local frame = loader.load("BigMonitor"):new(id, basalt)
+    local frame = loader.load("BigMonitor"):new(id, nil, basalt)
     frame:init()
     table.insert(monFrames, frame)
     return frame
 end
 
-local ObjectManager = {}
+local ElementManager = {}
 local proxyData = {}
 
-local function getObjectZIndex(objectType)
-    if proxyData[objectType] == nil then
-        proxyData[objectType] = {}
-        proxyData[objectType].zIndex = loader.load(objectType):new(nil, basalt):getZ()
+local function getElementZIndex(elementType)
+    if proxyData[elementType] == nil then
+        proxyData[elementType] = {}
+        proxyData[elementType].zIndex = loader.load(elementType):new(nil, basalt):getZ()
     end
-    return proxyData[objectType].zIndex
+    return proxyData[elementType].zIndex
 end
 
-local function createProxy(container, id, objectType)
+local function createProxy(container, id, elementType)
     return setmetatable({
         calls = {},
         isProxy = true,
         getZ = function(self)
-            return getObjectZIndex(objectType)
+            return getElementZIndex(elementType)
         end,
         getName = function(self)
             return id
@@ -181,7 +189,7 @@ local function createProxy(container, id, objectType)
         load = function(self)
             self.isProxy = false
             local calls = self.calls
-            container.real = loader.load(objectType):new(id, basalt)
+            container.real = loader.load(elementType):new(id, basalt)
             for _, call in ipairs(calls) do
                 if(container.real[call.method]~=nil)then
                     container.real[call.method](container.real, unpack(call.args))
@@ -210,16 +218,17 @@ local function createProxy(container, id, objectType)
     })
 end
 
-function ObjectManager.create(id, objectType)
+function ElementManager.create(id, elementType)
     local container = {}
-    container.proxy = createProxy(container, id, objectType)
+    container.proxy = createProxy(container, id, elementType)
     return container.proxy
 end
 
-function basalt.create(id, typ)
-    local proxy = ObjectManager.create(id, typ)
-    table.insert(objectQueue, proxy)
-    return proxy
+function basalt.create(id, parent, typ)
+    --local proxy = ElementManager.create(id, typ)
+    local obj = loader.load(typ):new(id, parent, basalt)
+    --table.insert(elementQueue, proxy)
+    return obj
 end
 
 ---- Error Handling
@@ -233,7 +242,6 @@ function basalt.errorHandler(errMsg)
     end
     print(errMsg)
     baseTerm.setTextColor(colors.white)
-    sleep(2)
     updaterActive = false
 end
 
@@ -255,8 +263,8 @@ function basalt.autoUpdate(isActive)
     end
 end
 
-function basalt.getObjects()
-    return loader.getObjectList()
+function basalt.getElements()
+    return loader.getElementList()
 end
 
 function basalt.onEvent(event, func)
@@ -306,9 +314,9 @@ function basalt.getTerm()
     return baseTerm
 end
 
-local plugins = loader.getPlugin("Basalt")
-if(plugins~=nil)then
-    for _,v in pairs(plugins)do
+local extensions = loader.getExtension("Basalt")
+if(extensions~=nil)then
+    for _,v in pairs(extensions)do
         for a,b in pairs(v)do
             basalt[a] = b
         end

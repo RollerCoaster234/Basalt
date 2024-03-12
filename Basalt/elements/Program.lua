@@ -1,7 +1,7 @@
 
-local objectLoader = require("objectLoader")
-local Object = objectLoader.load("Object")
-local VisualObject = objectLoader.load("VisualObject")
+local loader = require("basaltLoader")
+local Element = loader.load("BasicElement")
+local VisualElement = loader.load("VisualElement")
 local tHex = require("tHex")
 
 local newPackage = dofile("rom/modules/main/cc/require.lua").make
@@ -360,13 +360,13 @@ local function BasaltProgram(object)
     }
 end
 
-local Program = setmetatable({}, VisualObject)
+local Program = setmetatable({}, VisualElement)
 
-Object:initialize("Program")
-Object:addProperty("program", "table")
+Element:initialize("Program")
+Element:addProperty("program", "table")
 
-function Program:new(id, basalt)
-  local newInstance = VisualObject:new(id, basalt)
+function Program:new(id, parent, basalt)
+  local newInstance = VisualElement:new(id, parent, basalt)
   setmetatable(newInstance, self)
   self.__index = self
   newInstance:setType("Program")
@@ -379,7 +379,7 @@ function Program:new(id, basalt)
 end
 
 function Program:render()
-  VisualObject.render(self)
+  VisualElement.render(self)
   local renderData = self.program.getRenderData()
   for k,_ in ipairs(renderData[1])do
     self:addBlit(1, k, renderData[1][k], renderData[2][k], renderData[3][k])
@@ -402,14 +402,14 @@ function Program:event(...)
 end
 
 function Program:mouse_click(...)
-    if(VisualObject.mouse_click(self, ...))then
+    if(VisualElement.mouse_click(self, ...))then
         self.program.resume("mouse_click", ...)
         return true
     end
 end
 
 function Program:mouse_up(...)
-    if(VisualObject.mouse_up(self, ...))then
+    if(VisualElement.mouse_up(self, ...))then
         self.program.resume("mouse_up", ...)
         return true
     end
@@ -420,28 +420,28 @@ function Program:mouse_scroll(...)
 end
 
 function Program:mouse_drag(...)
-    if(VisualObject.mouse_drag(self, ...))then
+    if(VisualElement.mouse_drag(self, ...))then
         self.program.resume("mouse_drag", ...)
         return true
     end
 end
 
 function Program:key(...)
-    if(VisualObject.key(self, ...))then
+    if(VisualElement.key(self, ...))then
         self.program.resume("key", ...)
         return true
     end
 end
 
 function Program:key_up(...)
-    if(VisualObject.key_up(self, ...))then
+    if(VisualElement.key_up(self, ...))then
         self.program.resume("key_up", ...)
         return true
     end
 end
 
 function Program:char(...)
-    if(VisualObject.char(self, ...))then
+    if(VisualElement.char(self, ...))then
         self.program.resume("char", ...)
         return true
     end

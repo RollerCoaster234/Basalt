@@ -1,22 +1,22 @@
-local objectLoader = require("objectLoader")
-local Object = objectLoader.load("Object")
-local VisualObject = objectLoader.load("VisualObject")
+local loader = require("basaltLoader")
+local Element = loader.load("BasicElement")
+local VisualElement = loader.load("VisualElement")
 local tHex = require("tHex")
 
-local List = setmetatable({}, VisualObject)
+local List = setmetatable({}, VisualElement)
 
-Object:initialize("List")
-Object:addProperty("items", "table", {}) -- now each item is a ListItem object
-Object:addProperty("selectedIndex", "number", 1)
-Object:addProperty("selectionBackground", "color", colors.black)
-Object:addProperty("selectionForeground", "color", colors.cyan)
-Object:combineProperty("selectionColor", "selectionBackground", "selectionForeground")
-Object:addProperty("scrollIndex", "number", 1)
+Element:initialize("List")
+Element:addProperty("items", "table", {}) -- now each item is a ListItem object
+Element:addProperty("selectedIndex", "number", 1)
+Element:addProperty("selectionBackground", "color", colors.black)
+Element:addProperty("selectionForeground", "color", colors.cyan)
+Element:combineProperty("selectionColor", "selectionBackground", "selectionForeground")
+Element:addProperty("scrollIndex", "number", 1)
 
-Object:addListener("change", "changed_value")
+Element:addListener("change", "changed_value")
 
-function List:new()
-  local newInstance = VisualObject:new()
+function List:new(id, parent, basalt)
+  local newInstance = VisualElement:new(id, parent, basalt)
   setmetatable(newInstance, self)
   self.__index = self
   newInstance:setType("List")
@@ -31,7 +31,7 @@ List:extend("Load", function(self)
 end)
 
 function List:render()
-  VisualObject.render(self)
+  VisualElement.render(self)
   for i = 1, self.height do
     local item = self.items[i + self.scrollIndex - 1]
     if item then
@@ -93,7 +93,7 @@ function List:getSelectedIndex()
 end
 
 function List:mouse_click(button, x, y)
-    if(VisualObject.mouse_click(self, button, x, y)) then
+    if(VisualElement.mouse_click(self, button, x, y)) then
       if(button == 1) then
         local clickedIndex = y - self.y + self.scrollIndex
         if clickedIndex >= 1 and clickedIndex <= #self.items then
@@ -106,7 +106,7 @@ function List:mouse_click(button, x, y)
   end
 
 function List:mouse_scroll(direction, x, y)
-  if(VisualObject.mouse_scroll(self, direction, x, y)) then
+  if(VisualElement.mouse_scroll(self, direction, x, y)) then
     if direction == 1 and self.scrollIndex < #self.items - self.height + 1 then
       self.scrollIndex = self.scrollIndex + 1
     elseif direction == -1 and self.scrollIndex > 1 then
