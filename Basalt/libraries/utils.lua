@@ -240,6 +240,24 @@ return {
 deepcopy = deepcopy,
 getCenteredPosition = getCenteredPosition,
 
+subText = function(text, x, width)
+    if(x+#text<1)or(x>width)then
+        return ""
+      end
+    if x < 1 then
+        if(x==0)then
+            text = sub(text, 2) 
+        else
+            text = sub(text, 1 - x)
+        end
+        x = 1
+    end
+    if x+#text-1 > width then
+        text = sub(text, 1, width-x+1)
+    end
+    return text, x
+end,
+
 orderedTable = function(t)
     local newTable = {}
     for _, v in pairs(t) do

@@ -224,6 +224,7 @@ function CustomAnimation:new()
     self.ease = "linear"
     self._animations = {}
     self._animationCache = {}
+    self.onDoneHandler = {}
     return self
 end
 
@@ -271,8 +272,10 @@ function CustomAnimation.update(self, timerId)
     if(timerId==self.timerId)then
         self.curTime = self.curTime + self.timeIncrement
         if(self.curTime>=self.duration)then
-            if(self.doneHandler)then
-                self.doneHandler()
+            if(#self.onDoneHandler>0)then
+                for _,v in pairs(self.onDoneHandler)do
+                    v()
+                end
             end
             self._animationCache = {}
             os.cancelTimer(self.timerId)
@@ -306,7 +309,7 @@ function CustomAnimation.stop(self)
 end
 
 function CustomAnimation.onDone(self, func)
-    self.doneHandler = func
+    table.insert(self.onDoneHandler, func)
     return self
 end
 

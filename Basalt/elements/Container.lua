@@ -3,6 +3,7 @@ local Element = loader.load("BasicElement")
 local VisualElement = loader.load("VisualElement")
 local Container = setmetatable({}, VisualElement)
 local uuid = require("utils").uuid
+local subText = require("utils").subText
 
 local function rpairs(t)
   local keys = {}
@@ -298,19 +299,21 @@ function Container:setCursor(blink, cursorX, cursorY, color)
   end
     return self
 end
+local log = require("log")
 
-for _,v in pairs({"setBg", "setFg", "setText"}) do
+for _, v in pairs({"setBg", "setFg", "setText"}) do
   Container[v] = function(self, x, y, str)
-    local obx, oby = self:getPosition()
-    local w, h = self:getSize()
-      if (y >= 1) and (y <= h) then
-          local pos = max(x + (obx - 1), obx)
-          local str_visible = sub(str, max(1 - x + 1, 1), max(w - x + 1, 1))
+      local obx, oby = self:getPosition()
+      local w, h = self:getSize()
+      if y >= 1 and y <= h then
+        str, x = subText(str, x, w)
+        if(x~=nil)then
           if self.parent then
-              self.parent[v](self.parent, pos, oby + y - 1, str_visible)
+              self.parent[v](self.parent, obx + x - 1, oby + y - 1, "" .. str)
           else
-              self.renderSystem[v](pos, oby + y - 1, str_visible)
+              self.renderSystem[v](x, y, "" .. str)
           end
+        end
       end
   end
 end
@@ -372,6 +375,22 @@ for k,v in pairs({mouse_click=true,mouse_up=false,mouse_drag=false,mouse_scroll=
             end
             return true
           end
+      end
+  end
+end
+
+function Container.mouse_release(self, btn, x, y, ...)
+  if(VisualElement.mouse_release~=nil)then
+      if(VisualElement.mouse_release(self, btn, x, y, ...))then
+        local visibleChildren = self:getVisibleChildren("mouse_click")
+        for _,child in pairs(visibleChildren)do
+          if(child and child.mouse_release~=nil)then
+            local objX, objY = child:getPosition()
+            local relX, relY = self:getRelativePosition(x, y)
+            child.mouse_release(child, btn, relX, relY, ...)
+          end
+        end
+        return true
       end
   end
 end

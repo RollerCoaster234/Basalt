@@ -25,7 +25,7 @@ if(packaged)then
         end
     end
 else
-    --if(fs.exists(fs.combine(dir, "extensions")))then
+    if(fs.exists(fs.combine(dir, "extensions")))then
         for _,v in pairs(fs.list(fs.combine(dir, "extensions")))do
             local newExtension
             if(fs.isDir(fs.combine(fs.combine(dir, "extensions"), v)))then
@@ -44,7 +44,7 @@ else
                 end
             end
         end
-    --end
+    end
 end
 
 function basaltLoader.load(elementName)
@@ -97,6 +97,15 @@ function basaltLoader.getElementList()
         end
     end
     return elements
+end
+
+function basaltLoader.extensionExists(name)
+    for k,v in pairs(extensionNames)do
+        if(string.lower( v:gsub(".lua", ""))==string.lower(name))then
+            return true
+        end
+    end
+    return false
 end
 
 function basaltLoader.getExtension(extensionName)

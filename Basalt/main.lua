@@ -2,7 +2,7 @@ local loader = require("basaltLoader")
 local utils = require("utils")
 local log = require("log")
 
-local basalt, threads = {log=log}, {}
+local basalt, threads = {log=log, extensionExists = loader.extensionExists}, {}
 local updaterActive = false
 local mainFrame, focusedFrame, monFrames = nil, nil, {}
 local baseTerm = term.current()
@@ -24,7 +24,7 @@ local function drawFrames()
 end
 
 ---- Event Handling
-local throttle = {}
+local throttle = {mouse_drag=0.05, mouse_move=0.05}
 local lastEventTimes = {}
 local lastEventArgs = {}
 
@@ -56,18 +56,19 @@ local function updateEvent(event, ...)
     end
 
     if event == "timer" then
-        for k,_ in pairs(throttle) do
-            if lastEventTimes[k] == p[1] then
+        for k,v in pairs(lastEventTimes) do
+            if v == p[1] then
                 if mainFrame ~= nil and mainFrame[k] ~= nil then
                     mainFrame[k](mainFrame, unpack(lastEventArgs[k]))
                 end
-                for _,v in pairs(monFrames) do
-                    if v[k] ~= nil then
-                        v[k](v, unpack(lastEventArgs[k]))
+                for _,b in pairs(monFrames) do
+                    if b[k] ~= nil then
+                        b[k](b, unpack(lastEventArgs[k]))
                     end
                 end
                 lastEventTimes[k] = nil
                 lastEventArgs[k] = nil
+                drawFrames()
                 return
             end
         end
@@ -80,6 +81,11 @@ local function updateEvent(event, ...)
         lastEventArgs[event] = p
         return
     else
+        if(event=="mouse_up")then
+            if mainFrame ~= nil and mainFrame.mouse_release ~= nil then
+                mainFrame.mouse_release(mainFrame, unpack(p))
+            end
+        end
         if(events.mouse[event])then
             if(event=="monitor_touch")then
                 for _,v in pairs(monFrames) do
@@ -317,6 +323,7 @@ end
 local extensions = loader.getExtension("Basalt")
 if(extensions~=nil)then
     for _,v in pairs(extensions)do
+        v.basalt = basalt
         for a,b in pairs(v)do
             basalt[a] = b
         end

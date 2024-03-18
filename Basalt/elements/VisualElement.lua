@@ -1,5 +1,6 @@
 local Element = require("basaltLoader").load("BasicElement")
 local split = require("utils").splitString
+local subText = require("utils").subText
 
 local VisualElement = setmetatable({}, Element)
 
@@ -48,6 +49,7 @@ Element:addListener("keyUp", "key_up")
 Element:addListener("char", "char")
 Element:addListener("getFocus", "get_focus")
 Element:addListener("loseFocus", "lose_focus")
+Element:addListener("release", "mouse_release")
 
 function VisualElement:new(id, parent, basalt)
   local newInstance = Element:new(id, parent, basalt)
@@ -113,9 +115,10 @@ function VisualElement.blit(self, x, y, t, fg, bg)
 end
 
 for _,v in pairs({"Text", "Bg", "Fg"})do
-    VisualElement["add"..v] = function(self, x, y, str)
+    VisualElement["add"..v] = function(self, x, y, str, ignoreElementSize)
       local obj = self.parent or self
       local xPos,yPos = self:getPosition()
+      local w, h = self:getSize()
       local transparent = self:getTransparent()
       if(self.parent~=nil)then
           local xO, yO = self.parent:getOffset()
@@ -123,7 +126,9 @@ for _,v in pairs({"Text", "Bg", "Fg"})do
           xPos = ignOffset and xPos or xPos - xO
           yPos = ignOffset and yPos or yPos - yO
       end
-      str = str:sub(1, self:getWidth()-x)
+      if not(ignoreElementSize)then
+        str, x = subText(str, x, w)
+      end
       if not(transparent)then
           obj["set"..v](obj, x+xPos-1, y+yPos-1, str)
           return
@@ -247,13 +252,19 @@ function VisualElement.mouse_drag(self, btn, x, y)
 end
 
 function VisualElement.mouse_up(self, btn, x, y)
-  self:setProperty("dragging", false)
-  self:setProperty("clicked", false)
+  
   if isInside(self, x, y) then
     self:fireEvent("clickUp", btn, x, y)
     self:updateRender()
     return true
   end
+end
+
+function VisualElement.mouse_release(self, btn, x, y)
+  self:setProperty("dragging", false)
+  self:setProperty("clicked", false)
+  self:fireEvent("release", btn, x, y)
+  return true
 end
 
 function VisualElement:mouse_scroll(direction, x, y)
