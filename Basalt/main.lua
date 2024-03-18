@@ -182,48 +182,6 @@ local function getElementZIndex(elementType)
     return proxyData[elementType].zIndex
 end
 
-local function createProxy(container, id, elementType)
-    return setmetatable({
-        calls = {},
-        isProxy = true,
-        getZ = function(self)
-            return getElementZIndex(elementType)
-        end,
-        getName = function(self)
-            return id
-        end,
-        load = function(self)
-            self.isProxy = false
-            local calls = self.calls
-            container.real = loader.load(elementType):new(id, basalt)
-            for _, call in ipairs(calls) do
-                if(container.real[call.method]~=nil)then
-                    container.real[call.method](container.real, unpack(call.args))
-                end
-            end
-            if container.real.init then
-                container.real:init()
-                container.real.basalt = basalt
-            end
-            local parent = self:getParent()
-            if(parent~=nil)then
-                parent:childVisibiltyChanged()
-            end
-        end
-    }, {
-        __index = function(_, methodName)
-            if container.real then
-                return container.real[methodName]
-            end
-
-            return function(self, ...)
-                table.insert(self.calls, {method = methodName, args = {...}})
-                return self
-            end
-        end
-    })
-end
-
 function ElementManager.create(id, elementType)
     local container = {}
     container.proxy = createProxy(container, id, elementType)
@@ -231,10 +189,7 @@ function ElementManager.create(id, elementType)
 end
 
 function basalt.create(id, parent, typ)
-    --local proxy = ElementManager.create(id, typ)
-    local obj = loader.load(typ):new(id, parent, basalt)
-    --table.insert(elementQueue, proxy)
-    return obj
+    return loader.load(typ):new(id, parent, basalt)
 end
 
 ---- Error Handling

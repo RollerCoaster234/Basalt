@@ -67,6 +67,14 @@ local function defaultRule(typ)
         if(typ=="any")or(value==nil)or(type(value)=="function")then
             isValid = true
         end
+        if(typ=="number")then
+            if(type(value)=="string")then
+                if(tonumber(value)~=nil)then
+                    isValid = true
+                    value = tonumber(value)
+                end
+            end
+        end
 
         if(not isValid)then
             if(type(typ)=="table")then
@@ -138,6 +146,10 @@ function Element.getProperty(self, name)
         return prop()
     end
     return prop
+end
+
+function Element.hasProperty(self, name)
+    return self[name]~=nil
 end
 
 function Element.setProperties(self, properties)
