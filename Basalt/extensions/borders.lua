@@ -6,10 +6,9 @@ function borderExtension.extensionProperties(original)
     local Element = require("basaltLoader").load("BasicElement")
     Element:initialize("VisualElement")
     Element:addProperty("border", "boolean", false)
-    Element:addProperty("borderSides", "table", {["top"]=false, ["bottom"]=true, ["left"]=true, ["right"]=true})
+    Element:addProperty("borderSides", "table", {["top"]=true, ["bottom"]=true, ["left"]=true, ["right"]=true})
     Element:addProperty("borderType", "string", "small")
     Element:addProperty("borderColor", "color", colors.black)
-    Element:addProperty("backgroundSymbolColor", "color", colors.red)
 end
 
 function borderExtension.init(original)
@@ -23,6 +22,7 @@ function borderExtension.init(original)
                 local borderside = self:getBorderSides()
                 local bg = tHex[self:getBackground()]
                 local borderType = self:getBorderType()
+
                 if(borderType=="solid")then
                     for i=1, height do
                         self:addBlit(0, i, " ", borderColor, borderColor, true)
@@ -53,8 +53,8 @@ function borderExtension.init(original)
                     if(borderside["bottom"])then
                         self:addBlit(1, height+1, ("\143"):rep(width+1), bEleColStr, bColStr)
                     end
-                    if(borderside["top"] and borderside["left"])then
-                        self:addBlit(0, 0, "\151", borderColor, bg, true) -- top left
+                    if(borderside["top"] and borderside["left"])then  -- top left
+                        self:addBlit(0, 0, "\151", borderColor, bg, true)
                     end
                     if(borderside["top"] and borderside["right"])then
                         self:addBlit(width+1, 0, "\148", bg, borderColor, true) -- top right

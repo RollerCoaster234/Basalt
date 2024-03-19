@@ -124,6 +124,28 @@ function BasicXmlExtension.init(original)
     end)
 end
 
+local function getChildrenItems(children)
+    local items = {}
+    for k,v in pairs(children) do
+        if(v.tag)then
+            if(v.tag=="addItem")then
+                if(v.children[1].children)then
+                    table.insert(items, getChildrenItems(v.children[1].children))
+                else
+                    table.insert(items, v.children[1].text)
+                end
+            else
+                if(v.children[1].children)then
+                    items[v.tag] = getChildrenItems(v.children)
+                else
+                    items[v.tag] = v.children[1].text
+                end
+            end
+        end
+    end
+    return items
+end
+
 function BasicXmlExtension.generateElementFromXML(self, properties, env)
     env = env or _ENV
     env.basalt = self.basalt
@@ -142,7 +164,12 @@ function BasicXmlExtension.generateElementFromXML(self, properties, env)
             if(self[v.tag]~=nil)then
                 local propName = "set"..v.tag:gsub("^%l", string.upper)
                 if(self[propName]~=nil)then
-                    self[propName](self, v.children[1].text)
+                    if(self:getPropertyType(v.tag)=="table")then
+                        local items = getChildrenItems(v.children)
+                        self[propName](self, items)
+                    else
+                        self[propName](self, v.children[1].text)
+                    end
                 elseif(self[v.tag]~=nil)then
                     self[v.tag](self, function(...)
                         env.event = ... or nil
@@ -155,7 +182,6 @@ function BasicXmlExtension.generateElementFromXML(self, properties, env)
             end
         end
     end
-    
     return self
 end
 

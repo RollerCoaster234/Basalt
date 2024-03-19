@@ -5,6 +5,7 @@ local uuid = require("utils").uuid
 local Element = {}
 
 local properties = {}
+local propertyTypes = {}
 local extensions = {}
 local activeType = "BasicElement"
 
@@ -41,6 +42,48 @@ local function defaultRule(typ)
                 if(type(value)==v)then
                     isValid = true
                 end
+                if(v=="number")then
+                    if(type(value)=="string")then
+                        if(tonumber(value)~=nil)then
+                            isValid = true
+                            value = tonumber(value)
+                        end
+                    end
+                end
+                if(v=="boolean")then
+                    if(type(value)=="string")then
+                        if(value=="true")then
+                            isValid = true
+                            value = true
+                        elseif(value=="false")then
+                            isValid = true
+                            value = false
+                        end
+                    end
+                end
+                if(v:find("table"))then
+                    -- v could have something like string|table>name,background,foreground we need to sub table>name,background,foreground out of the string and store it to a variable
+                    local subTable = v:match("table>(.*)")
+                    if(subTable)then
+                        local subTableTypes = split(subTable, ",")
+                        if(type(value)=="table")then
+                            local newTable = {}
+                            for k,v in pairs(subTableTypes)do
+                                if(value[v]~=nil)then
+                                    newTable[v] = value[v]
+                                else
+                                    error(self:getType()..": Invalid type for property "..name.."! Expected table with keys "..subTable)
+                                end
+                            end
+                            value = newTable
+                            isValid = true
+                        end
+                    elseif(type(value)=="table")then
+                        isValid = true
+                    end
+
+                    
+                end
             end
         end
         if(typ=="color")then
@@ -66,14 +109,6 @@ local function defaultRule(typ)
         end
         if(typ=="any")or(value==nil)or(type(value)=="function")then
             isValid = true
-        end
-        if(typ=="number")then
-            if(type(value)=="string")then
-                if(tonumber(value)~=nil)then
-                    isValid = true
-                    value = tonumber(value)
-                end
-            end
         end
 
         if(not isValid)then
@@ -171,6 +206,16 @@ function Element.getProperties(self)
     return p
 end
 
+function Element.getPropertyType(self, name)
+    for k,v in pairs(self.type)do
+        if(propertyTypes[v]~=nil)then
+            if(propertyTypes[v][name]~=nil)then
+                return propertyTypes[v][name]
+            end
+        end
+    end
+end
+
 function Element.updateRender(self)
     if(self.parent~=nil)then
         self.parent:forceVisibleChildrenUpdate()
@@ -179,6 +224,7 @@ function Element.updateRender(self)
         self.updateRendering = true
     end
 end
+
 function Element.addProperty(self, name, typ, defaultValue, readonly, setLogic, getLogic)
     if(typ==nil)then typ = "any" end
     if(readonly==nil)then readonly = false end
@@ -186,11 +232,13 @@ function Element.addProperty(self, name, typ, defaultValue, readonly, setLogic, 
     local fName = name:gsub("^%l", string.upper)
     if not properties[activeType] then
         properties[activeType] = {}
+        propertyTypes[activeType] = {}
     end
     if(type(defaultValue)=="table")then
         defaultValue = deepcopy(defaultValue)
     end
     properties[activeType][name] = defaultValue
+    propertyTypes[activeType][name] = typ
 
     if not(readonly)then
         self["set"..fName] = function(self, value, ignRenderUpdate, ...)
