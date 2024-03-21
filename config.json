@@ -1,0 +1,45 @@
+{
+    "versions": {
+        "elements": {
+            "BaseFrame": 1,
+            "BasicElement": 1,
+            "Button": 1,
+            "Checkbox": 1,
+            "Container": 1,
+            "Dropdown": 1,
+            "Flexbox": 1,
+            "Frame": 1,
+            "Image": 1,
+            "Input": 1,
+            "Label": 1,
+            "List": 1,
+            "BigMonitor": 1,
+            "Menubar": 1,
+            "Monitor": 1,
+            "MovableFrame": 1,
+            "Progressbar": 1,
+            "Program": 1,
+            "Slider": 1,
+            "Textfield": 1,
+            "VisualElement": 1
+        },
+        "extensions": {
+            "debug": 1,
+            "dynamicValues": 1,
+            "templates": 1,
+            "xml": 1,
+            "betterBackgrounds": 1,
+            "borders": 1,
+            "animations": 1
+        },
+        "libraries": {
+            "log": 1,
+            "tHex": 1,
+            "utils": 1
+        },
+        "basaltInit": 1,
+        "main": 1,
+        "renderSystem": 1,
+        "basaltLoader": 1
+    }
+}

@@ -21,17 +21,6 @@ function Element:new(id, parent, basalt)
     return newInstance
 end
 
---[[
-    setmetatable(proxy, {
-    __index = function(_, key)
-        return t[key]
-    end,
-    __newindex = function(_, key, value)
-        t[key] = value
-    end
-})
-]]
-
 local function defaultRule(typ)
     return function(self, name, value)
         local isValid = false
@@ -62,7 +51,6 @@ local function defaultRule(typ)
                     end
                 end
                 if(v:find("table"))then
-                    -- v could have something like string|table>name,background,foreground we need to sub table>name,background,foreground out of the string and store it to a variable
                     local subTable = v:match("table>(.*)")
                     if(subTable)then
                         local subTableTypes = split(subTable, ",")
@@ -148,7 +136,9 @@ function Element.forcePropertyObserverUpdate(self, propertyName)
         return
     end
     for _,v in pairs(self.propertyObservers[propertyName])do
-        v(self, propertyName)
+        if(type(v)=="function")then
+            v(self, propertyName)
+        end
     end
 end
 

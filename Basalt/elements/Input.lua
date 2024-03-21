@@ -1,6 +1,7 @@
 local loader = require("basaltLoader")
 local Element = loader.load("BasicElement")
 local VisualElement = loader.load("VisualElement")
+local tHex = require("tHex")
 
 local Input = setmetatable({}, VisualElement)
 
@@ -10,6 +11,10 @@ Element:addProperty("cursorIndex", "number", 1)
 Element:addProperty("scrollIndex", "number", 1)
 Element:addProperty("inputLimit", "number", nil)
 Element:addProperty("inputType", "string", "text")
+Element:addProperty("placeholderText", "string", "")
+Element:addProperty("placeholderColor", "color", colors.gray)
+Element:addProperty("placeholderBackground", "color", colors.black)
+Element:combineProperty("placeholder", "placeholderText", "placeholderColor", "placeholderBackground")
 
 Element:addListener("change", "change_value")
 Element:addListener("enter", "enter_pressed")
@@ -27,13 +32,24 @@ end
 
 function Input.render(self)
     VisualElement.render(self)
-    local visibleValue = self.value:sub(self.scrollIndex, self.scrollIndex + self.width - 1)
-    if(self.inputType=="password")then
-        visibleValue = ("*"):rep(visibleValue:len())
+    local text = self:getValue()
+    local width = self:getWidth()
+    local placeHolderActive = false
+    if(text == "")then
+        text = self:getPlaceholderText()
+        placeHolderActive = true
     end
-    local space = (" "):rep(self.width - visibleValue:len())
-    visibleValue = visibleValue .. space
-    self:addText(1, 1, visibleValue)
+    local visibleText = text:sub(self.scrollIndex, self.scrollIndex + width - 1)
+    if(self.inputType=="password")then
+        visibleText = ("*"):rep(visibleText:len())
+    end
+    local space = (" "):rep(width - visibleText:len())
+    visibleText = visibleText .. space
+    self:addText(1, 1, visibleText)
+    if(placeHolderActive)then
+        self:addBg(1, 1, tHex[self:getPlaceholderBackground()]:rep(width))
+        self:addFg(1, 1, tHex[self:getPlaceholderColor()]:rep(visibleText:len()))
+    end
 end
 
 Input:extend("Load", function(self)

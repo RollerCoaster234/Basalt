@@ -32,6 +32,10 @@ local baseTemplate = {
         Input = {
             background = "{self.focused ? cyan : black}",
             foreground = "{self.focused ? black : cyan}",
+            placeholderBackground = "{self.focused ? cyan : black}",
+            placeholderColor = "{self.focused ? gray : gray}",
+            placeholderText = "{self.focused ? '' : 'Type..'}",
+            width = 14,
         },
         Slider = {
             background = nil,

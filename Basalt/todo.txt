@@ -2,14 +2,8 @@ Todo:
 
 Important:
 
-- Rework basaltLoader to load from hidden basalt folder, if doesn't exists load it from github
-- Create a basalt cache system which lasts until pc gets restarted
-- Create settings which uses cc tweaked settings system for basalt default behaviours
-- basalt.isKeyDown
-- basalt.isMouseButtonDown
 - Fix Textfield -> Inside a sub-sub frame the cursor vertical coordinates have wrong position (by 1)
-- Fix Textfield -> Textfield have a higher event prio, but button is rendered on top of textfied?
-- Fix z-system (sometimes it draws buttons over frames (where the button should be behind)
+
 
 Low:
 

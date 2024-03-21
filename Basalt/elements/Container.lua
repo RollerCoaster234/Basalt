@@ -147,23 +147,21 @@ function Container:addChild(child, childZ)
   if(self:getChild(child) ~= nil) then
     return
   end
+
   local inserted = false
-  local pos = 1
   childZ = childZ or child:getZ()
-  for i, registeredChild in ipairs(self.children) do
-    local registeredChildZ = registeredChild:getZ()
-    if childZ > registeredChildZ then
-      table.insert(self.children, i+1, child)
+
+  for i, registeredChild in ipairs(self.children)do
+    if childZ < registeredChild:getZ() then
+      table.insert(self.children, i, child)
       inserted = true
       break
     end
-    if(childZ == registeredChildZ)then
-      pos = i+1
-    end
   end
   if not inserted then
-    table.insert(self.children, pos, child)
+    table.insert(self.children, child)
   end
+
   child:setParent(self)
   child.basalt = self.basalt
   child:init()
@@ -299,7 +297,6 @@ function Container:setCursor(blink, cursorX, cursorY, color)
   end
     return self
 end
-local log = require("log")
 
 for _, v in pairs({"setBg", "setFg", "setText"}) do
   Container[v] = function(self, x, y, str)

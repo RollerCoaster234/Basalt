@@ -8,6 +8,7 @@ local mainFrame, focusedFrame, monFrames = nil, nil, {}
 local baseTerm = term.current()
 local registeredEvents = {}
 local elementQueue = {}
+local keysDown,mouseDown = {}, {}
 loader.setBasalt(basalt)
 
 ---- Frame Rendering
@@ -81,7 +82,17 @@ local function updateEvent(event, ...)
         lastEventArgs[event] = p
         return
     else
+        if(event=="key")then
+            keysDown[p[1]] = true
+        end
+        if(event=="key_up")then
+            keysDown[p[1]] = false
+        end
+        if(event=="mouse_click")then
+            mouseDown[p[1]] = true
+        end
         if(event=="mouse_up")then
+            mouseDown[p[1]] = false
             if mainFrame ~= nil and mainFrame.mouse_release ~= nil then
                 mainFrame.mouse_release(mainFrame, unpack(p))
             end
@@ -137,6 +148,14 @@ local function updateEvent(event, ...)
     end
 end
 
+function basalt.isKeyDown(key)
+    return keysDown[key] or false
+end
+
+function basalt.isMouseDown(button)
+    return mouseDown[button] or false
+end
+
 function basalt.getMainFrame(id)
     if(mainFrame==nil)then
         mainFrame = loader.load("BaseFrame"):new(id or "Basalt_Mainframe", nil, basalt)
@@ -189,7 +208,11 @@ function ElementManager.create(id, elementType)
 end
 
 function basalt.create(id, parent, typ)
-    return loader.load(typ):new(id, parent, basalt)
+    local l = loader.load(typ)
+    if(type(l)=="string")then
+        l = load(l, nil, "t", _ENV)()
+    end
+    return l:new(id, parent, basalt)
 end
 
 ---- Error Handling
