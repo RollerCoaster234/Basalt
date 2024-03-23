@@ -2,6 +2,7 @@ local loader = require("basaltLoader")
 local Element = loader.load("BasicElement")
 local VisualElement = loader.load("VisualElement")
 
+---@class Progressbar : ProgressbarP
 local Progressbar = setmetatable({}, VisualElement)
 
 Element:initialize("Progressbar")
@@ -10,6 +11,12 @@ Element:addProperty("progressBackground", "color", colors.black)
 Element:addProperty("minValue", "number", 0)
 Element:addProperty("maxValue", "number", 100)
 
+--- Creates a new Progressbar.
+---@param id string The id of the object.
+---@param parent? Container The parent of the object.
+---@param basalt Basalt The basalt object.
+--- @return Progressbar
+---@protected
 function Progressbar:new(id, parent, basalt)
   local newInstance = VisualElement:new(id, parent, basalt)
   setmetatable(newInstance, self)
@@ -20,10 +27,17 @@ function Progressbar:new(id, parent, basalt)
   return newInstance
 end
 
+---@protected
 function Progressbar:render()
     VisualElement.render(self)
-    local barLength = math.floor((self.width - 2) * (self.progress - self.minValue) / (self.maxValue - self.minValue))
-    self:addBackgroundBox(1, 1, barLength, self.height, self.progressBackground)
+    local width = self:getWidth()
+    local height = self:getHeight()
+    local progress = self:getProgress()
+    local minValue = self:getMinValue()
+    local maxValue = self:getMaxValue()
+    local progressBackground = self:getProgressBackground()
+    local barLength = math.floor((width - 2) * (progress - minValue) / (maxValue - minValue))
+    self:addBackgroundBox(1, 1, barLength, height, progressBackground)
 end
 
 return Progressbar

@@ -1,13 +1,26 @@
+local basaltPath = ".basalt"
+
+local defaultPath = package.path
+local format = "path;/path/?.lua;/path/?/init.lua;"
+local main = format:gsub("path", basaltPath)
+local eleFolder = format:gsub("path", basaltPath.."/elements")
+local extFolder = format:gsub("path", basaltPath.."/extensions")
+local libFolder = format:gsub("path", basaltPath.."/libraries")
+package.path = main..eleFolder..extFolder..libFolder..defaultPath
+
 local loader = require("basaltLoader")
 local utils = require("utils")
 local log = require("log")
 
-local basalt, threads = {log=log, extensionExists = loader.extensionExists}, {}
+--- The Basalt Core API
+--- @class Basalt
+local basalt = {log=log, extensionExists = loader.extensionExists}
+
+local threads = {}
 local updaterActive = false
 local mainFrame, focusedFrame, monFrames = nil, nil, {}
 local baseTerm = term.current()
 local registeredEvents = {}
-local elementQueue = {}
 local keysDown,mouseDown = {}, {}
 loader.setBasalt(basalt)
 
@@ -46,14 +59,6 @@ local function updateEvent(event, ...)
                 return
             end
         end
-    end
-
-    if(#elementQueue>0)then
-        for _=1,math.min(#elementQueue,50) do
-            local obj = table.remove(elementQueue, 1)
-            obj:load()
-        end
-        os.startTimer(0.05)
     end
 
     if event == "timer" then
@@ -148,14 +153,23 @@ local function updateEvent(event, ...)
     end
 end
 
+--- Checks if a key is currently pressed
+--- @param key number -- Use the key codes from the `keys` table, example: `keys.enter`
+--- @return boolean
 function basalt.isKeyDown(key)
     return keysDown[key] or false
 end
 
+--- Checks if a mouse button is currently pressed
+--- @param button number -- Use the button numbers: 1, 2, 3, 4 or 5
+--- @return boolean
 function basalt.isMouseDown(button)
     return mouseDown[button] or false
 end
 
+--- Returns the current main active main frame, if it doesn't exist it will create one
+--- @param id? string -- The id of the frame
+--- @return BaseFrame
 function basalt.getMainFrame(id)
     if(mainFrame==nil)then
         mainFrame = loader.load("BaseFrame"):new(id or "Basalt_Mainframe", nil, basalt)
@@ -164,6 +178,9 @@ function basalt.getMainFrame(id)
     return mainFrame
 end
 
+--- Creates a new frame, if main frame doesn't exist it will be set to the new frame.
+--- @param id? string -- The id of the frame
+--- @return BaseFrame
 function basalt.addFrame(id)
     id = id or utils.uuid()
     local frame = loader.load("BaseFrame"):new(id, nil, basalt)
@@ -174,6 +191,20 @@ function basalt.addFrame(id)
     return frame
 end
 
+--- Switches the main frame to a new frame
+--- @param frame BaseFrame -- The frame to switch to
+function basalt.switchFrame(frame)
+    if(frame:getType()~="BaseFrame")then
+        error("Invalid frame type: "..frame:getType().." (expected: BaseFrame)")
+    end
+    mainFrame = frame
+    frame:forceRender()
+    basalt.setFocusedFrame(frame)
+end
+
+--- Creates a new monitor frame
+--- @param id? string -- The id of the monitor
+--- @return Monitor
 function basalt.addMonitor(id)
     id = id or utils.uuid()
     local frame = loader.load("Monitor"):new(id, nil, basalt)
@@ -182,6 +213,9 @@ function basalt.addMonitor(id)
     return frame
 end
 
+--- Creates a new big monitor frame
+--- @param id? string -- The id of the big monitor
+--- @return BigMonitor
 function basalt.addBigMonitor(id)
     id = id or utils.uuid()
     local frame = loader.load("BigMonitor"):new(id, nil, basalt)
@@ -190,32 +224,33 @@ function basalt.addBigMonitor(id)
     return frame
 end
 
-local ElementManager = {}
-local proxyData = {}
-
-local function getElementZIndex(elementType)
-    if proxyData[elementType] == nil then
-        proxyData[elementType] = {}
-        proxyData[elementType].zIndex = loader.load(elementType):new(nil, basalt):getZ()
-    end
-    return proxyData[elementType].zIndex
-end
-
-function ElementManager.create(id, elementType)
-    local container = {}
-    container.proxy = createProxy(container, id, elementType)
-    return container.proxy
-end
-
-function basalt.create(id, parent, typ)
+--- Creates a new element
+--- @param id string -- The id of the element
+--- @param parent Container|nil -- The parent frame of the element
+--- @param typ string -- The type of the element
+--- @param defaultProperties? table -- The default properties of the element
+--- @return BasicElement
+function basalt.create(id, parent, typ, defaultProperties)
     local l = loader.load(typ)
     if(type(l)=="string")then
         l = load(l, nil, "t", _ENV)()
     end
-    return l:new(id, parent, basalt)
+    local element = l:new(id, parent, basalt)
+    if(defaultProperties~=nil)then
+        for k,v in pairs(defaultProperties)do
+            local fName = "set"..k:sub(1,1):upper()..k:sub(2)
+            if(element[fName]~=nil)then
+                element[fName](element, v)
+            else
+                element[k] = v
+            end
+        end
+    end
+    return element
 end
 
----- Error Handling
+--- The error Handler which is used by basalt when errors happen. Can be overwritten
+--- @param errMsg string -- The error message
 function basalt.errorHandler(errMsg)
     baseTerm.clear()
     baseTerm.setCursorPos(1,1)
@@ -229,7 +264,9 @@ function basalt.errorHandler(errMsg)
     updaterActive = false
 end
 
--- Public functions
+
+--- Starts the update loop
+--- @param isActive? boolean -- If the update loop should be active
 function basalt.autoUpdate(isActive)
     updaterActive = isActive
     if(isActive==nil)then updaterActive = true end
@@ -247,10 +284,15 @@ function basalt.autoUpdate(isActive)
     end
 end
 
+--- Returns a list of all available elements in the current basalt installation
+--- @return table
 function basalt.getElements()
     return loader.getElementList()
 end
 
+--- Registers a new event listener
+--- @param event string -- The event to listen for
+--- @param func function -- The function to call when the event is triggered
 function basalt.onEvent(event, func)
     if(registeredEvents[event]==nil)then
         registeredEvents[event] = {}
@@ -258,6 +300,9 @@ function basalt.onEvent(event, func)
     table.insert(registeredEvents[event], func)
 end
 
+--- Removes an event listener
+--- @param event string -- The event to remove the listener from
+--- @param func function -- The function to remove
 function basalt.removeEvent(event, func)
     if(registeredEvents[event]==nil)then return end
     for k,v in pairs(registeredEvents[event])do
@@ -267,6 +312,8 @@ function basalt.removeEvent(event, func)
     end
 end
 
+--- Sets the focused frame
+--- @param frame BaseFrame|Monitor|BigMonitor -- The frame to focus
 function basalt.setFocusedFrame(frame)
     if(focusedFrame~=nil)then
         focusedFrame:lose_focus()
@@ -277,7 +324,10 @@ function basalt.setFocusedFrame(frame)
     focusedFrame = frame
 end
 
--- not finished
+
+--- Starts a new thread which runs the function parallel to the main thread
+--- @param func function -- The function to run
+--- @vararg any? -- The arguments to pass to the function
 function basalt.thread(func, ...)
     local threadData = {}
     threadData.thread = coroutine.create(func)
@@ -290,10 +340,12 @@ function basalt.thread(func, ...)
     basalt.errorHandler(filter)
 end
 
+--- Stops the update loop
 function basalt.stop()
     updaterActive = false
 end
 
+--- Returns the current term
 function basalt.getTerm()
     return baseTerm
 end
@@ -308,4 +360,5 @@ if(extensions~=nil)then
     end
 end
 
+package.path = defaultPath
 return basalt

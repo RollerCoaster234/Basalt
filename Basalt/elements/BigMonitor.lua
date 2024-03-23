@@ -187,12 +187,17 @@ local loader = require("basaltLoader")
 local Element = loader.load("BasicElement")
 local Container = loader.load("Container")
 
-
+---@class BigMonitor : BigMonitorP
 local BigMonitor = setmetatable({}, Container)
 
 Element:initialize("BigMonitor")
 
-
+--- Creates a new BigMonitor.
+---@param id string The id of the object.
+---@param parent? Container The parent of the object.
+---@param basalt Basalt The basalt object.
+--- @return BigMonitor
+---@protected
 function BigMonitor:new(id, parent, basalt)
   local newInstance = Container:new(id, parent, basalt)
   setmetatable(newInstance, self)
@@ -202,6 +207,7 @@ function BigMonitor:new(id, parent, basalt)
   return newInstance
 end
 
+---@protected
 function BigMonitor:event(event, ...)
   Container.event(self, event, ...)
   if(event=="monitor_resize")then
@@ -209,6 +215,10 @@ function BigMonitor:event(event, ...)
   end
 end
 
+--- Sets the group of monitors to be used.
+---@param self BigMonitor The element itself
+---@param group table The group of monitors.
+---@return BigMonitor
 function BigMonitor:setGroup(group)
     if(type(group)~="table")then
         error("Expected table, got "..type(group))
@@ -234,17 +244,23 @@ function BigMonitor:setGroup(group)
     self.massiveMon = MassiveMonitor(monitors)
     self:setTerm(self.massiveMon)
     self:setSize(self.massiveMon.getSize())
+    return self
 end
 
+--- Gets the group of monitors.
+---@param self BigMonitor The element itself
+---@return table The group of monitors.
 function BigMonitor:getGroup()
     return self.monitors
 end
 
+---@protected
 function BigMonitor:lose_focus()
     Container.lose_focus(self)
     self:setCursor(false)
 end
 
+---@protected
 function BigMonitor:monitor_touch(side, x, y)
     self:mouse_click(1, self.massiveMon.calculateClick(side, x, y))
 end

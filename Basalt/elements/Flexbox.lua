@@ -4,6 +4,7 @@ local Element = loader.load("BasicElement")
 local log = require("log")
 local uuid = require("utils").uuid
 
+---@class Flexbox : FlexboxP
 local Flexbox = setmetatable({}, Container)
 
 Element:initialize("Flexbox")
@@ -11,7 +12,7 @@ Element:addProperty("flexDirection", "string", "row")
 Element:addProperty("flexSpacing", "number", 1)
 Element:addProperty("flexJustifyContent", "string", "flex-start")
 Element:addProperty("flexWrap", "boolean", false)
-Element:addProperty("flexCreateLayout", "boolean", false)
+Element:addProperty("flexUpdateLayout", "boolean", false)
 
 local lineBreakElement = {
   getHeight = function(self) return 0 end,
@@ -274,7 +275,7 @@ local function calculateColumn(self, children, spacing, justifyContent)
   end
 end
 
-local function createLayout(self, direction, spacing, justifyContent, wrap)
+local function updateLayout(self, direction, spacing, justifyContent, wrap)
   local elements = sortElements(self, direction, spacing, wrap)
     if direction == "row" then
         for _,v in pairs(elements)do
@@ -285,9 +286,15 @@ local function createLayout(self, direction, spacing, justifyContent, wrap)
             calculateColumn(self, v, spacing, justifyContent)
         end
     end
-    self:setFlexCreateLayout(false)
+    self:setFlexUpdateLayout(false)
 end
 
+--- Creates a new Flexbox.
+---@param id string The id of the object.
+---@param parent? Container The parent of the object.
+---@param basalt Basalt The basalt object.
+--- @return Flexbox
+---@protected
 function Flexbox:new(id, parent, basalt)
   local newInstance = Container:new(id, parent, basalt)
   setmetatable(newInstance, self)
@@ -297,10 +304,10 @@ function Flexbox:new(id, parent, basalt)
   newInstance:setZ(10)
   newInstance:setSize(30, 12)
   newInstance:addPropertyObserver("width", function(self, value)
-    self:setFlexCreateLayout(true)
+    self:setFlexUpdateLayout(true)
   end)
   newInstance:addPropertyObserver("height", function(self, value)
-    self:setFlexCreateLayout(true)
+    self:setFlexUpdateLayout(true)
   end)
   return newInstance
 end
@@ -314,17 +321,17 @@ function Flexbox:addChild(element, ...)
     element:setProperty("flexBasis", 1)
     element.setFlexGrow = function(self, value)
       self:setProperty("flexGrow", value)
-      self:setFlexCreateLayout(true)
+      self:setFlexUpdateLayout(true)
       return self
     end
     element.setFlexShrink = function(self, value)
       self:setProperty("flexShrink", value)
-      self:setFlexCreateLayout(true)
+      self:setFlexUpdateLayout(true)
       return self
     end
     element.setFlexBasis = function(self, value)
       self:setProperty("flexBasis", value)
-      self:setFlexCreateLayout(true)
+      self:setFlexUpdateLayout(true)
       return self
     end
     element.getFlexGrow = function(self)
@@ -338,7 +345,7 @@ function Flexbox:addChild(element, ...)
     end
   end
   
-  self:setFlexCreateLayout(true)
+  self:setFlexUpdateLayout(true)
   return self
 end
 
@@ -357,10 +364,13 @@ function Flexbox:removeChild(element, ...)
     element:setProperty("flexBasis", nil)
   end
 
-  self:setFlexCreateLayout(true)
+  self:setFlexUpdateLayout(true)
   return self
 end
 
+--- Adds a new line break to the flexbox.
+---@param self Flexbox The element itself
+---@return Flexbox
 function Flexbox:addLineBreak()
   self:addChild(lineBreakElement)
   return self
@@ -368,12 +378,12 @@ end
 
 function Flexbox:setSize(...)
   Container.setSize(self, ...)
-  self:setFlexCreateLayout(true)
+  self:setFlexUpdateLayout(true)
 end
 
 function Flexbox:render()
-  if(self:getFlexCreateLayout())then
-    createLayout(self, self:getFlexDirection(), self:getFlexSpacing(), self:getFlexJustifyContent(), self:getFlexWrap())
+  if(self:getFlexUpdateLayout())then
+    updateLayout(self, self:getFlexDirection(), self:getFlexSpacing(), self:getFlexJustifyContent(), self:getFlexWrap())
   end
   Container.render(self)
 end

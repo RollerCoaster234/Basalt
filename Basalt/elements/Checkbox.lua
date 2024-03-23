@@ -3,6 +3,7 @@ local Element = loader.load("BasicElement")
 local VisualElement = loader.load("VisualElement")
 local getCenteredPosition = require("utils").getCenteredPosition
 
+---@class Checkbox : CheckboxP
 local Checkbox = setmetatable({}, VisualElement)
 
 Element:initialize("Checkbox")
@@ -14,6 +15,12 @@ Element:combineProperty("Symbol", "checkedSymbol", "checkedColor", "checkedBgCol
 
 Element:addListener("check", "checked_value")
 
+--- Creates a new checkbox.
+---@param id string The id of the object.
+---@param parent? Container The parent of the object.
+---@param basalt Basalt The basalt object.
+--- @return Checkbox
+---@protected
 function Checkbox:new(id, parent, basalt)
     local newInstance = VisualElement:new(id, parent, basalt)
     setmetatable(newInstance, self)
@@ -24,6 +31,7 @@ function Checkbox:new(id, parent, basalt)
   return newInstance
 end
 
+---@protected
 function Checkbox:render()
     VisualElement.render(self)
     local xO, yO = getCenteredPosition(self.checkedSymbol, self:getWidth(), self:getHeight())
@@ -34,10 +42,12 @@ function Checkbox:render()
     end
 end
 
+---@protected
 Checkbox:extend("Load", function(self)
     self:listenEvent("mouse_click")
 end)
 
+---@protected
 function Checkbox:mouse_click(button, x, y)
     if(VisualElement.mouse_click(self, button, x, y))then
         if(button == 1)then

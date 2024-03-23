@@ -3,13 +3,17 @@ Todo:
 Important:
 
 - Fix Textfield -> Inside a sub-sub frame the cursor vertical coordinates have wrong position (by 1)
-
+- term_resize needs to update all frames, not just the mainframe
+- Second label's width is for some reason wrong (smaller than text)
+- Textfield needs addLine, removeLine..
+- Program needs a stop and other stuff
+- Image is not finished
+- Flexbox has a bug when resizing the window multiple times (it starts to look wrong after 4-5x resizing)
+- BigMonitor monitor_resize isn't finished
+- Scrollbar isn't implemented yet
 
 Low:
 
 - Skip some render calls
 - Better logging system
 - Better debugging tools
-
-
-

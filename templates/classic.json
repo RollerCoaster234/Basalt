@@ -1,0 +1,40 @@
+{
+    "default": {
+        "background": "cyan",
+        "foreground": "black"
+    },
+    "BaseFrame": {
+        "background": "lightGray",
+        "foreground": "black",
+        "Button": {
+            "background": "{self.clicked ? black : cyan}",
+            "foreground": "{self.clicked ? cyan : black}"
+        },
+        "Container": {
+            "background": "black",
+            "Button": {
+                "background": "{self.clicked ? black : cyan}",
+                "foreground": "{self.clicked ? cyan : black}"
+            }
+        },
+        "Checkbox": {
+            "background": "black",
+            "foreground": "cyan"
+        },
+        "Input": {
+            "background": "{self.focused ? cyan : black}",
+            "foreground": "{self.focused ? black : cyan}",
+            "placeholderBackground": "{self.focused ? cyan : black}",
+            "placeholderColor": "{self.focused ? gray : gray}",
+            "placeholderText": "{self.focused ? '' : 'Type..'}",
+            "width": 14
+        },
+        "Slider": {
+            "background": null,
+            "knobBackground": "{self.focused ? cyan : black}"
+        },
+        "Label": {
+            "background": null
+        }
+    }
+}

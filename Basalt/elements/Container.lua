@@ -1,29 +1,11 @@
 local loader = require("basaltLoader")
 local Element = loader.load("BasicElement")
 local VisualElement = loader.load("VisualElement")
-local Container = setmetatable({}, VisualElement)
 local uuid = require("utils").uuid
 local subText = require("utils").subText
 
-local function rpairs(t)
-  local keys = {}
-  for k in pairs(t) do
-      if type(k) == "number" then
-          table.insert(keys, k)
-      end
-  end
-  table.sort(keys, function(a, b) return a > b end)
-
-  local i = 0
-  local function iter(tbl)
-      i = i + 1
-      if keys[i] then
-          return keys[i], tbl[keys[i]]
-      end
-  end
-
-  return iter, t
-end
+--- @class Container : ContainerE
+local Container = setmetatable({}, VisualElement)
 
 local renderSystem = require("renderSystem")
 
@@ -60,6 +42,12 @@ Element:combineProperty("Offset", "XOffset", "YOffset")
 
 local sub, max = string.sub, math.max
 
+--- Creates a new container.
+---@param id string The id of the object.
+---@param parent? Container The parent of the object.
+---@param basalt Basalt The basalt object.
+--- @return Container
+---@protected
 function Container:new(id, parent, basalt)
   local newInstance = VisualElement:new(id, parent, basalt)
   setmetatable(newInstance, self)
@@ -69,11 +57,11 @@ function Container:new(id, parent, basalt)
   return newInstance
 end
 
+---@protected
 function Container:render()
   if(self:getTerm()==nil)then
     --return
   end
-
   local visibleChildren = self:getVisibleChildren()
   if self.parent == nil then
     if self.updateRendering then
@@ -90,7 +78,7 @@ function Container:render()
   end
 end
 
-
+---@protected
 function Container:processRender()
   if(self.updateRendering)then
     if(self.renderSystem~=nil)then
@@ -100,10 +88,14 @@ function Container:processRender()
   end
 end
 
+--- Gets all visible children of the container.
+--- @param self Container
+--- @return table
 function Container:getVisibleChildren()
   if(self.isVisibleChildrenUpdated)then
     return self.visibleChildren
   end
+
   local visibleChildren = {}
   for _, child in ipairs(self.children) do
       if self:isChildVisible(child) then
@@ -115,6 +107,10 @@ function Container:getVisibleChildren()
   return visibleChildren
 end
 
+--- Checks if a child is visible inside the container.
+--- @param self Container
+--- @param child table The child to check.
+--- @return boolean 
 function Container:isChildVisible(child)
   local childX, childY = child:getPosition()
   local childWidth, childHeight = child:getSize()
@@ -125,6 +121,7 @@ function Container:isChildVisible(child)
          childX + childWidth > 0 and childY + childHeight > 0
 end
 
+--- Forces to render all visible childrens.
 function Container:forceVisibleChildrenUpdate()
   self.isVisibleChildrenUpdated = false
   for k,v in pairs(self.isVisibleChildrenEventsUpdated)do
@@ -132,6 +129,9 @@ function Container:forceVisibleChildrenUpdate()
   end
 end
 
+--- Gets a child by its name.
+--- @param self Container
+--- @param name string The name of the child.
 function Container:getChild(name)
   if(type(name)=="table")then
     name = name:getName()
@@ -143,6 +143,11 @@ function Container:getChild(name)
   end
 end
 
+--- Adds a child to the container.
+--- @param self Container
+--- @param child table The child to add.
+--- @param childZ? number The z index of the child.
+--- @return table
 function Container:addChild(child, childZ)
   if(self:getChild(child) ~= nil) then
     return
@@ -169,6 +174,9 @@ function Container:addChild(child, childZ)
   return child
 end
 
+--- Removes a child from the container.
+--- @param self Container
+--- @param childName string The name of the child.
 function Container:removeChild(childName)
   if(type(childName)=="table")then
     childName = childName:getName()
@@ -182,6 +190,9 @@ function Container:removeChild(childName)
   self.isVisibleChildrenUpdated = false
 end
 
+--- Checks if a certain event is registered for a child.
+--- @param self Container
+--- @param event string The event to check.
 function Container:isEventRegistered(event, child)
   if(self.childrenEvents[event]==nil)then
     return false
@@ -194,6 +205,10 @@ function Container:isEventRegistered(event, child)
   return false
 end
 
+--- Adds an event to a child.
+--- @param self Container
+--- @param event string The event to add.
+--- @param child table The child to add the event to.
 function Container:addEvent(event, child)
   self.childrenEvents[event] = self.childrenEvents[event] or {}
   if(self:isEventRegistered(event, child))then
@@ -217,6 +232,10 @@ function Container:addEvent(event, child)
   self.isVisibleChildrenEventsUpdated[event] = false
 end
 
+--- Removes an event from a child.
+--- @param self Container
+--- @param event string The event to remove.
+--- @param child table The child to remove the event from.
 function Container:removeEvent(event, child)
   if(self.childrenEvents[event]==nil)then
     return false
@@ -236,6 +255,10 @@ function Container:removeEvent(event, child)
   return false
 end
 
+--- Gets all visible children of the container for a certain event.
+--- @param self Container
+--- @param event string The event to get the children for.
+--- @return table
 function Container:getVisibleChildrenEvents(event)
   if(self.isVisibleChildrenEventsUpdated[event])then
     return self.visibleChildrenEvents[event]
@@ -255,6 +278,9 @@ function Container:getVisibleChildrenEvents(event)
   return visibleChildrenEvents
 end
 
+--- Forces to update the z position of the child.
+--- @param self Container
+--- @param child table The child to update.
 function Container:updateChild(child)
   if not child or type(child) ~= "table" then
     return
@@ -271,6 +297,13 @@ function Container:updateChild(child)
   end
 end
 
+--- Sets the cursor of the container.
+--- @param self Container
+--- @param blink boolean If the cursor should blink.
+--- @param cursorX? number The x position of the cursor.
+--- @param cursorY? number The y position of the cursor.
+--- @param color? color The color of the cursor.
+--- @return self
 function Container:setCursor(blink, cursorX, cursorY, color)
   if(self.parent~=nil) then
     local obx, oby = self:getPosition()
@@ -299,6 +332,7 @@ function Container:setCursor(blink, cursorX, cursorY, color)
 end
 
 for _, v in pairs({"setBg", "setFg", "setText"}) do
+  ---@protected
   Container[v] = function(self, x, y, str)
       local obx, oby = self:getPosition()
       local w, h = self:getSize()
@@ -316,6 +350,7 @@ for _, v in pairs({"setBg", "setFg", "setText"}) do
 end
 
 for _,v in pairs({"drawBackgroundBox", "drawForegroundBox", "drawTextBox"})do
+    ---@protected
   Container[v] = function(self, x, y, width, height, symbol)
       local obx, oby = self:getPosition()
       local w, h = self:getSize()
@@ -331,6 +366,7 @@ for _,v in pairs({"drawBackgroundBox", "drawForegroundBox", "drawTextBox"})do
 end
 
 function Container:blit(x, y, t, f, b)
+  ---@protected
   local obx, oby = self:getPosition()
   local w, h = self:getSize()
   if y >= 1 and y <= h then
@@ -343,6 +379,7 @@ function Container:blit(x, y, t, f, b)
   end
 end
 
+---@protected
 function Container:event(event, ...)
   VisualElement.event(self, event, ...)
   for _, child in ipairs(self.children) do
@@ -353,6 +390,7 @@ function Container:event(event, ...)
 end
 
 for k,v in pairs({mouse_click=true,mouse_up=false,mouse_drag=false,mouse_scroll=true,mouse_move=false})do
+  ---@protected
   Container[k] = function(self, btn, x, y, ...)
       if(VisualElement[k]~=nil)then
           if(VisualElement[k](self, btn, x, y, ...))then
@@ -376,6 +414,7 @@ for k,v in pairs({mouse_click=true,mouse_up=false,mouse_drag=false,mouse_scroll=
   end
 end
 
+---@protected
 function Container.mouse_release(self, btn, x, y, ...)
   if(VisualElement.mouse_release~=nil)then
       if(VisualElement.mouse_release(self, btn, x, y, ...))then
@@ -394,6 +433,7 @@ end
 
 
 for _,v in pairs({"key", "key_up", "char"})do
+  ---@protected
   Container[v] = function(self, ...)
       if(VisualElement[v]~=nil)then
           if(VisualElement[v](self, ...))then
@@ -412,9 +452,15 @@ for _,v in pairs({"key", "key_up", "char"})do
 end
 
 for k,_ in pairs(loader.getElementList())do
+  ---@protected
   local elementName = k:gsub("^%l", string.upper)
   Container["add"..elementName] = function(self, id)
-    local element = self.basalt.create(id or uuid(), self, k)
+    local uid = id
+    if(type(id)=="table")then
+      uid = id.name
+      id.name = nil
+    end
+    local element = self.basalt.create(uid or uuid(), self, k, type(id)=="table" and id or nil)
     self:addChild(element, element:getZ())
     return element
   end

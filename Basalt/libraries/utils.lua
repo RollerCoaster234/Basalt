@@ -17,53 +17,6 @@ local function splitString(str, delimiter)
     return results
 end
 
-local function removeTags(input)
-    return input:gsub("{[^}]+}", "")
-end
-
-
-local function wrapText(str, width)
-    str = removeTags(str)
-    if(str=="")or(width==0)then
-        return {""}
-    end
-    local uniqueLines = splitString(str, "\n")
-    local result = {}
-    for k, v in pairs(uniqueLines) do
-        if #v == 0 then
-            table.insert(result, "")
-        else
-            while #v > width do
-                local last_space = width
-                for i = width, 1, -1 do
-                    if sub(v, i, i) == " " then
-                        last_space = i
-                        break
-                    end
-                end
-
-                if last_space == width then
-                    local line = sub(v, 1, last_space - 1) .. "-"
-                    table.insert(result, line)
-                    v = sub(v, last_space)
-                else
-                    local line = sub(v, 1, last_space - 1)
-                    table.insert(result, line)
-                    v = sub(v, last_space + 1)
-                end
-
-                if #v <= width then
-                    break
-                end
-            end
-            if #v > 0 then
-                table.insert(result, v)
-            end
-        end
-    end
-    return result
-end
-
 --- Coonverts a string with special tags to a table with colors and text
 -- @param input The string to convert
 -- @return A table with the following structure: { {text = "Hello", color = colors.red}, {text = "World", color = colors.blue} }
@@ -287,8 +240,6 @@ end,
 
 splitString = splitString,
 removeTags = removeTags,
-
-wrapText = wrapText,
 
 convertRichText = convertRichText,
 

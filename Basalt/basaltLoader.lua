@@ -4,6 +4,12 @@ if(dir==nil)then
     error("Unable to find directory "..args[2].." please report this bug to our discord.")
 end
 
+--- @class BasaltLoader
+--- @field load fun(elementName: string): table
+--- @field getElementList fun(): table
+--- @field extensionExists fun(name: string): boolean
+--- @field getExtension fun(extensionName: string): table
+--- @field setBasalt fun(basaltInstance: table)
 local basaltLoader = {}
 
 local _ELEMENTS = {}

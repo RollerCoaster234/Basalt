@@ -3,6 +3,7 @@ local Element = loader.load("BasicElement")
 local VisualElement = loader.load("VisualElement")
 local log = require("log")
 
+---@class Textfield : TextfieldP
 local TextField = setmetatable({}, VisualElement)
 
 Element:initialize("TextField")
@@ -12,7 +13,12 @@ Element:addProperty("scrollIndexX", "number", 1)
 Element:addProperty("scrollIndexY", "number", 1)
 Element:addProperty("cursorIndex", "number", 1)
 
-
+--- Creates a new Textfield.
+---@param id string The id of the object.
+---@param parent? Container The parent of the object.
+---@param basalt Basalt The basalt object.
+--- @return Textfield
+---@protected
 function TextField:new(id, parent, basalt)
   local newInstance = VisualElement:new(id, parent, basalt)
   setmetatable(newInstance, self)
@@ -29,6 +35,7 @@ TextField:extend("Load", function(self)
     self:listenEvent("mouse_scroll")
 end)
 
+---@protected
 function TextField:render()
     VisualElement.render(self)
     for i = 1, self.height do
@@ -43,76 +50,83 @@ function TextField:render()
     end
   end
 
-  function TextField:lose_focus()
-    VisualElement.lose_focus(self)
+---@protected
+function TextField:lose_focus()
+  VisualElement.lose_focus(self)
+  self.parent:setCursor(false)
+end
+
+---@protected
+function TextField:adjustScrollIndices(updateAccordingToCursor)
+  if updateAccordingToCursor then
+    if self.cursorIndex < self.scrollIndexX then
+      self.scrollIndexX = self.cursorIndex
+    elseif self.cursorIndex >= self.scrollIndexX + self.width then
+      self.scrollIndexX = self.cursorIndex - self.width + 1
+    end
+    if self.lineIndex < self.scrollIndexY then
+      self.scrollIndexY = self.lineIndex
+    elseif self.lineIndex >= self.scrollIndexY + self.height then
+      self.scrollIndexY = self.lineIndex - self.height + 1
+    end
+  end
+  self.scrollIndexX = math.max(1, self.scrollIndexX)
+  self.scrollIndexY = math.max(1, self.scrollIndexY)
+end
+
+--- Updates the cursor position.
+function TextField:updateCursor()
+  if self.cursorIndex >= self.scrollIndexX and self.cursorIndex < self.scrollIndexX + self.width
+      and self.lineIndex >= self.scrollIndexY and self.lineIndex < self.scrollIndexY + self.height then
+    self.parent:setCursor(true, self.x + self.cursorIndex - self.scrollIndexX, self.y + self.lineIndex - self.scrollIndexY, self:getForeground())
+  else
     self.parent:setCursor(false)
   end
+end
 
-  function TextField:adjustScrollIndices(updateAccordingToCursor)
-    if updateAccordingToCursor then
-      if self.cursorIndex < self.scrollIndexX then
-        self.scrollIndexX = self.cursorIndex
-      elseif self.cursorIndex >= self.scrollIndexX + self.width then
-        self.scrollIndexX = self.cursorIndex - self.width + 1
-      end
-      if self.lineIndex < self.scrollIndexY then
-        self.scrollIndexY = self.lineIndex
-      elseif self.lineIndex >= self.scrollIndexY + self.height then
-        self.scrollIndexY = self.lineIndex - self.height + 1
-      end
-    end
-    self.scrollIndexX = math.max(1, self.scrollIndexX)
-    self.scrollIndexY = math.max(1, self.scrollIndexY)
-  end
-
-  function TextField:updateCursor()
-    if self.cursorIndex >= self.scrollIndexX and self.cursorIndex < self.scrollIndexX + self.width
-       and self.lineIndex >= self.scrollIndexY and self.lineIndex < self.scrollIndexY + self.height then
-      self.parent:setCursor(true, self.x + self.cursorIndex - self.scrollIndexX, self.y + self.lineIndex - self.scrollIndexY, self:getForeground())
-    else
-      self.parent:setCursor(false)
-    end
-  end
-
+---@protected
 function TextField:mouse_click(button, x, y)
-    if(VisualElement.mouse_click(self, button, x, y)) then
-      if(button == 1) then
-          if(#self.lines > 0)then
-              self.lineIndex = math.min(y - self.y + self.scrollIndexY, #self.lines)
-              self.cursorIndex = math.min(x - self.x + self.scrollIndexX, self.lines[self.lineIndex]:len() + 1)
-              self:adjustScrollIndices(true)
-          else
-              self.lineIndex = 1
-              self.cursorIndex = 1
-          end
-      end
-      return true
+  if(VisualElement.mouse_click(self, button, x, y)) then
+    if(button == 1) then
+        if(#self.lines > 0)then
+            self.lineIndex = math.min(y - self.y + self.scrollIndexY, #self.lines)
+            self.cursorIndex = math.min(x - self.x + self.scrollIndexX, self.lines[self.lineIndex]:len() + 1)
+            self:adjustScrollIndices(true)
+        else
+            self.lineIndex = 1
+            self.cursorIndex = 1
+        end
     end
+    return true
   end
+end
 
-  function TextField:mouse_up(button, x, y)
-    if(VisualElement.mouse_up(self, button, x, y))then
-      if(button == 1)then
-        self:updateCursor()
-      end
-      return true
-    end
-  end
-
-  function TextField:mouse_scroll(direction, x, y)
-    if (VisualElement.mouse_scroll(self, direction, x, y)) then
-      if direction == 1 then
-        self.scrollIndexY = math.min(#self.lines - self.height + 1, self.scrollIndexY + 1)
-      elseif direction == -1 then
-        self.scrollIndexY = math.max(1, self.scrollIndexY - 1)
-      end
-      self:adjustScrollIndices(false)
+---@protected
+function TextField:mouse_up(button, x, y)
+  if(VisualElement.mouse_up(self, button, x, y))then
+    if(button == 1)then
       self:updateCursor()
-      self:updateRender()
-      return true
     end
+    return true
   end
+end
 
+---@protected
+function TextField:mouse_scroll(direction, x, y)
+  if (VisualElement.mouse_scroll(self, direction, x, y)) then
+    if direction == 1 then
+      self.scrollIndexY = math.min(#self.lines - self.height + 1, self.scrollIndexY + 1)
+    elseif direction == -1 then
+      self.scrollIndexY = math.max(1, self.scrollIndexY - 1)
+    end
+    self:adjustScrollIndices(false)
+    self:updateCursor()
+    self:updateRender()
+    return true
+  end
+end
+
+---@protected
 function TextField:key(key)
     if(VisualElement.key(self, key)) then
       local line = self.lines[self.lineIndex]
@@ -169,7 +183,7 @@ function TextField:key(key)
   end
 
 
-
+---@protected
 function TextField:char(char)
   if(VisualElement.char(self, char))then
     local line = self.lines[self.lineIndex]

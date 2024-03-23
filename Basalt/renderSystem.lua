@@ -26,6 +26,7 @@ return function(drawTerm)
 
     local emptySpaceLine
     local emptyColorLines = {}
+    local forcedRender = false
     
     local function createEmptyLines()
         emptySpaceLine = rep(" ", width)
@@ -153,20 +154,34 @@ return function(drawTerm)
             end
             terminal.setCursorBlink(false)
             for n = 1, height do
-                if(modifiedLines[n])then
-                    if(cache[n][1]~=renderData[n][1])or(cache[n][2]~=renderData[n][2])or(cache[n][3]~=renderData[n][3])then
-                        cache[n][1] = renderData[n][1]
-                        cache[n][2] = renderData[n][2]
-                        cache[n][3] = renderData[n][3]
-                        terminal.setCursorPos(1, n)
-                        terminal.blit(unpack(renderData[n]))
-                    end
+                if(forcedRender)then
+                    cache[n][1] = renderData[n][1]
+                    cache[n][2] = renderData[n][2]
+                    cache[n][3] = renderData[n][3]
+                    terminal.setCursorPos(1, n)
+                    terminal.blit(unpack(renderData[n]))
                     modifiedLines[n] = false
+                else
+                    if(modifiedLines[n])then
+                        if((cache[n][1]~=renderData[n][1])or(cache[n][2]~=renderData[n][2])or(cache[n][3]~=renderData[n][3]))or(forcedRender)then
+                            cache[n][1] = renderData[n][1]
+                            cache[n][2] = renderData[n][2]
+                            cache[n][3] = renderData[n][3]
+                            terminal.setCursorPos(1, n)
+                            terminal.blit(unpack(renderData[n]))
+                        end
+                        modifiedLines[n] = false
+                    end
                 end
             end
+            forcedRender = false
             terminal.setBackgroundColor(colors.black)
             terminal.setCursorBlink(isBlinking)
             terminal.setCursorPos(xC, yC)
+        end,
+
+        forceRender = function()
+            forcedRender = true
         end,
 
         setTerm = function(newTerm)

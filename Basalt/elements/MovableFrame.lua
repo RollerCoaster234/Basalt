@@ -1,6 +1,7 @@
 local Container = require("basaltLoader").load("Container")
 local log = require("log")
 
+---@class MovableFrame : MovableFrameP
 local MovableFrame = setmetatable({}, Container)
 
 MovableFrame:initialize("MovableFrame")
@@ -8,6 +9,12 @@ MovableFrame:addProperty("dragMap", "table", {
     {x=1, y=1, w=0, h=1}
 })
 
+--- Creates a new MovableFrame.
+---@param id string The id of the object.
+---@param parent? Container The parent of the object.
+---@param basalt Basalt The basalt object.
+--- @return MovableFrame
+---@protected
 function MovableFrame:new(id, parent, basalt)
   local newInstance = Container:new(id, parent, basalt)
   setmetatable(newInstance, self)
@@ -25,6 +32,11 @@ MovableFrame:extend("Load", function(self)
     self:listenEvent("mouse_drag")
 end)
 
+--- Checks if the given position is in the drag map.
+---@param self MovableFrame The element itself
+---@param x number The x position.
+---@param y number The y position.
+---@return boolean
 function MovableFrame:isInDragMap(x, y)
     local x, y = self:getRelativePosition(x, y)
     for _, v in pairs(self.dragMap)do
@@ -38,16 +50,18 @@ function MovableFrame:isInDragMap(x, y)
     return false
 end
 
-function MovableFrame:addDragPoint(x, y, w, h)
+--- Adds a new drag area to the drag map.
+---@param self MovableFrame The element itself
+---@param x number The x position.
+---@param y number The y position.
+---@param w number The width.
+---@param h number The height.
+function MovableFrame:addDragArea(x, y, w, h)
     table.insert(self.dragMap, {x=x, y=y, w=w, h=h})
     return self
 end
 
-function MovableFrame:createDragMap(newMap)
-    self.dragMap = newMap
-    return self
-end
-
+---@protected
 function MovableFrame:mouse_click(button, x, y)
     if(Container.mouse_click(self, button, x, y))then
         if(button == 1)then
@@ -61,11 +75,13 @@ function MovableFrame:mouse_click(button, x, y)
     end
 end
 
+---@protected
 function MovableFrame:mouse_up(button, x, y)
     self.isDragging = false
     return Container.mouse_up(self, button, x, y)
 end
 
+---@protected
 function MovableFrame:mouse_drag(button, x, y)
     Container.mouse_drag(self, button, x, y)
     if(self.isDragging)then

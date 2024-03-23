@@ -2,8 +2,10 @@ local loader = require("basaltLoader")
 local Element = loader.load("BasicElement")
 local VisualElement = loader.load("VisualElement")
 local List = loader.load("List")
-local Dropdown = setmetatable({}, List)
 local tHex = require("tHex")
+
+---@class Dropdown : DropdownP
+local Dropdown = setmetatable({}, List)
 
 Element:initialize("Dropdown")
 Element:addProperty("opened", "boolean", false)
@@ -11,6 +13,12 @@ Element:addProperty("dropdownHeight", "number", 5)
 Element:addProperty("dropdownWidth", "number", 15)
 Element:combineProperty("dropdownSize", "dropdownWidth", "dropdownHeight")
 
+--- Creates a new Dropdown.
+---@param id string The id of the object.
+---@param parent? Container The parent of the object.
+---@param basalt Basalt The basalt object.
+--- @return Dropdown
+---@protected
 function Dropdown:new(id, parent, basalt)
     local newInstance = List:new(id, parent, basalt)
     setmetatable(newInstance, self)
@@ -22,6 +30,7 @@ function Dropdown:new(id, parent, basalt)
     return newInstance
 end
 
+---@protected
 function Dropdown:render()
     VisualElement.render(self)
     local selectedIndex = self:getSelectedIndex()
@@ -48,6 +57,7 @@ function Dropdown:render()
     end
 end
 
+---@protected
 function Dropdown:mouse_click(button, x, y)
     if(VisualElement.mouse_click(self, button, x, y)) then
         self.opened = not self.opened
@@ -67,6 +77,7 @@ function Dropdown:mouse_click(button, x, y)
     end
 end
 
+---@protected
 function Dropdown:mouse_scroll(direction, x, y)
     if(VisualElement.mouse_scroll(self, direction, x, y)) then
         self.selectedIndex = math.max(math.min(self.selectedIndex + direction, #self.items), 1)

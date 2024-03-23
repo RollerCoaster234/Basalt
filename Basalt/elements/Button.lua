@@ -1,14 +1,20 @@
+
 local loader = require("basaltLoader")
 local Element = loader.load("BasicElement")
 local VisualElement = loader.load("VisualElement")
 local getCenteredPosition = require("utils").getCenteredPosition
 
-
+--- @class Button : ButtonP
 local Button = setmetatable({}, VisualElement)
 
 Element:initialize("Button")
 Element:addProperty("text", "string", "Button")
 
+--- Creates a new visual element.
+---@param id string The id of the object.
+---@param parent Container The parent of the object.
+---@param basalt Basalt The basalt object.
+--- @return Button
 function Button:new(id, parent, basalt)
   local newInstance = VisualElement:new(id, parent, basalt)
   setmetatable(newInstance, self)

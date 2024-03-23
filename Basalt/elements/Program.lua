@@ -360,11 +360,18 @@ local function BasaltProgram(object)
     }
 end
 
+---@class Program : ProgramP
 local Program = setmetatable({}, VisualElement)
 
 Element:initialize("Program")
 Element:addProperty("program", "table")
 
+--- Creates a new Program.
+---@param id string The id of the object.
+---@param parent? Container The parent of the object.
+---@param basalt Basalt The basalt object.
+--- @return Program
+---@protected
 function Program:new(id, parent, basalt)
   local newInstance = VisualElement:new(id, parent, basalt)
   setmetatable(newInstance, self)
@@ -378,6 +385,7 @@ function Program:new(id, parent, basalt)
   return newInstance
 end
 
+---@protected
 function Program:render()
   VisualElement.render(self)
   local renderData = self.program.getRenderData()
@@ -386,6 +394,9 @@ function Program:render()
   end
 end
 
+--- Starts the program.
+---@param path string|function The path to the program or the function to run.
+---@param customEnv? table The custom environment for the program.
 function Program:start(path, customEnv, ...)
   self.program.start(path, customEnv, ...)
 end
@@ -397,10 +408,12 @@ Program:extend("Load", function(self)
     self:listenEvent("mouse_drag")
 end)
 
+---@protected
 function Program:event(...)
   self.program.resume(...)
 end
 
+---@protected
 function Program:mouse_click(...)
     if(VisualElement.mouse_click(self, ...))then
         self.program.resume("mouse_click", ...)
@@ -408,6 +421,7 @@ function Program:mouse_click(...)
     end
 end
 
+---@protected
 function Program:mouse_up(...)
     if(VisualElement.mouse_up(self, ...))then
         self.program.resume("mouse_up", ...)
@@ -415,10 +429,12 @@ function Program:mouse_up(...)
     end
 end
 
+---@protected
 function Program:mouse_scroll(...)
     self.program.resume("mouse_scroll", ...)
 end
 
+---@protected
 function Program:mouse_drag(...)
     if(VisualElement.mouse_drag(self, ...))then
         self.program.resume("mouse_drag", ...)
@@ -426,6 +442,7 @@ function Program:mouse_drag(...)
     end
 end
 
+---@protected
 function Program:key(...)
     if(VisualElement.key(self, ...))then
         self.program.resume("key", ...)
@@ -433,6 +450,7 @@ function Program:key(...)
     end
 end
 
+---@protected
 function Program:key_up(...)
     if(VisualElement.key_up(self, ...))then
         self.program.resume("key_up", ...)
@@ -440,6 +458,7 @@ function Program:key_up(...)
     end
 end
 
+---@protected
 function Program:char(...)
     if(VisualElement.char(self, ...))then
         self.program.resume("char", ...)

@@ -5,7 +5,7 @@ local loader = require("basaltLoader")
 local Element = loader.load("BasicElement")
 local Container = loader.load("Container")
 
-
+---@class Monitor : MonitorP
 local Monitor = setmetatable({}, Container)
 
 Element:initialize("Monitor")
@@ -32,7 +32,12 @@ Element:addProperty("Side", "string", nil, nil, function(self, value)
     end
 end)
 
-
+--- Creates a new Monitor.
+---@param id string The id of the object.
+---@param parent? Container The parent of the object.
+---@param basalt Basalt The basalt object.
+--- @return Monitor
+---@protected
 function Monitor:new(id, parent, basalt)
   local newInstance = Container:new(id, parent, basalt)
   setmetatable(newInstance, self)
@@ -42,6 +47,7 @@ function Monitor:new(id, parent, basalt)
   return newInstance
 end
 
+---@protected
 function Monitor:event(event, ...)
   Container.event(self, event, ...)
   if(event=="monitor_resize")then
@@ -51,6 +57,7 @@ function Monitor:event(event, ...)
   end
 end
 
+---@protected
 function Monitor:monitor_touch(side, ...)
   if(side==self:getSide())then
     self.basalt.setFocusedFrame(self)
@@ -58,6 +65,7 @@ function Monitor:monitor_touch(side, ...)
   end
 end
 
+---@protected
 function Monitor:lose_focus()
   Container.lose_focus(self)
   self:setCursor(false)

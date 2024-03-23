@@ -13,4 +13,8 @@ package.path = main..eleFolder..extFolder..libFolder..defaultPath
 local Basalt = require("main")
 package.path = defaultPath
 
+--- Add a frame to the basalt instance
+-- @param id The id of the frame
+-- @return BaseFrame
+
 return Basalt

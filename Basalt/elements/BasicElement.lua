@@ -2,6 +2,7 @@ local split = require("utils").splitString
 local deepcopy = require("utils").deepcopy
 local uuid = require("utils").uuid
 
+---@class BasicElement
 local Element = {}
 
 local properties = {}
@@ -9,6 +10,12 @@ local propertyTypes = {}
 local extensions = {}
 local activeType = "BasicElement"
 
+--- Creates a new basic element
+---@param id string The id of the element
+---@param parent? table The parent of the element
+---@param basalt table The basalt instance
+---@return BasicElement
+---@protected
 function Element:new(id, parent, basalt)
     local newInstance = {}
     setmetatable(newInstance, self)
@@ -109,16 +116,27 @@ local function defaultRule(typ)
     end
 end
 
+--- Adds a property listener to the element
+---@param self BasicElement
+---@param propertyName string
+---@param observerFunction function
+---@return self
 function Element.addPropertyObserver(self, propertyName, observerFunction)
     if not self.propertyObservers[propertyName] then
         self.propertyObservers[propertyName] = {}
     end
     table.insert(self.propertyObservers[propertyName], observerFunction)
+    return self
 end
 
+--- Removes a property observer from the element
+---@param self BasicElement
+---@param propertyName string
+---@param index number
+---@return self
 function Element.removePropertyObserver(self, propertyName, index)
     if not self.propertyObservers[propertyName] then
-        return
+        return self
     end
     if(type(index)=="number")then
         table.remove(self.propertyObservers[propertyName], index)
@@ -129,19 +147,31 @@ function Element.removePropertyObserver(self, propertyName, index)
             end
         end
     end
+    return self
 end
 
+--- Forces an update of the property observer
+---@param self BasicElement
+---@param propertyName string
+---@return self
 function Element.forcePropertyObserverUpdate(self, propertyName)
     if not self.propertyObservers[propertyName] then
-        return
+        return self
     end
     for _,v in pairs(self.propertyObservers[propertyName])do
         if(type(v)=="function")then
             v(self, propertyName)
         end
     end
+    return self
 end
 
+--- Sets a property of the element
+---@param self BasicElement
+---@param name string
+---@param value any
+---@param rule? function
+---@return self
 function Element.setProperty(self, name, value, rule)
     if(name==nil)then
         error(self:getType()..": Property name cannot be nil!")
@@ -165,6 +195,10 @@ function Element.setProperty(self, name, value, rule)
     return self
 end
 
+--- Gets a property of the element
+---@param self BasicElement
+---@param name string
+---@return any
 function Element.getProperty(self, name)
     local prop = self[name]
     if(type(prop)=="function")then
@@ -173,10 +207,17 @@ function Element.getProperty(self, name)
     return prop
 end
 
+--- Checks if the element has a property
+---@param self BasicElement
+---@param name string
 function Element.hasProperty(self, name)
     return self[name]~=nil
 end
 
+--- Sets multiple properties of the element
+---@param self BasicElement
+---@param properties table -- Table of properties (like: {x=1, y=2, width=10, background=colors.red})
+---@return self
 function Element.setProperties(self, properties)
     for k,v in pairs(properties) do
         self[k] = v
@@ -184,6 +225,9 @@ function Element.setProperties(self, properties)
     return self
 end
 
+--- Gets all properties of the element
+---@param self BasicElement
+---@return table
 function Element.getProperties(self)
     local p = {}
     for k,v in pairs(self)do
@@ -196,6 +240,10 @@ function Element.getProperties(self)
     return p
 end
 
+--- Gets the type of the element
+---@param self BasicElement
+---@param name string -- The name of the property
+---@return string | nil
 function Element.getPropertyType(self, name)
     for k,v in pairs(self.type)do
         if(propertyTypes[v]~=nil)then
@@ -206,6 +254,9 @@ function Element.getPropertyType(self, name)
     end
 end
 
+--- Updates the rendering of the element
+---@param self BasicElement
+---@protected
 function Element.updateRender(self)
     if(self.parent~=nil)then
         self.parent:forceVisibleChildrenUpdate()
@@ -215,6 +266,15 @@ function Element.updateRender(self)
     end
 end
 
+--- Adds a property behaviour to the element
+---@param self BasicElement
+---@param name string -- The name of the property
+---@param typ string -- The type of the property (e.g. "string", "number", "boolean", "table>key1,key2")
+---@param defaultValue any -- The default value of the property
+---@param readonly? boolean -- If the property is readonly
+---@param setLogic? function -- The logic to set the property (gets called when setting the property)
+---@param getLogic? function -- The logic to get the property (gets called when getting the property)
+---@protected
 function Element.addProperty(self, name, typ, defaultValue, readonly, setLogic, getLogic)
     if(typ==nil)then typ = "any" end
     if(readonly==nil)then readonly = false end
@@ -254,7 +314,12 @@ function Element.addProperty(self, name, typ, defaultValue, readonly, setLogic, 
     end
 end
 
-local log = require("log")
+--- Combines multiple properties into one function
+---@param self BasicElement
+---@param name string -- The name of the combined propertyName
+---@vararg string -- The names of the properties to combine
+---@return self
+---@protected
 function Element.combineProperty(self, name, ...)
     name = name:gsub("^%l", string.upper)
     local args = {...}
@@ -275,11 +340,14 @@ function Element.combineProperty(self, name, ...)
     return self
 end
 
+---@protected
 function Element.initialize(self, typ)
     activeType = typ
     return self
 end
 
+--- This method is meant for internal usage only, it copys the properties from the template
+---@protected
 function Element:create(typ)
     if(properties[typ]~=nil)then
         for k,v in pairs(properties[typ])do
@@ -295,6 +363,8 @@ function Element:create(typ)
     end
 end
 
+--- Adds a event listener to the element like :create this method is meant for internal usage only
+---@protected
 function Element.addListener(self, name, event)
     self["on"..name:gsub("^%l", string.upper)] = function(self, ...)
         for _,f in pairs({...})do
@@ -314,6 +384,12 @@ function Element.addListener(self, name, event)
 return self
 end
 
+--- Fires an event
+---@param self BasicElement
+---@param name string -- The name of the event
+---@vararg any -- The arguments to pass to the event
+---@protected
+---@return self
 function Element.fireEvent(self, name, ...)
     if(self.listeners~=nil)then
         if(self.listeners[name]~=nil)then
@@ -325,6 +401,10 @@ function Element.fireEvent(self, name, ...)
     return self
 end
 
+--- Checks if the element is of a certain type
+---@param self BasicElement
+---@param typ string -- The type to check (e.g. "BasicElement")
+---@return boolean
 function Element.isType(self, typ)
     for _,v in pairs(self.type)do
         if(v==typ)then
@@ -334,6 +414,11 @@ function Element.isType(self, typ)
     return false
 end
 
+--- listens to a event
+---@param self BasicElement
+---@param event string -- The event to listen to
+---@param active? boolean -- If the event listener for should be active
+---@return self
 function Element.listenEvent(self, event, active)
     if(self.parent~=nil)then
         if(active)or(active==nil)then
@@ -347,6 +432,9 @@ function Element.listenEvent(self, event, active)
     return self
 end
 
+--- Updates the event list of the element
+---@param self BasicElement
+---@return self
 function Element.updateEvents(self)
     if(self.parent~=nil)then
         for k,v in pairs(self.events)do
@@ -360,6 +448,8 @@ function Element.updateEvents(self)
     return self
 end
 
+--- This method is meant for internal usage only
+---@protected
 function Element.extend(self, name, f)
     if(extensions[activeType]==nil)then
         extensions[activeType] = {}
@@ -371,6 +461,8 @@ function Element.extend(self, name, f)
     return self
 end
 
+--- Calls an extension - meant for internal/extension usage only
+---@protected
 function Element.callExtension(self, name)
     for _,t in pairs(self.type)do
         if(extensions[t]~=nil)then
@@ -402,11 +494,14 @@ Element:addProperty("z", "number", 1, false, function(self, value)
     end
     return value
 end)
+
 Element:addProperty("enabled", "boolean", true)
 Element:addProperty("parent", "table", nil)
 Element:addProperty("events", "table", {})
 Element:addProperty("propertyObservers", "table", {})
 
+--- This method gets called when the element gets created, it is meant for internal usage only
+---@protected
 function Element.init(self)
     if not self.initialized then
         self:callExtension("Init")

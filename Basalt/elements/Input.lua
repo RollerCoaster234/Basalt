@@ -3,6 +3,7 @@ local Element = loader.load("BasicElement")
 local VisualElement = loader.load("VisualElement")
 local tHex = require("tHex")
 
+---@class Input : InputL
 local Input = setmetatable({}, VisualElement)
 
 Element:initialize("Input")
@@ -19,6 +20,12 @@ Element:combineProperty("placeholder", "placeholderText", "placeholderColor", "p
 Element:addListener("change", "change_value")
 Element:addListener("enter", "enter_pressed")
 
+--- Creates a new Input.
+---@param id string The id of the object.
+---@param parent? Container The parent of the object.
+---@param basalt Basalt The basalt object.
+--- @return Input
+---@protected
 function Input:new(id, parent, basalt)
   local newInstance = VisualElement:new(id, parent, basalt)
   setmetatable(newInstance, self)
@@ -30,6 +37,7 @@ function Input:new(id, parent, basalt)
   return newInstance
 end
 
+---@protected
 function Input.render(self)
     VisualElement.render(self)
     local text = self:getValue()
@@ -57,11 +65,13 @@ Input:extend("Load", function(self)
     self:listenEvent("mouse_up")
 end)
 
+---@protected
 function Input:lose_focus()
     VisualElement.lose_focus(self)
     self.parent:setCursor(false)
 end
 
+---@protected
 function Input:mouse_up(button, x, y)
     if(VisualElement.mouse_up(self, button, x, y))then
         if(button == 1)then
@@ -72,6 +82,7 @@ function Input:mouse_up(button, x, y)
     end
 end
 
+---@protected
 function Input:key(key)
     if(VisualElement.key(self, key))then
         if key == keys.backspace and self.value ~= "" and self.cursorIndex > 1 then
@@ -99,6 +110,7 @@ function Input:key(key)
     end
 end
 
+---@protected
 function Input:char(char)
     if(VisualElement.char(self, char))then
         if self.inputLimit and self.value:len() >= self.inputLimit then
@@ -123,11 +135,15 @@ function Input:char(char)
     end
 end
 
+---@protected
 function Input:adjustScrollIndex()
-    if self.cursorIndex < self.scrollIndex then
-        self.scrollIndex = self.cursorIndex
-    elseif self.cursorIndex > self.scrollIndex + self.width - 1 then
-        self.scrollIndex = self.cursorIndex - self.width + 1
+    local width = self:getWidth()
+    local cursorIndex = self:getCursorIndex()
+    local scrollIndex = self:getScrollIndex()
+    if cursorIndex < scrollIndex then
+        scrollIndex = cursorIndex
+    elseif cursorIndex > scrollIndex + width - 1 then
+        scrollIndex = cursorIndex - width + 1
     end
 end
 

@@ -2,12 +2,21 @@ local loader = require("basaltLoader")
 local Element = loader.load("BasicElement")
 local VisualElement = loader.load("VisualElement")
 local List = loader.load("List")
-local Menubar = setmetatable({}, List)
 local tHex = require("tHex")
+
+---@class Menubar : MenubarP
+local Menubar = setmetatable({}, List)
+
 
 Element:initialize("Menubar")
 Element:addProperty("spacing", "number", 1)
 
+--- Creates a new Menubar.
+---@param id string The id of the object.
+---@param parent? Container The parent of the object.
+---@param basalt Basalt The basalt object.
+--- @return Menubar
+---@protected
 function Menubar:new(id, parent, basalt)
     local newInstance = List:new(id, parent, basalt)
     setmetatable(newInstance, self)
@@ -18,6 +27,7 @@ function Menubar:new(id, parent, basalt)
     return newInstance
 end
 
+---@protected
 function Menubar:mouse_click(button, x, y)
     if(VisualElement.mouse_click(self, button, x, y)) then
         if(button == 1) then
@@ -36,7 +46,8 @@ function Menubar:mouse_click(button, x, y)
     end
 end
 
-  function Menubar:render()
+---@protected
+function Menubar:render()
     VisualElement.render(self)
     local currentIndex = self.scrollIndex
     local currentX = 1
@@ -59,6 +70,7 @@ end
     end
 end
 
+---@protected
 function Menubar:mouse_scroll(direction, x, y)
     if(VisualElement.mouse_scroll(self, direction, x, y)) then
         if direction == 1 and self.scrollIndex < #self.items - self:getVisibleItems() + 1 then
@@ -71,6 +83,9 @@ function Menubar:mouse_scroll(direction, x, y)
     end
 end
 
+--- Returns the amount of visible items
+---@param self Menubar
+---@return number
 function Menubar:getVisibleItems()
     local visibleItems = 0
     local currentIndex = self.scrollIndex

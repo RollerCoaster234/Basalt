@@ -1,8 +1,8 @@
 settings.define("basalt.path", {description="Path to the basalt folder", default=".basalt", type="string"})
 settings.define("basalt.cacheGlobally", {description="Cache the basalt API globally", default=false, type="boolean"})
 settings.define("basalt.downloadFiles", {description="Download the required files from Github", default=true, type="boolean"})
-settings.define("basalt.storeDownloadedFiles", {description="", default=true, type="boolean"})
-settings.define("basalt.autoUpdate", {description="Automatically update the project from Github", default=true, type="boolean"})
+settings.define("basalt.storeDownloadedFiles", {description="", default=false, type="boolean"})
+settings.define("basalt.autoUpdate", {description="Automatically update the project from Github", default=false, type="boolean"})
 settings.define("basalt.versions", {description="The versions of the elements and extensions", default={}, type="table"})
 settings.define("basalt.github", {description="The URL to the Github repository", default="https://raw.githubusercontent.com/pyroxenium/Basalt/basalt2/", type="string"})
 
@@ -19,13 +19,16 @@ local basaltVersion = settings.get("basalt.versions")
 local githubBasaltConfig = githubURL.."config.json"
 
 -- DO NOT TOUCH BELOW THIS LINE
+
+--- @class BasaltLoader : Basalt
+local _basalt = {}
+
 local format = "path;/path/?.lua;/path/?/init.lua;"
 local mainPath = format:gsub("path", ".basalt")
 package.path = mainPath..basaltPath
 
 local requiredElements = {}
 local requiredExtensions = {}
-local _basalt = {}
 local main = {}
 local config
 local loaded = false
@@ -34,8 +37,7 @@ local function getConfig(key)
     if(config~=nil)then
         return config[key]
     end
-    --local file = http.get(githubBasaltConfig)
-    local file = fs.open("config.json", "r")
+    local file = http.get(githubBasaltConfig)
     if(file == nil) then
         error("Failed to download the Basalt config file")
     end
@@ -43,12 +45,24 @@ local function getConfig(key)
     return config[key]
 end
 
-local function required(typ, name)
+--- This function will tell Basalt to require a specific element or extension. It will try to download the file from the Github repository if it doesn't exist.
+--- @param typ --- The type of the required file. Can be either "element" or "extension".
+---| '"extension"' # Looks for the required file in the extensions folder.
+---| '"element"' #  Looks for the required file in the elements folder.
+--- @param name string -- The name of the required file.
+function _basalt.required(typ, name)
     if typ == "element" then
         requiredElements[name] = true
     elseif typ == "extension" then
         requiredExtensions[name] = true
     end
+end
+
+--- This function will set a value in the settings API. Look at https://basalt.madefor.cc/ for settings documentation.
+--- @param key string -- The key of the setting.
+--- @param value any -- The value of the setting.
+function _basalt.set(key, value)
+    settings.set(key, value)
 end
 
 local function downloadRequiredFile(name, typ)
@@ -72,9 +86,6 @@ local function updateFile(path, file)
     f.write(file)
     f.close()
 end
-
-
-
 
 local function checkFileUpdate(name, typ)
     local newestVersion = getConfig("versions")
@@ -103,6 +114,7 @@ local function checkFileUpdate(name, typ)
             if(newestVersion[name]>basaltVersion[name])then
                 local file = downloadRequiredFile(name, typ)
                 updateFile(basaltPath.."/"..name..".lua", file)
+                basaltVersion[name] = newestVersion[name]
                 return true
             end
         end
@@ -147,16 +159,13 @@ if(autoUpdate)then
     end
     settings.set("basalt.versions", basaltVersion)
 end
-
-local basalt_mt = {
+    local basalt_mt = {
     __index = function(tbl, key)
         if(key == "required") then
-            return required
+            return _basalt.required
         end
         if(key == "set")then
-            return function(k, v)
-                settings.set(k, v)
-            end
+            return _basalt.set
         end
         if not loaded then
             package.path = mainPath..basaltPath
@@ -202,7 +211,7 @@ local basalt_mt = {
             end
             package.path = basaltPath
         end
-        local loaded = true
+        loaded = true
         return main[key]
     end
 }
