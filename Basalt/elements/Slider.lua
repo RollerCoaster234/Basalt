@@ -3,7 +3,7 @@ local Element = loader.load("BasicElement")
 local VisualElement = loader.load("VisualElement")
 local tHex = require("tHex")
 
----@class Slider : SliderL
+---@class Slider : VisualElement
 local Slider = setmetatable({}, VisualElement)
 
 Element:initialize("Slider")

@@ -4,7 +4,7 @@ local VisualElement = loader.load("VisualElement")
 local uuid = require("utils").uuid
 local subText = require("utils").subText
 
---- @class Container : ContainerE
+--- @class Container : VisualElement
 local Container = setmetatable({}, VisualElement)
 
 local renderSystem = require("renderSystem")
@@ -454,7 +454,7 @@ end
 for k,_ in pairs(loader.getElementList())do
   ---@protected
   local elementName = k:gsub("^%l", string.upper)
-  Container["add"..elementName] = function(self, id)
+  Container["add"..elementName] = function(self, id, x, y, w, h, bg, fg)
     local uid = id
     if(type(id)=="table")then
       uid = id.name
@@ -462,6 +462,12 @@ for k,_ in pairs(loader.getElementList())do
     end
     local element = self.basalt.create(uid or uuid(), self, k, type(id)=="table" and id or nil)
     self:addChild(element, element:getZ())
+    if(x~=nil)then element:setX(x) end
+    if(y~=nil)then element:setY(y) end
+    if(w~=nil)then element:setWidth(w) end
+    if(h~=nil)then element:setHeight(h) end
+    if(bg~=nil)then element:setBackground(bg) end
+    if(fg~=nil)then element:setForeground(fg) end
     return element
   end
 end

@@ -3,7 +3,7 @@ local Element = loader.load("BasicElement")
 local VisualElement = loader.load("VisualElement")
 local tHex = require("tHex")
 
----@class List : ListL
+---@class List : VisualElement
 local List = setmetatable({}, VisualElement)
 
 Element:initialize("List")

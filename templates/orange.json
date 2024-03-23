@@ -1,0 +1,47 @@
+{
+    "colors": {
+        "orange": "#ff8c00",
+        "white": "#E0E0E0",
+        "black": "#202020",
+        "gray": "#404040",
+        "lightGray": "#808080"
+    },
+    "default": {
+        "background": "white",
+        "foreground": "black"
+    },
+    "BaseFrame": {
+        "background": "orange",
+        "foreground": "white",
+        "Button": {
+            "background": "{self.clicked ? black : white}",
+            "foreground": "{self.clicked ? white : black}"
+        },
+        "Container": {
+            "background": "white",
+            "Button": {
+                "background": "{self.clicked ? black : orange}",
+                "foreground": "{self.clicked ? white : black}"
+            }
+        },
+        "Checkbox": {
+            "background": "black",
+            "foreground": "lightGray"
+        },
+        "Input": {
+            "background": "{self.focused ? white : black}",
+            "foreground": "{self.focused ? black : white}",
+            "placeholderBackground": "{self.focused ? white : black}",
+            "placeholderColor": "{self.focused ? gray : gray}",
+            "placeholderText": "{self.focused ? '' : 'Type..'}",
+            "width": 14
+        },
+        "Slider": {
+            "background": null,
+            "knobBackground": "{self.focused ? black : gray}"
+        },
+        "Label": {
+            "background": null
+        }
+    }
+}

@@ -1,6 +1,7 @@
 
 local bbgExtension = {}
 
+
 function bbgExtension.extensionProperties(original)
     local Element = require("basaltLoader").load("BasicElement")
     Element:initialize("VisualElement")

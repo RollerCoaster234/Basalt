@@ -1,6 +1,6 @@
 local Container = require("basaltLoader").load("Container")
 
---- @class Frame : FrameP
+--- @class Frame : Container
 local Frame = setmetatable({}, Container)
 
 Frame:initialize("Frame")

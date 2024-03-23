@@ -3,7 +3,7 @@ local Element = loader.load("BasicElement")
 local VisualElement = loader.load("VisualElement")
 local log = require("log")
 
----@class Textfield : TextfieldP
+---@class Textfield : VisualElement
 local TextField = setmetatable({}, VisualElement)
 
 Element:initialize("TextField")

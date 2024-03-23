@@ -1,3 +1,4 @@
+---@class Basalt
 local debug = {frames={}}
 
 local function openDebugPanel()
@@ -25,9 +26,11 @@ local function openDebugPanel()
     return debug.frames[id]
 end
 
+--- Writes a message to the debug log window
+---@param ... any
 debug.debug = function(...)
     local msg = ""
-    for k,v in pairs({...})do
+    for _,v in pairs({...})do
         msg = msg..tostring(v).." "
     end
     local mainFrame = debug.basalt.getMainFrame()
@@ -39,8 +42,10 @@ debug.debug = function(...)
     end
 end
 
-debug.openDebugPanel = function()
-    openDebugPanel():setVisible(true)
+--- Opens the debug panel
+---@param bool? boolean
+debug.openDebugPanel = function(bool)
+    openDebugPanel():setVisible(bool or true)
 end
 
 return {

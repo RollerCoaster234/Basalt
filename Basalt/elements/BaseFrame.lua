@@ -2,7 +2,7 @@ local loader = require("basaltLoader")
 local Element = loader.load("BasicElement")
 local Container = loader.load("Container")
 
---- @class BaseFrame : BaseFrameP
+--- @class BaseFrame : Container
 local BaseFrame = setmetatable({}, Container)
 
 Element:initialize("BaseFrame")

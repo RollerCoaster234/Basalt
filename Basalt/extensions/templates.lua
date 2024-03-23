@@ -105,7 +105,19 @@ local function lookUpTemplate(allTypes)
     return elementData
 end
 
+---@class Basalt
 local Basalt = {}
+local oldStop
+local changedColors = {}
+
+---@private
+function Basalt.init(basalt)
+    oldStop = basalt.stop
+end
+
+--- Returns the template of the element or the base template.
+---@param element? string
+---@return table The template of the element.
 function Basalt.getTemplate(element)
     if(element==nil)then
         return baseTemplate
@@ -113,17 +125,9 @@ function Basalt.getTemplate(element)
     return lookUpTemplate(element:__getElementPathTypes())
 end
 
+--- Adds additional template configurations.
+---@param newTemplate table The new template to add.
 function Basalt.addTemplate(newTemplate)
-    if(type(newTemplate)=="string")then
-        local file = fs.open(newTemplate, "r")
-        if(file~=nil)then
-            local data = file.readAll()
-            file.close()
-            baseTemplate = textutils.unserializeJSON(data)
-        else
-            error("Could not open template file "..newTemplate)
-        end
-    end
     if(type(newTemplate)=="table")then
         for k,v in pairs(newTemplate)do
             baseTemplate[k] = v
@@ -131,11 +135,70 @@ function Basalt.addTemplate(newTemplate)
     end
 end
 
+--- Sets a new template.
+---@param newTemplate table The new base template.
 function Basalt.setTemplate(newTemplate)
     baseTemplate = newTemplate
 end
 
+--- Loads a template from a json formatted file.
+---@param newTemplate string The path to the template file.
+function Basalt.loadTemplate(newTemplate)
+    local file = fs.open(newTemplate, "r")
+    if(file~=nil)then
+        local data = file.readAll()
+        file.close()
+        baseTemplate = textutils.unserializeJSON(data)
+    else
+        error("Could not open template file "..newTemplate)
+    end
+end
+
+--- Sets the colors of the terminal.
+---@param colorList table The new colors to set.
+function Basalt.setColors(colorList)
+    for k,v in pairs(colorList)do
+        term.setPaletteColour(colors[k], v)
+    end
+end
+
+function Basalt.stop()
+    oldStop()
+    for k,v in pairs(changedColors)do
+        for a,b in pairs(v)do
+            k.setPaletteColor(colors[a], b)
+        end
+    end
+end
+
+local Container = {}
+function Container.init(original, basalt)
+    local Element = require("basaltLoader").load("BasicElement")
+    Element:extend("Init", function(self)
+        if(original:getParent()==nil)then
+            if(baseTemplate.colors~=nil)then
+                local FrameTerm = self:getTerm()
+                if(FrameTerm~=nil)then
+                    for k,v in pairs(baseTemplate.colors)do
+                        if(colors[k]~=nil)then
+                            if(v:sub(1,1)=="#")then
+                                v = "0x"..v:sub(2)
+                            end
+                            local color = tonumber(v)
+                            changedColors[FrameTerm] = changedColors[FrameTerm] or {}
+                            changedColors[FrameTerm][k] = colors.packRGB(FrameTerm.getPaletteColor(colors[k]))
+                            FrameTerm.setPaletteColor(colors[k], color)
+                        end
+                    end
+                end
+            end
+        end
+        return self
+    end)
+end
+
 return {
     BasicElement = TempExtension,
+    Container = Container,
     Basalt = Basalt,
 }

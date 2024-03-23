@@ -3,7 +3,7 @@ local Element = loader.load("BasicElement")
 local VisualElement = loader.load("VisualElement")
 local getCenteredPosition = require("utils").getCenteredPosition
 
----@class Checkbox : CheckboxP
+---@class Checkbox : VisualElement
 local Checkbox = setmetatable({}, VisualElement)
 
 Element:initialize("Checkbox")

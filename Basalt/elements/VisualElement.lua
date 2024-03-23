@@ -2,7 +2,7 @@ local Element = require("basaltLoader").load("BasicElement")
 local split = require("utils").splitString
 local subText = require("utils").subText
 
---- @class VisualElement: VisualElementL
+--- @class VisualElement: BasicElement
 local VisualElement = setmetatable({}, Element)
 
 local function BaseRender(self)

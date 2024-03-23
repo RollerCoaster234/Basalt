@@ -4,7 +4,7 @@ local VisualElement = loader.load("VisualElement")
 local List = loader.load("List")
 local tHex = require("tHex")
 
----@class Dropdown : DropdownP
+---@class Dropdown : List
 local Dropdown = setmetatable({}, List)
 
 Element:initialize("Dropdown")

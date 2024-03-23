@@ -2,7 +2,7 @@ local loader = require("basaltLoader")
 local Element = loader.load("BasicElement")
 local VisualElement = loader.load("VisualElement")
 
----@class Progressbar : ProgressbarP
+---@class Progressbar : VisualElement
 local Progressbar = setmetatable({}, VisualElement)
 
 Element:initialize("Progressbar")

@@ -4,7 +4,7 @@ local VisualElement = loader.load("VisualElement")
 local List = loader.load("List")
 local tHex = require("tHex")
 
----@class Menubar : MenubarP
+---@class Menubar : List
 local Menubar = setmetatable({}, List)
 
 

@@ -3,7 +3,7 @@ local Element = loader.load("BasicElement")
 local VisualElement = loader.load("VisualElement")
 local tHex = require("tHex")
 
----@class Input : InputL
+---@class Input : VisualElement
 local Input = setmetatable({}, VisualElement)
 
 Element:initialize("Input")
@@ -145,6 +145,7 @@ function Input:adjustScrollIndex()
     elseif cursorIndex > scrollIndex + width - 1 then
         scrollIndex = cursorIndex - width + 1
     end
+    self:setScrollIndex(scrollIndex)
 end
 
 return Input

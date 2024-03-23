@@ -4,7 +4,7 @@ local Element = loader.load("BasicElement")
 local VisualElement = loader.load("VisualElement")
 local getCenteredPosition = require("utils").getCenteredPosition
 
---- @class Button : ButtonP
+--- @class Button : VisualElement
 local Button = setmetatable({}, VisualElement)
 
 Element:initialize("Button")

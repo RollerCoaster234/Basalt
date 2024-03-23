@@ -187,7 +187,7 @@ local loader = require("basaltLoader")
 local Element = loader.load("BasicElement")
 local Container = loader.load("Container")
 
----@class BigMonitor : BigMonitorP
+---@class BigMonitor : Container
 local BigMonitor = setmetatable({}, Container)
 
 Element:initialize("BigMonitor")

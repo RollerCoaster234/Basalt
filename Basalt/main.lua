@@ -252,6 +252,7 @@ end
 --- The error Handler which is used by basalt when errors happen. Can be overwritten
 --- @param errMsg string -- The error message
 function basalt.errorHandler(errMsg)
+    basalt.stop()
     baseTerm.clear()
     baseTerm.setCursorPos(1,1)
     baseTerm.setBackgroundColor(colors.black)
@@ -261,7 +262,6 @@ function basalt.errorHandler(errMsg)
     end
     print(errMsg)
     baseTerm.setTextColor(colors.white)
-    updaterActive = false
 end
 
 
@@ -342,6 +342,11 @@ end
 
 --- Stops the update loop
 function basalt.stop()
+    baseTerm.clear()
+    baseTerm.setCursorPos(1,1)
+    baseTerm.setBackgroundColor(colors.black)
+    baseTerm.setTextColor(colors.red)
+    baseTerm.setTextColor(colors.white)
     updaterActive = false
 end
 
@@ -354,8 +359,13 @@ local extensions = loader.getExtension("Basalt")
 if(extensions~=nil)then
     for _,v in pairs(extensions)do
         v.basalt = basalt
+        if(v.init~=nil)then
+            v.init(basalt)
+        end
         for a,b in pairs(v)do
-            basalt[a] = b
+            if(a~="init")then
+                basalt[a] = b
+            end
         end
     end
 end

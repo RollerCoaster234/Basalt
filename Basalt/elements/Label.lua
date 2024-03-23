@@ -3,7 +3,7 @@ local Element = loader.load("BasicElement")
 local VisualElement = loader.load("VisualElement")
 local splitString = require("utils").splitString
 
----@class Label : LabelP
+---@class Label : VisualElement
 local Label = setmetatable({}, VisualElement)
 local sub, rep = string.sub, string.rep
 

@@ -1,7 +1,10 @@
 
+---@class VisualElement
 local borderExtension = {}
 local tHex = require("tHex")
 
+
+---@protected
 function borderExtension.extensionProperties(original)
     local Element = require("basaltLoader").load("BasicElement")
     Element:initialize("VisualElement")
@@ -11,6 +14,7 @@ function borderExtension.extensionProperties(original)
     Element:addProperty("borderColor", "color", colors.black)
 end
 
+---@protected
 function borderExtension.init(original)
     local Element = require("basaltLoader").load("BasicElement")
     Element:extend("Init", function(self)
@@ -73,6 +77,11 @@ function borderExtension.init(original)
     end)
 end
 
+--- Enables/disables the border on a specific side
+---@param self VisualElement
+---@param side string|table
+---@param value? boolean
+---@return VisualElement
 function borderExtension.setBorderSide(self, side, value)
     if(type(side)=="table")then
         self.borderSides = side
@@ -82,6 +91,10 @@ function borderExtension.setBorderSide(self, side, value)
     return self
 end
 
+--- Gets if the border is enabled on a side
+---@param self VisualElement
+---@param side string
+---@return boolean
 function borderExtension.getBorderSide(self, side)
     return self.borderSide[side]
 end

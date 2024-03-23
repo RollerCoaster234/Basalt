@@ -4,7 +4,7 @@ local Element = loader.load("BasicElement")
 local log = require("log")
 local uuid = require("utils").uuid
 
----@class Flexbox : FlexboxP
+---@class Flexbox : Container
 local Flexbox = setmetatable({}, Container)
 
 Element:initialize("Flexbox")

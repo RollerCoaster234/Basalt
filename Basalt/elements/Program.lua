@@ -360,7 +360,7 @@ local function BasaltProgram(object)
     }
 end
 
----@class Program : ProgramP
+---@class Program : VisualElement
 local Program = setmetatable({}, VisualElement)
 
 Element:initialize("Program")

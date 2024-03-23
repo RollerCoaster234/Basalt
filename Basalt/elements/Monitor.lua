@@ -5,7 +5,7 @@ local loader = require("basaltLoader")
 local Element = loader.load("BasicElement")
 local Container = loader.load("Container")
 
----@class Monitor : MonitorP
+---@class Monitor : Container
 local Monitor = setmetatable({}, Container)
 
 Element:initialize("Monitor")

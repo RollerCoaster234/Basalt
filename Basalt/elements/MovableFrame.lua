@@ -1,7 +1,7 @@
 local Container = require("basaltLoader").load("Container")
 local log = require("log")
 
----@class MovableFrame : MovableFrameP
+---@class MovableFrame : Container
 local MovableFrame = setmetatable({}, Container)
 
 MovableFrame:initialize("MovableFrame")

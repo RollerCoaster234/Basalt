@@ -211,10 +211,13 @@ local lerp = {
     easeInOutBounce=easeInOutBounce,
 }
 
+--- @class Animation
 local CustomAnimation = {}
-
 CustomAnimation.__index = CustomAnimation
 
+--- A new animation object
+---@param self Animation The animation object.
+---@return Animation
 function CustomAnimation:new()
     local self = {}
     setmetatable(self, CustomAnimation)
@@ -228,6 +231,10 @@ function CustomAnimation:new()
     return self
 end
 
+--- Sets the easing of the animation
+---@param self Animation The animation object.
+---@param ease string The easing of the animation.
+---@return Animation
 function CustomAnimation.setEase(self, ease)
     if(lerp[ease]==nil)then
         error("Ease "..ease.." does not exist")
@@ -236,17 +243,29 @@ function CustomAnimation.setEase(self, ease)
     return self
 end
 
+--- Sets the increment of the animation
+---@param self Animation The animation object.
+---@param increment number The increment of the animation.
+---@return Animation
 function CustomAnimation.setIncrement(self, increment)
     self.timeIncrement = math.max(increment, 0.05)
     return self
 end
 
+--- Sets the duration to a specified time
+---@param self Animation The animation object.
+---@param time number The time to set the duration to.
+---@return Animation
 function CustomAnimation.on(self, time)
     time = floor(time * 20) / 20
     self.duration = time
     return self
 end
 
+--- Runs a function at the specified time (specified with :on)
+---@param self Animation The animation object.
+---@param func function The function to run.
+---@return Animation
 function CustomAnimation.run(self, func)
     local inserted = false
     for k,v in pairs(self._animations)do
@@ -262,12 +281,17 @@ function CustomAnimation.run(self, func)
     return self
 end
 
+--- Waits for a specified time
+---@param self Animation The animation object.
+---@param time number The time to wait.
+---@return Animation
 function CustomAnimation.wait(self, time)
     time = floor(time * 20) / 20
     self.duration = self.duration + time
     return self
 end
 
+---@private
 function CustomAnimation.update(self, timerId)
     if(timerId==self.timerId)then
         self.curTime = self.curTime + self.timeIncrement
@@ -293,6 +317,8 @@ function CustomAnimation.update(self, timerId)
     end
 end
 
+--- Plays the animation
+---@param self Animation The animation object.
 function CustomAnimation.play(self)
     self.curTime = 0
     self.timerId = os.startTimer(self.timeIncrement)
@@ -304,15 +330,21 @@ function CustomAnimation.play(self)
     end
 end
 
+--- Stops the animation
+---@param self Animation The animation object.
 function CustomAnimation.stop(self)
     os.cancelTimer(self.timerId)
 end
 
+--- Adds a function to run when the animation is done
+---@param self Animation The animation object.
 function CustomAnimation.onDone(self, func)
     table.insert(self.onDoneHandler, func)
     return self
 end
 
+
+--- @class VisualElement
 local Animation = {}
 
 local function animationMoveHelper(element, v3, v4, duration, offset, ease, get, set)
@@ -343,31 +375,52 @@ local function animationMoveHelper(element, v3, v4, duration, offset, ease, get,
     return animation
 end 
 
-function Animation.animatePosition(element, x, y, duration, offset, ease)
-    return animationMoveHelper(element, x, y, duration, offset, ease, element.getPosition, element.setPosition)
+--- Moves the element to the specified position from its current position.
+---@param self VisualElement The element to animate.
+---@param x number The x position.
+---@param y number The y position.
+---@param duration? number The duration of the animation.
+---@param offset? number The offset of the animation.
+---@param ease? string The easing of the animation.
+function Animation:animatePosition(x, y, duration, offset, ease)
+    return animationMoveHelper(self, x, y, duration, offset, ease, self.getPosition, self.setPosition)
 end
 
-function Animation.animateSize(element, x, y, duration, offset, ease)
-    return animationMoveHelper(element, x, y, duration, offset, ease, element.getSize, element.setSize)
+--- Animates to the specified size from the current size.
+---@param self VisualElement The element to animate.
+---@param width number The width.
+---@param height number The height.
+---@param duration? number The duration of the animation.
+---@param offset? number The offset of the animation.
+---@param ease? string The easing of the animation.
+function Animation:animateSize(self, width, height, duration, offset, ease)
+    return animationMoveHelper(self, width, height, duration, offset, ease, self.getSize, self.setSize)
 end
 
-function Animation.animateOffset(element, x, y, duration, offset, ease)
-    if(element.getOffset==nil or element.setOffset==nil)then
-        error("Element "..element:getType().." does not have offset")
+--- Animates the element to the specified offset from the current offset. Only available for elements with offset properties
+---@param self VisualElement The element to animate.
+---@param x number The x offset.
+---@param y number The y offset.
+function Animation:animateOffset(self, x, y, duration, offset, ease)
+    if(self.getOffset==nil or self.setOffset==nil)then
+        error("Element "..self:getType().." does not have offset")
     end
-    return animationMoveHelper(element, x, y, duration, offset, ease, element.getOffset, element.setOffset)
+    return animationMoveHelper(self, x, y, duration, offset, ease, self.getOffset, self.setOffset)
 end
 
-function Animation.newAnimation(element)
+--- Creates a new animation object attached to the element.
+function Animation:newAnimation(self)
     return CustomAnimation:new()
 end
 
+---@protected
 function Animation.extensionProperties(original)
     local Element = require("basaltLoader").load("BasicElement")
     Element:initialize("VisualElement")
     Element:addProperty("animations", "table", {})
 end
 
+---@protected
 function Animation.init(original)
     local baseEvent = original.event
     
