@@ -1,19 +1,20 @@
 
 local shadowExtension = {}
+local VisualElement
 local tHex = require("tHex")
 
 function shadowExtension.extensionProperties(original)
-    local Element = require("basaltLoader").load("BasicElement")
-    Element:initialize("VisualElement")
-    Element:addProperty("shadow", "boolean", false)
-    Element:addProperty("shadowDirection", "string", "bottomRight")
-    Element:addProperty("shadowColor", "color", colors.black)
+    original:initialize("VisualElement")
+    original:addProperty("shadow", "boolean", false)
+    original:addProperty("shadowDirection", "string", "bottomRight")
+    original:addProperty("shadowColor", "color", colors.black)
 end
 
 function shadowExtension.init(original)
-    local Element = require("basaltLoader").load("BasicElement")
-    Element:extend("Init", function(self)
-        table.insert(self.renderData, function(self)
+    original:extend("Init", function(self)
+        local originalRender = self.render
+        self.render = function(self)
+            originalRender(self)
             local shadow = self:getShadow()
             if(shadow)then
                 local width, height = self:getSize()
@@ -52,7 +53,7 @@ function shadowExtension.init(original)
                     end
                 end
             end
-        end)
+        end
         return self
     end)
 end

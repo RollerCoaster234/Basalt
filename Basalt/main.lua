@@ -18,7 +18,7 @@ local basalt = {log=log, extensionExists = loader.extensionExists}
 
 local threads = {}
 local updaterActive = false
-local mainFrame, focusedFrame, monFrames = nil, nil, {}
+local mainFrame, focusedFrame, frames, monFrames = nil, nil, {}, {}
 local baseTerm = term.current()
 local registeredEvents = {}
 local keysDown,mouseDown = {}, {}
@@ -28,11 +28,9 @@ loader.setBasalt(basalt)
 local function drawFrames()
     if(updaterActive==false)then return end
     if(mainFrame~=nil)then
-        mainFrame:render()
         mainFrame:processRender()
     end
     for _,v in pairs(monFrames)do
-        v:render()
         v:processRender()
     end
 end
@@ -119,12 +117,14 @@ local function updateEvent(event, ...)
                 focusedFrame[event](focusedFrame, unpack(p))
             end
         else
-            if mainFrame ~= nil and mainFrame.event ~= nil then
-                mainFrame:event(event, unpack(p))
+            for _,v in pairs(frames)do
+                if(v.event~=nil)then
+                    v.event(v, event, unpack(p))
+                end
             end
             for _,v in pairs(monFrames) do
                 if v[event] ~= nil then
-                    v[event](v, unpack(p))
+                    v[event](v, event, unpack(p))
                 end
             end
         end
@@ -172,8 +172,7 @@ end
 --- @return BaseFrame
 function basalt.getMainFrame(id)
     if(mainFrame==nil)then
-        mainFrame = loader.load("BaseFrame"):new(id or "Basalt_Mainframe", nil, basalt)
-        mainFrame:init()
+        mainFrame = basalt.addFrame(id or "Basalt_Mainframe")
     end
     return mainFrame
 end
@@ -188,7 +187,19 @@ function basalt.addFrame(id)
     if(mainFrame==nil)then
         mainFrame = frame
     end
+    table.insert(frames, frame)
     return frame
+end
+
+--- Removes a frame from the frame list
+--- @param frame BaseFrame -- The frame to removeEvent
+function basalt.removeFrame(frame)
+    for k,v in pairs(frames)do
+        if(v==frame)then
+            table.remove(frames, k)
+            return
+        end
+    end
 end
 
 --- Switches the main frame to a new frame
@@ -211,6 +222,17 @@ function basalt.addMonitor(id)
     frame:init()
     table.insert(monFrames, frame)
     return frame
+end
+
+--- Removes a monitor/BigMonitor from the monitor list
+--- @param frame Monitor|BigMonitor -- The monitor to remove
+function basalt.removeMonitor(frame)
+    for k,v in pairs(monFrames)do
+        if(v==frame)then
+            table.remove(monFrames, k)
+            return
+        end
+    end
 end
 
 --- Creates a new big monitor frame

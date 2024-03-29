@@ -6,12 +6,13 @@ local tHex = require("tHex")
 
 ---@class Dropdown : List
 local Dropdown = setmetatable({}, List)
+Dropdown.__index = Dropdown
 
-Element:initialize("Dropdown")
-Element:addProperty("opened", "boolean", false)
-Element:addProperty("dropdownHeight", "number", 5)
-Element:addProperty("dropdownWidth", "number", 15)
-Element:combineProperty("dropdownSize", "dropdownWidth", "dropdownHeight")
+Dropdown:initialize("Dropdown")
+Dropdown:addProperty("opened", "boolean", false)
+Dropdown:addProperty("dropdownHeight", "number", 5)
+Dropdown:addProperty("dropdownWidth", "number", 15)
+Dropdown:combineProperty("dropdownSize", "dropdownWidth", "dropdownHeight")
 
 --- Creates a new Dropdown.
 ---@param id string The id of the object.

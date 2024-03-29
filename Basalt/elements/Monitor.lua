@@ -2,15 +2,15 @@ local type,len,rep,sub = type,string.len,string.rep,string.sub
 local tHex = require("tHex")
 
 local loader = require("basaltLoader")
-local Element = loader.load("BasicElement")
 local Container = loader.load("Container")
 
 ---@class Monitor : Container
 local Monitor = setmetatable({}, Container)
+Monitor.__index = Monitor
 
-Element:initialize("Monitor")
+Monitor:initialize("Monitor")
 
-Element:addProperty("Monitor", "any", nil, nil, function(self, value)
+Monitor:addProperty("Monitor", "any", nil, nil, function(self, value)
     if(type(value=="string"))then
        value = peripheral.wrap(value)
     end
@@ -19,7 +19,7 @@ Element:addProperty("Monitor", "any", nil, nil, function(self, value)
     self:setTerm(value)
     return value
 end)
-Element:addProperty("Side", "string", nil, nil, function(self, value)
+Monitor:addProperty("Side", "string", nil, nil, function(self, value)
     if(value==nil)then
       return nil
     end

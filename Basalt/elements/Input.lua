@@ -1,24 +1,24 @@
 local loader = require("basaltLoader")
-local Element = loader.load("BasicElement")
 local VisualElement = loader.load("VisualElement")
 local tHex = require("tHex")
 
 ---@class Input : VisualElement
 local Input = setmetatable({}, VisualElement)
+Input.__index = Input
 
-Element:initialize("Input")
-Element:addProperty("value", "string", "")
-Element:addProperty("cursorIndex", "number", 1)
-Element:addProperty("scrollIndex", "number", 1)
-Element:addProperty("inputLimit", "number", nil)
-Element:addProperty("inputType", "string", "text")
-Element:addProperty("placeholderText", "string", "")
-Element:addProperty("placeholderColor", "color", colors.gray)
-Element:addProperty("placeholderBackground", "color", colors.black)
-Element:combineProperty("placeholder", "placeholderText", "placeholderColor", "placeholderBackground")
+Input:initialize("Input")
+Input:addProperty("value", "string", "")
+Input:addProperty("cursorIndex", "number", 1)
+Input:addProperty("scrollIndex", "number", 1)
+Input:addProperty("inputLimit", "number", nil)
+Input:addProperty("inputType", "string", "text")
+Input:addProperty("placeholderText", "string", "")
+Input:addProperty("placeholderColor", "color", colors.gray)
+Input:addProperty("placeholderBackground", "color", colors.black)
+Input:combineProperty("placeholder", "placeholderText", "placeholderColor", "placeholderBackground")
 
-Element:addListener("change", "change_value")
-Element:addListener("enter", "enter_pressed")
+Input:addListener("change", "change_value")
+Input:addListener("enter", "enter_pressed")
 
 --- Creates a new Input.
 ---@param id string The id of the object.

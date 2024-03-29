@@ -1,30 +1,30 @@
 local loader = require("basaltLoader")
-local Element = loader.load("BasicElement")
 local VisualElement = loader.load("VisualElement")
 local uuid = require("utils").uuid
 local subText = require("utils").subText
 
 --- @class Container : VisualElement
 local Container = setmetatable({}, VisualElement)
+Container.__index = Container
 
 local renderSystem = require("renderSystem")
 
-Element:initialize("Container")
-Element:addProperty("term", "table", nil, false, function(self, value)
+Container:initialize("Container")
+Container:addProperty("term", "table", nil, false, function(self, value)
   if(value~=nil)then
     value.__noCopy = true
   end
   self.renderSystem = renderSystem(value)
 end)
-Element:addProperty("children", "table", {})
-Element:addProperty("childrenEvents", "table", {})
-Element:addProperty("visibleChildrenEvents", "table", {})
-Element:addProperty("isVisibleChildrenEventsUpdated", "table", {})
-Element:addProperty("cursorBlink", "boolean", false)
-Element:addProperty("cursorColor", "color", colors.white)
-Element:addProperty("cursorX", "number", 1)
-Element:addProperty("cursorY", "number", 1)
-Element:addProperty("focusedChild", "table", nil, false, function(self, value)
+Container:addProperty("children", "table", {})
+Container:addProperty("childrenEvents", "table", {})
+Container:addProperty("visibleChildrenEvents", "table", {})
+Container:addProperty("isVisibleChildrenEventsUpdated", "table", {})
+Container:addProperty("cursorBlink", "boolean", false)
+Container:addProperty("cursorColor", "color", colors.white)
+Container:addProperty("cursorX", "number", 1)
+Container:addProperty("cursorY", "number", 1)
+Container:addProperty("focusedChild", "table", nil, false, function(self, value)
   local curFocus = self:getFocusedChild()
   if(curFocus~=value)then
     if(curFocus~=nil)then
@@ -36,9 +36,13 @@ Element:addProperty("focusedChild", "table", nil, false, function(self, value)
   end
   return value
 end)
-Element:addProperty("XOffset", "number", 0)
-Element:addProperty("YOffset", "number", 0)
-Element:combineProperty("Offset", "XOffset", "YOffset")
+Container:addProperty("XOffset", "number", 0, nil , function(self, value)
+  self:forceVisibleChildrenUpdate()
+end)
+Container:addProperty("YOffset", "number", 0, nil , function(self, value)
+  self:forceVisibleChildrenUpdate()
+end)
+Container:combineProperty("Offset", "XOffset", "YOffset")
 
 local sub, max = string.sub, math.max
 
@@ -67,24 +71,25 @@ function Container:render()
     if self.updateRendering then
       VisualElement.render(self)
         for _, element in pairs(visibleChildren) do
-            element:render()
+            element:processRender()
         end
     end
   else
     VisualElement.render(self)
     for _, element in pairs(visibleChildren) do
-      element:render()
+      element:processRender()
     end
   end
 end
 
 ---@protected
 function Container:processRender()
+  VisualElement.processRender(self)
   if(self.updateRendering)then
-    if(self.renderSystem~=nil)then
-      self.renderSystem.update()
-      self.updateRendering = false
-    end
+      if(self.renderSystem~=nil)then
+        self.renderSystem.update()
+        self.updateRendering = false
+      end
   end
 end
 
@@ -115,6 +120,10 @@ function Container:isChildVisible(child)
   local childX, childY = child:getPosition()
   local childWidth, childHeight = child:getSize()
   local containerWidth, containerHeight = self:getSize()
+  local xOffset, yOffset = self:getOffset()
+
+  childX = childX - xOffset
+  childY = childY - yOffset
 
   return child:getVisible() and
          childX <= containerWidth and childY <= containerHeight and
@@ -224,7 +233,7 @@ function Container:addEvent(event, child)
   end
 
   if not inserted then
-    table.insert(self.childrenEvents[event], 1, child)
+    table.insert(self.childrenEvents[event], child)
   end
   if(self.parent~=nil)then
     self.parent:addEvent(event, self)
@@ -397,7 +406,6 @@ for k,v in pairs({mouse_click=true,mouse_up=false,mouse_drag=false,mouse_scroll=
             local visibleChildren = self:getVisibleChildrenEvents(k)
             for _,child in pairs(visibleChildren)do
               if(child and child[k]~=nil)then
-                local objX, objY = child:getPosition()
                 local relX, relY = self:getRelativePosition(x, y)
                 if(child[k](child, btn, relX, relY, ...))then
                   self:setFocusedChild(child, true)
@@ -421,7 +429,6 @@ function Container.mouse_release(self, btn, x, y, ...)
         local visibleChildren = self:getVisibleChildren("mouse_click")
         for _,child in pairs(visibleChildren)do
           if(child and child.mouse_release~=nil)then
-            local objX, objY = child:getPosition()
             local relX, relY = self:getRelativePosition(x, y)
             child.mouse_release(child, btn, relX, relY, ...)
           end

@@ -1,26 +1,11 @@
 local loader = require("basaltLoader")
-local Element = loader.load("BasicElement")
 local VisualElement = loader.load("VisualElement")
 local splitString = require("utils").splitString
 
 ---@class Label : VisualElement
 local Label = setmetatable({}, VisualElement)
+Label.__index = Label
 local sub, rep = string.sub, string.rep
-
-Element:initialize("Label")
-Element:addProperty("autoSize", "boolean", true, nil, function(self, value)
-    self.wrap = false
-end)
-Element:addProperty("Wrap", "boolean", false, nil, function(self, value)
-    self.autoSize = false
-end)
-Element:addProperty("Coloring", "boolean", false)
-Element:addProperty("text", "string", "My Label", nil, function(self, value)
-    if(self.autoSize)then
-        print(value)
-        self:setSize(value:len(), 1)
-    end
-end)
 
 -- Wrapping Features:
 local function removeTags(input)
@@ -51,11 +36,15 @@ local function wrapText(str, width)
                 end
 
                 if last_space == width then
-                    local line = sub(v, 1, last_space - 1) .. "-"
+                    local line = sub(v, 1, last_space - 1)
+                    
                     table.insert(result, line)
                     v = sub(v, last_space)
                 else
                     local line = sub(v, 1, last_space - 1)
+                    if(line:sub(1,1)==" ")then
+                        line = line:sub(2, #line)
+                    end
                     table.insert(result, line)
                     v = sub(v, last_space + 1)
                 end
@@ -65,12 +54,32 @@ local function wrapText(str, width)
                 end
             end
             if #v > 0 then
+                if(v:sub(1,1)==" ")then
+                    v = v:sub(2, #v)
+                end
                 table.insert(result, v)
             end
         end
     end
     return result
 end
+
+Label:initialize("Label")
+Label:addProperty("autoSize", "boolean", true)
+Label:addProperty("wrap", "boolean", false)
+Label:addProperty("wrappedText", "table", {}, nil, function(self, value)
+    self:setWrap(true)
+end)
+Label:addProperty("Coloring", "boolean", false)
+Label:addProperty("text", "string", "My Label", nil, function(self, value)
+    if(self.autoSize)and not(self.wrap)then
+        self:setSize(value:len(), 1)
+    elseif(self.autoSize)and(self.wrap)then
+        local lines = wrapText(value, self:getWidth())
+        self:setWrappedText(lines)
+        self:setHeight(#lines)
+    end
+end)
 
 --- Creates a new label.
 ---@param id string The id of the object.
@@ -79,6 +88,7 @@ end
 --- @return Label
 ---@protected
 function Label:new(id, parent, basalt)
+
     local newInstance = VisualElement:new(id, parent, basalt)
     setmetatable(newInstance, self)
     self.__index = self
@@ -87,16 +97,18 @@ function Label:new(id, parent, basalt)
   return newInstance
 end
 
---- Returns the given text wrapped.
----@return table<string> wrapped The wrapped text.
-function Label:getWrappedText()
-    return wrapText(self:getText(), self:getWidth())
-end
-
 ---@protected
 Label:extend("Init", function(self)
-    self:setBackground(self.parent.background)
-    self:setForeground(self.parent.foreground)
+    self:setBackground(self.parent:getBackground())
+    self:setForeground(self.parent:getForeground())
+
+    self:addPropertyObserver("width", function()
+        if(self.autoSize)and(self.wrap)then
+            local lines = wrapText(self:getText(), self:getWidth())
+            self:setWrappedText(lines)
+            self:setHeight(#lines)
+        end
+    end)
 end)
 
 ---@protected
@@ -106,7 +118,7 @@ function Label:render()
     local wrap = self:getWrap()
     local w, h = self:getSize()
     if(wrap)then
-        local lines = wrapText(text, w)
+        local lines = self:getWrappedText()
         for i, line in ipairs(lines) do
             if(i <= h)then
                 self:addText(1, i, line)

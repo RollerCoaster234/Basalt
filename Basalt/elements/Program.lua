@@ -1,6 +1,5 @@
 
 local loader = require("basaltLoader")
-local Element = loader.load("BasicElement")
 local VisualElement = loader.load("VisualElement")
 local tHex = require("tHex")
 
@@ -327,6 +326,7 @@ local function BasaltProgram(object)
 
         resume = function(event, ...)
             term.redirect(process.window)
+            if(process.coroutine==nil)then return end
             if(process.filter~=nil)then
                 if(event~=process.filter)then return end
                 process.filter=nil
@@ -340,6 +340,10 @@ local function BasaltProgram(object)
             end
             term.redirect(object.basalt.getTerm())
             return ok, result
+        end,
+
+        stop = function()
+            process = {}
         end,
 
         getProcess = function()
@@ -362,9 +366,10 @@ end
 
 ---@class Program : VisualElement
 local Program = setmetatable({}, VisualElement)
+Program.__index = Program
 
-Element:initialize("Program")
-Element:addProperty("program", "table")
+Program:initialize("Program")
+Program:addProperty("program", "table")
 
 --- Creates a new Program.
 ---@param id string The id of the object.
@@ -395,10 +400,19 @@ function Program:render()
 end
 
 --- Starts the program.
+---@param self Program
 ---@param path string|function The path to the program or the function to run.
 ---@param customEnv? table The custom environment for the program.
 function Program:start(path, customEnv, ...)
   self.program.start(path, customEnv, ...)
+end
+
+--- Stops the program.
+---@param self Program
+---@return Program
+function Program:stop()
+  self.program.stop()
+  return self
 end
 
 Program:extend("Load", function(self)

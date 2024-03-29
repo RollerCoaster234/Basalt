@@ -1,15 +1,15 @@
 local loader = require("basaltLoader")
-local Element = loader.load("BasicElement")
 local VisualElement = loader.load("VisualElement")
 
 ---@class Progressbar : VisualElement
 local Progressbar = setmetatable({}, VisualElement)
+Progressbar.__index = Progressbar
 
-Element:initialize("Progressbar")
-Element:addProperty("progress", "number", 0)
-Element:addProperty("progressBackground", "color", colors.black)
-Element:addProperty("minValue", "number", 0)
-Element:addProperty("maxValue", "number", 100)
+Progressbar:initialize("Progressbar")
+Progressbar:addProperty("progress", "number", 0)
+Progressbar:addProperty("progressBackground", "color", colors.black)
+Progressbar:addProperty("minValue", "number", 0)
+Progressbar:addProperty("maxValue", "number", 100)
 
 --- Creates a new Progressbar.
 ---@param id string The id of the object.

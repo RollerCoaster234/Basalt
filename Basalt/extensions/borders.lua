@@ -6,19 +6,45 @@ local tHex = require("tHex")
 
 ---@protected
 function borderExtension.extensionProperties(original)
-    local Element = require("basaltLoader").load("BasicElement")
-    Element:initialize("VisualElement")
-    Element:addProperty("border", "boolean", false)
-    Element:addProperty("borderSides", "table", {["top"]=true, ["bottom"]=true, ["left"]=true, ["right"]=true})
-    Element:addProperty("borderType", "string", "small")
-    Element:addProperty("borderColor", "color", colors.black)
+    original:initialize("VisualElement")
+    original:addProperty("border", "boolean", false)
+    original:addProperty("borderClickable", "boolean", false)
+    original:addProperty("borderSides", "table", {["top"]=true, ["bottom"]=true, ["left"]=true, ["right"]=true})
+    original:addProperty("borderType", "string", "small")
+    original:addProperty("borderColor", "color", colors.black)
 end
+
+local log = require("log")
 
 ---@protected
 function borderExtension.init(original)
-    local Element = require("basaltLoader").load("BasicElement")
-    Element:extend("Init", function(self)
-        table.insert(self.renderData, function(self)
+    original:extend("Init", function(self)
+        local baseInside = self.isInside
+        local originalRender = self.render
+        self.isInside = function(self, x, y)
+            local pX, pY = self:getPosition()
+            local borders = self:getBorderSides()
+            if(self:getBorderClickable())then
+                if(self:getType()=="Button")then
+                    --log(x, pX, x-pX)
+                end
+                if(borders["top"] and y-pY==-1)then
+                    y = y+1
+                end
+                if(borders["bottom"] and y-pY==self:getHeight())then
+                    y = y-1
+                end
+                if(borders["left"] and x-pX==-1)then
+                    x = x+1
+                end
+                if(borders["right"] and x-pX==self:getWidth())then
+                    x = x-1
+                end
+            end
+            return baseInside(self, x, y)
+        end
+        self.render = function(self)
+            originalRender(self)
             local border = self:getBorder()
             if(border)then
                 local width, height = self:getSize()
@@ -55,7 +81,7 @@ function borderExtension.init(original)
                         self:addBlit(1, 0, ("\131"):rep(width+1), bColStr, bEleColStr)
                     end
                     if(borderside["bottom"])then
-                        self:addBlit(1, height+1, ("\143"):rep(width+1), bEleColStr, bColStr)
+                        self:addBlit(1, height+1, ("\143"):rep(width+1), bEleColStr, bColStr, true)
                     end
                     if(borderside["top"] and borderside["left"])then  -- top left
                         self:addBlit(0, 0, "\151", borderColor, bg, true)
@@ -71,8 +97,7 @@ function borderExtension.init(original)
                     end
                 end
             end
-
-        end)
+        end
         return self
     end)
 end

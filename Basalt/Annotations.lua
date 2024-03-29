@@ -230,7 +230,109 @@ function VisualElement:setFocused(value)end
 ---@return boolean
 function VisualElement:getFocused()end
 
+--- Pre-Renders text to the element
+---@param self table The element itself
+---@param x integer -- The x position of the text
+---@param y integer -- The y position of the text
+---@param text string -- The text to be pre-rendered
+---@returns VisualElement
+function VisualElement:preText(x, y, text)end
 
+--- Pre-Renders background to the element
+---@param self table The element itself
+---@param x integer -- The x position of the background
+---@param y integer -- The y position of the background
+---@param bg string -- The background text, example: "ffffff"
+---@returns VisualElement
+function VisualElement:preBackground(x, y, bg)end
+
+--- Pre-Renders foreground to the element
+---@param self table The element itself
+---@param x integer -- The x position of the foreground
+---@param y integer -- The y position of the foreground
+---@param fg string -- The foreground text, example: "000000"
+---@returns VisualElement
+function VisualElement:preForeground(x, y, fg)end
+
+--- Pre-Renders text, background and foreground to the element
+---@param self table The element itself
+---@param x integer -- The x position of the text
+---@param y integer -- The y position of the text
+---@param text string -- The text to be pre-rendered
+---@param fg string -- The foreground text, example: "000000"
+---@param bg string -- The background text, example: "ffffff"
+---@returns VisualElement
+function VisualElement:preBlit(x, y, text, fg, bg)end
+
+--- Pre-Renders a symbol box to the element
+---@param self table The element itself
+---@param x integer -- The x position of the text
+---@param y integer -- The y position of the text
+---@param width integer -- The width of the box
+---@param height integer -- The height of the box
+---@param text string -- The text to be pre-rendered
+---@param symbol string -- The symbol to render
+function VisualElement:preTextBox(x, y, width, height, text, symbol)end
+
+--- Pre-Renders a background box to the element
+---@param self table The element itself
+---@param x integer -- The x position of the text
+---@param y integer -- The y position of the text
+---@param width integer -- The width of the box
+---@param height integer -- The height of the box
+---@param bg integer -- The background color of the box, example: colors.black
+function VisualElement:preBackgroundBox(x, y, width, height, bg)end
+
+--- Pre-Renders a foreground box to the element
+---@param self table The element itself
+---@param x integer -- The x position of the text
+---@param y integer -- The y position of the text
+---@param width integer -- The width of the box
+---@param height integer -- The height of the box
+---@param fg integer -- The foreground color of the box, example: colors.white
+function VisualElement:preForegroundBox(x, y, width, height, fg)end
+
+--- Pre-Renders a box to the element (not implemented yet)
+---@param self table The element itself
+---@param x integer -- The x position of the text
+---@param y integer -- The y position of the text
+---@param width integer -- The width of the box
+---@param height integer -- The height of the box
+---@param symbol string -- The symbol to render
+---@param fg integer -- The foreground color of the box, example: colors.white
+---@param bg integer -- The background color of the box, example: colors.black
+function VisualElement:preBlitBox(x, y, width, height, symbol, fg, bg)end
+
+--- Sets the preRenderData of the element: 
+---@param self table The element itself
+---@param value table -- The preRenderData of the element
+---@return VisualElement
+function VisualElement:setPreRenderData(value)end
+
+--- Gets the preRenderData of the element
+---@param self table The element itself
+---@return table
+function VisualElement:getPreRenderData()end
+
+--- Sets the postRenderData of the element:
+---@param self table The element itself
+---@param value table -- The postRenderData of the element
+---@return VisualElement
+function VisualElement:setPostRenderData(value)end
+
+--- Gets the postRenderData of the element
+---@param self table The element itself
+---@return table
+
+--- Clears the pre Render Data of the element
+---@param self table The element itself
+---@return VisualElement
+function VisualElement:clearPreRender()end
+
+--- Clears the post Render Data of the element
+---@param self table The element itself
+---@return VisualElement
+function VisualElement:clearPostRender()end
 
 ----- Visual Element --------------------------------------
 --------- Listeners ---------------------------------------
@@ -624,6 +726,17 @@ function Label:setText(value)end
 ---@param self table The element itself
 ---@return string
 function Label:getText()end
+
+--- Sets the wrapped text of the label
+---@param self table The element itself
+---@param value table -- The wrapped text of the label
+---@return Label
+function Label:setWrappedText(value)end
+
+--- Gets the wrapped text
+---@param self table The element itself
+---@return table
+function Label:getWrappedText()end
 
 --- Sets the autoSize of the label (automatically changes the width of the label to fit the text)
 ---@param self table The element itself
@@ -1378,6 +1491,51 @@ function MovableFrame:setDragMap(value)end
 ---@param self table The element itself
 ---@return table
 function MovableFrame:getDragMap()end
+
+
+
+
+------ ScrollableFrame ------------------------------------
+--------- Properties --------------------------------------
+
+--- @class ScrollableFrame
+local ScrollableFrame = {}
+
+--- Sets the scroll direction of the scrollableframe
+---@param self table The element itself
+--- @param value --- The scroll direction of the scrollableframe
+---| '"vertical"' # The default scroll direction: vertical
+---| '"horizontal"' #  The horizontal scroll direction
+---@return ScrollableFrame
+function ScrollableFrame:setScrollDirection(value)end
+
+--- Gets the scroll direction of the scrollableframe
+---@param self table The element itself
+---@return string
+function ScrollableFrame:getScrollDirection()end
+
+--- Sets if the scrollableframe should's max scroll index should be automatically calculated
+---@param self table The element itself
+---@param value boolean -- If the scrollableframe should's max scroll index should be automatically calculated
+---@return ScrollableFrame
+function ScrollableFrame:setAutoScroll(value)end
+
+--- Gets if the scrollableframe max scroll index should be automatically calculated
+---@param self table The element itself
+---@return boolean
+function ScrollableFrame:getAutoScroll()end
+
+--- Sets the amount the scrollable frame is allowed to scroll (only if auto scroll is disabled)
+---@param self table The element itself
+---@param value integer -- The amount the scrollable frame is allowed to scroll
+---@return ScrollableFrame
+function ScrollableFrame:setScrollAmount(value)end
+
+--- Gets the amount the scrollable frame is allowed to scroll
+---@param self table The element itself
+---@return integer
+function ScrollableFrame:getScrollAmount()end
+
 
 
 

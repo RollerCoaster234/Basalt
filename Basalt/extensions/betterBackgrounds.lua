@@ -3,16 +3,16 @@ local bbgExtension = {}
 
 
 function bbgExtension.extensionProperties(original)
-    local Element = require("basaltLoader").load("BasicElement")
-    Element:initialize("VisualElement")
-    Element:addProperty("backgroundSymbol", "char", "")
-    Element:addProperty("backgroundSymbolColor", "color", colors.red)
+    original:initialize("VisualElement")
+    original:addProperty("backgroundSymbol", "char", "")
+    original:addProperty("backgroundSymbolColor", "color", colors.red)
 end
 
 function bbgExtension.init(original)
-    local Element = require("basaltLoader").load("BasicElement")
-    Element:extend("Init", function(self)
-        table.insert(self.renderData, 2, function(self)
+    original:extend("Init", function(self)
+        local originalRender = self.render
+        self.render = function(self)
+            originalRender(self)
             local bg = self:getBackgroundSymbol()
             if(bg~="")or(bg~=" ")then
                 local width, height = self:getSize()
@@ -21,7 +21,7 @@ function bbgExtension.init(original)
                     self:addText(1, i, bg:rep(width))
                 end
             end
-        end)
+        end
         return self
     end)
 end

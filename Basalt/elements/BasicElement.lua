@@ -4,6 +4,7 @@ local uuid = require("utils").uuid
 
 ---@class BasicElement
 local Element = {}
+Element.__index = Element
 
 local properties = {}
 local propertyTypes = {}
@@ -362,6 +363,7 @@ function Element:create(typ)
         end
     end
 end
+
 
 --- Adds a event listener to the element like :create this method is meant for internal usage only
 ---@protected

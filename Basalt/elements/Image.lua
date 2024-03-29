@@ -1,11 +1,11 @@
 local loader = require("basaltLoader")
-local Element = loader.load("BasicElement")
 local VisualElement = loader.load("VisualElement")
 
 
 local Image = setmetatable({}, VisualElement)
+Image.__index = Image
 
-Element:initialize("Image")
+Image:initialize("Image")
 
 function Image:new(id, parent, basalt)
   local newInstance = VisualElement:new(id, parent, basalt)

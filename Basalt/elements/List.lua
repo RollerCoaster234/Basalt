@@ -1,19 +1,19 @@
 local loader = require("basaltLoader")
-local Element = loader.load("BasicElement")
 local VisualElement = loader.load("VisualElement")
 local tHex = require("tHex")
 
 ---@class List : VisualElement
 local List = setmetatable({}, VisualElement)
+List.__index = List
 
-Element:initialize("List")
-Element:addProperty("items", "table", {})
-Element:addProperty("itemsBackground", "table", {})
-Element:addProperty("itemsForeground", "table", {})
-Element:addProperty("selection", "boolean", true)
-Element:addProperty("multiSelection", "boolean", false)
-Element:addProperty("autoScroll", "boolean", false)
-Element:addProperty("selectedIndex", "table", {1}, nil, function(self, value)
+List:initialize("List")
+List:addProperty("items", "table", {})
+List:addProperty("itemsBackground", "table", {})
+List:addProperty("itemsForeground", "table", {})
+List:addProperty("selection", "boolean", true)
+List:addProperty("multiSelection", "boolean", false)
+List:addProperty("autoScroll", "boolean", false)
+List:addProperty("selectedIndex", "table", {}, nil, function(self, value)
   local newValue = self.selectedIndex
   if(self:getMultiSelection())then
     if(type(value)=="table")then
@@ -34,19 +34,19 @@ Element:addProperty("selectedIndex", "table", {1}, nil, function(self, value)
   else
     return {value}
   end
-end, function(self, value, index)
+end, function(self, value)
   if(self:getMultiSelection())then
     return value
   else
     return value[1]
   end
 end)
-Element:addProperty("selectionBackground", "color", colors.black)
-Element:addProperty("selectionForeground", "color", colors.cyan)
-Element:combineProperty("selectionColor", "selectionBackground", "selectionForeground")
-Element:addProperty("scrollIndex", "number", 1)
+List:addProperty("selectionBackground", "color", colors.black)
+List:addProperty("selectionForeground", "color", colors.cyan)
+List:combineProperty("selectionColor", "selectionBackground", "selectionForeground")
+List:addProperty("scrollIndex", "number", 1)
 
-Element:addListener("change", "changed_value")
+List:addListener("change", "changed_value")
 
 --- Creates a new List.
 ---@param id string The id of the object.

@@ -112,14 +112,12 @@ local BasicXmlExtension = {}
 local ContainerXmlExtension = {}
 
 function BasicXmlExtension.extensionProperties(original)
-    local Element = require("basaltLoader").load("BasicElement")
-    Element:initialize("VisualElement")
+  original:initialize("VisualElement")
 
 end
 
 function BasicXmlExtension.init(original)
-    local Element = require("basaltLoader").load("BasicElement")
-    Element:extend("Init", function(self)
+    original:extend("Init", function(self)
         
     end)
 end
@@ -204,7 +202,7 @@ function ContainerXmlExtension.generateElementFromXML(self, doc, env)
     env = env or _ENV
     env.basalt = self.basalt
     local baseFunc = require("basaltLoader").load("BasicElement").generateElementFromXML
-    for k,v in pairs(doc.children) do
+    for _,v in pairs(doc.children) do
         if(v.tag)then
             local fName = "add"..v.tag:gsub("^%l", string.upper)
             if(self[fName])then

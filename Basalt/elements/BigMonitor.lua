@@ -184,13 +184,13 @@ local function MassiveMonitor(monitors)
 end
 
 local loader = require("basaltLoader")
-local Element = loader.load("BasicElement")
 local Container = loader.load("Container")
 
 ---@class BigMonitor : Container
 local BigMonitor = setmetatable({}, Container)
+BigMonitor.__index = BigMonitor
 
-Element:initialize("BigMonitor")
+BigMonitor:initialize("BigMonitor")
 
 --- Creates a new BigMonitor.
 ---@param id string The id of the object.
@@ -211,7 +211,8 @@ end
 function BigMonitor:event(event, ...)
   Container.event(self, event, ...)
   if(event=="monitor_resize")then
-
+    self:forceVisibleChildrenUpdate()
+    self:setSize(self.massiveMon.getSize())
   end
 end
 

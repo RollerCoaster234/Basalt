@@ -1,18 +1,17 @@
 local loader = require("basaltLoader")
 local Container = require("basaltLoader").load("Container")
-local Element = loader.load("BasicElement")
-local log = require("log")
 local uuid = require("utils").uuid
 
 ---@class Flexbox : Container
 local Flexbox = setmetatable({}, Container)
+Flexbox.__index = Flexbox
 
-Element:initialize("Flexbox")
-Element:addProperty("flexDirection", "string", "row")
-Element:addProperty("flexSpacing", "number", 1)
-Element:addProperty("flexJustifyContent", "string", "flex-start")
-Element:addProperty("flexWrap", "boolean", false)
-Element:addProperty("flexUpdateLayout", "boolean", false)
+Flexbox:initialize("Flexbox")
+Flexbox:addProperty("flexDirection", "string", "row")
+Flexbox:addProperty("flexSpacing", "number", 1)
+Flexbox:addProperty("flexJustifyContent", "string", "flex-start")
+Flexbox:addProperty("flexWrap", "boolean", false)
+Flexbox:addProperty("flexUpdateLayout", "boolean", false)
 
 local lineBreakElement = {
   getHeight = function(self) return 0 end,

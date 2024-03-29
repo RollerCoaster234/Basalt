@@ -1,17 +1,16 @@
 local loader = require("basaltLoader")
-local Element = loader.load("BasicElement")
 local VisualElement = loader.load("VisualElement")
-local log = require("log")
 
 ---@class Textfield : VisualElement
 local TextField = setmetatable({}, VisualElement)
+TextField.__index = TextField
 
-Element:initialize("TextField")
-Element:addProperty("lines", "table", {""})
-Element:addProperty("lineIndex", "number", 1)
-Element:addProperty("scrollIndexX", "number", 1)
-Element:addProperty("scrollIndexY", "number", 1)
-Element:addProperty("cursorIndex", "number", 1)
+TextField:initialize("TextField")
+TextField:addProperty("lines", "table", {""})
+TextField:addProperty("lineIndex", "number", 1)
+TextField:addProperty("scrollIndexX", "number", 1)
+TextField:addProperty("scrollIndexY", "number", 1)
+TextField:addProperty("cursorIndex", "number", 1)
 
 --- Creates a new Textfield.
 ---@param id string The id of the object.
@@ -82,6 +81,47 @@ function TextField:updateCursor()
   else
     self.parent:setCursor(false)
   end
+end
+
+--- Adds a line to the textfield.
+---@param self Textfield
+---@param line string The line to add.
+---@return Textfield
+function TextField:addLine(line)
+  table.insert(self.lines, line)
+  return self
+end
+
+--- Removes a line from the textfield.
+---@param self Textfield
+---@param index number The index of the line to remove.
+---@return Textfield
+function TextField:removeLine(index)
+  table.remove(self.lines, index)
+  return self
+end
+
+--- Clears the textfield.
+---@param self Textfield
+---@return Textfield
+function TextField:clear()
+  self.lines = {}
+  return self
+end
+
+--- Gets a line from the textfield.
+---@param self Textfield
+---@param index number The index of the line to get.
+function TextField:getLine(index)
+  return self.lines[index]
+end
+
+--- Sets a line in the textfield.
+---@param self Textfield
+---@param index number The index of the line to set.
+function TextField:setLine(index, line)
+  self.lines[index] = line
+  return self
 end
 
 ---@protected

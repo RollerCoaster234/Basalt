@@ -1,22 +1,22 @@
 local loader = require("basaltLoader")
-local Element = loader.load("BasicElement")
 local VisualElement = loader.load("VisualElement")
 local tHex = require("tHex")
 
 ---@class Slider : VisualElement
 local Slider = setmetatable({}, VisualElement)
+Slider.__index = Slider
 
-Element:initialize("Slider")
-Element:addProperty("knobSymbol", "string", " ")
-Element:addProperty("knobBackground", "color", colors.black)
-Element:addProperty("knobForeground", "color", colors.black)
-Element:addProperty("bgSymbol", "string", "\140")
-Element:addProperty("value", "number", 0)
-Element:addProperty("minValue", "number", 0)
-Element:addProperty("maxValue", "number", 100)
-Element:addProperty("step", "number", 1)
+Slider:initialize("Slider")
+Slider:addProperty("knobSymbol", "string", " ")
+Slider:addProperty("knobBackground", "color", colors.black)
+Slider:addProperty("knobForeground", "color", colors.black)
+Slider:addProperty("bgSymbol", "string", "\140")
+Slider:addProperty("value", "number", 0)
+Slider:addProperty("minValue", "number", 0)
+Slider:addProperty("maxValue", "number", 100)
+Slider:addProperty("step", "number", 1)
 
-Element:combineProperty("knob", "knobSymbol", "knobBackground", "knobForeground")
+Slider:combineProperty("knob", "knobSymbol", "knobBackground", "knobForeground")
 
 Slider:addListener("change", "value_change")
 
@@ -45,11 +45,18 @@ end)
 
 ---@protected
 local function calculateKnobPosition(self, x, y)
-    local relativeX = x - self.x
-    self.value = relativeX / (self.width - 1) * (self.maxValue - self.minValue) + self.minValue
-    self.value = math.floor((self.value + self.step / 2) / self.step) * self.step
-    self.value = math.max(self.minValue, math.min(self.maxValue, self.value))
-    self:fireEvent("value_change", self.value)
+    local xPos, yPos = self:getPosition()
+    local width, height = self:getSize()
+    local value = self:getValue()
+    local maxValue = self:getMaxValue()
+    local minValue = self:getMinValue()
+    local step = self:getStep()
+    local relativeX = x - xPos
+    value = relativeX / (width - 1) * (maxValue - minValue) + minValue
+    value = math.floor((value + step / 2) / step) * step
+    value = math.max(minValue, math.min(maxValue, value))
+    self:setValue(value)
+    self:fireEvent("change", value)
     self:updateRender()
 end
 
@@ -75,14 +82,30 @@ end
 
 ---@protected
 function Slider:mouse_scroll(direction, x, y)
-    if(VisualElement.mouse_scroll(self, direction, x, y))then
-        self.value = self.value + direction * (self.maxValue / self.width)
-        self.value = math.max(self.minValue, math.min(self.maxValue, self.value))
-        self:fireEvent("value_change", self.value)
+    if VisualElement.mouse_scroll(self, direction, x, y) then
+        local value = self:getValue()
+        local minValue = self:getMinValue()
+        local maxValue = self:getMaxValue()
+        local width = self:getWidth()
+
+        local step = (maxValue - minValue) / (width - 1)
+
+        if direction == 1 then
+            value = value + step
+        else
+            value = value - step
+        end
+
+        value = math.max(minValue, math.min(value, maxValue))
+
+        self:setValue(value)
+        self:fireEvent("change", value)
         self:updateRender()
         return true
     end
 end
+
+
 
 ---@protected
 function Slider:render()

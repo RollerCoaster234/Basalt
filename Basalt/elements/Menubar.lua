@@ -1,15 +1,15 @@
 local loader = require("basaltLoader")
-local Element = loader.load("BasicElement")
 local VisualElement = loader.load("VisualElement")
 local List = loader.load("List")
 local tHex = require("tHex")
 
 ---@class Menubar : List
 local Menubar = setmetatable({}, List)
+Menubar.__index = Menubar
 
 
-Element:initialize("Menubar")
-Element:addProperty("spacing", "number", 1)
+Menubar:initialize("Menubar")
+Menubar:addProperty("spacing", "number", 1)
 
 --- Creates a new Menubar.
 ---@param id string The id of the object.

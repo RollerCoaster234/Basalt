@@ -1,19 +1,19 @@
 local loader = require("basaltLoader")
-local Element = loader.load("BasicElement")
 local VisualElement = loader.load("VisualElement")
 local getCenteredPosition = require("utils").getCenteredPosition
 
 ---@class Checkbox : VisualElement
 local Checkbox = setmetatable({}, VisualElement)
+Checkbox.__index = Checkbox
 
-Element:initialize("Checkbox")
-Element:addProperty("checked", "boolean", false)
-Element:addProperty("checkedSymbol", "string", "\42")
-Element:addProperty("checkedColor", "color", colors.white)
-Element:addProperty("checkedBgColor", "color", colors.black)
-Element:combineProperty("Symbol", "checkedSymbol", "checkedColor", "checkedBgColor")
+Checkbox:initialize("Checkbox")
+Checkbox:addProperty("checked", "boolean", false)
+Checkbox:addProperty("checkedSymbol", "string", "\42")
+Checkbox:addProperty("checkedColor", "color", colors.white)
+Checkbox:addProperty("checkedBgColor", "color", colors.black)
+Checkbox:combineProperty("Symbol", "checkedSymbol", "checkedColor", "checkedBgColor")
 
-Element:addListener("check", "checked_value")
+Checkbox:addListener("check", "checked_value")
 
 --- Creates a new checkbox.
 ---@param id string The id of the object.

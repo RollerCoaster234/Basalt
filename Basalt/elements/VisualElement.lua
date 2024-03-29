@@ -4,35 +4,34 @@ local subText = require("utils").subText
 
 --- @class VisualElement: BasicElement
 local VisualElement = setmetatable({}, Element)
+VisualElement.__index = VisualElement
 
-local function BaseRender(self)
-  local w, h = self:getSize()
-  self:addTextBox(1, 1, w, h, " ")
-  self:addBackgroundBox(1, 1, w, h, self:getBackground())
-  self:addForegroundBox(1, 1, w, h, self:getForeground())
-end
+VisualElement:initialize("VisualElement")
 
-Element:initialize("VisualElement")
-Element:addProperty("background", "color", colors.black)
-Element:addProperty("foreground", "color", colors.white)
-Element:addProperty("x", "number", 1)
-Element:addProperty("y", "number", 1)
-
-Element:combineProperty("Position", "X", "Y")
-Element:addProperty("visible", "boolean", true)
-Element:addProperty("width", "number", 1)
-Element:addProperty("height", "number", 1)
-Element:addProperty("renderData", "table", {BaseRender}, false, function(self, value)
-  if(type(value)=="function")then
-    table.insert(self.renderData, value)
-    return self.renderData
-  end
+VisualElement:addProperty("background", "color", colors.black)
+VisualElement:addProperty("foreground", "color", colors.white)
+VisualElement:addProperty("x", "number", 1, nil, function(self, value)
+  self:reposition("x", value)
+end)
+VisualElement:addProperty("y", "number", 1, nil, function(self, value)
+  self:reposition("y", value)
+end)
+VisualElement:combineProperty("Position", "X", "Y")
+VisualElement:addProperty("visible", "boolean", true)
+VisualElement:addProperty("width", "number", 1, nil, function(self, value)
+  self:resize("width", value)
+end)
+VisualElement:addProperty("height", "number", 1, nil, function(self, value)
+  self:resize("height", value)
 end)
 
-Element:combineProperty("Size", "width", "height")
-Element:addProperty("transparency", "boolean", false)
-Element:addProperty("ignoreOffset", "boolean", false)
-Element:addProperty("focused", "boolean", false, nil, function(self, value)
+VisualElement:addProperty("preRenderData", "table", {})
+VisualElement:addProperty("postRenderData", "table", {})
+
+VisualElement:combineProperty("Size", "width", "height")
+VisualElement:addProperty("transparency", "boolean", false)
+VisualElement:addProperty("ignoreOffset", "boolean", false)
+VisualElement:addProperty("focused", "boolean", false, nil, function(self, value)
   if(value)then
     self:get_focus()
   else
@@ -40,18 +39,20 @@ Element:addProperty("focused", "boolean", false, nil, function(self, value)
   end
 end)
 
-Element:addListener("click", "mouse_click")
-Element:addListener("drag", "mouse_drag")
-Element:addListener("scroll", "mouse_scroll")
-Element:addListener("hover", "mouse_move")
-Element:addListener("leave", "mouse_move2")
-Element:addListener("clickUp", "mouse_up")
-Element:addListener("key", "key")
-Element:addListener("keyUp", "key_up")
-Element:addListener("char", "char")
-Element:addListener("getFocus", "get_focus")
-Element:addListener("loseFocus", "lose_focus")
-Element:addListener("release", "mouse_release")
+VisualElement:addListener("click", "mouse_click")
+VisualElement:addListener("drag", "mouse_drag")
+VisualElement:addListener("scroll", "mouse_scroll")
+VisualElement:addListener("hover", "mouse_move")
+VisualElement:addListener("leave", "mouse_move2")
+VisualElement:addListener("clickUp", "mouse_up")
+VisualElement:addListener("key", "key")
+VisualElement:addListener("keyUp", "key_up")
+VisualElement:addListener("char", "char")
+VisualElement:addListener("getFocus", "get_focus")
+VisualElement:addListener("loseFocus", "lose_focus")
+VisualElement:addListener("release", "mouse_release")
+VisualElement:addListener("resize", "resize")
+VisualElement:addListener("reposition", "reposition")
 
 --- Creates a new visual element.
 ---@param id string The id of the object.
@@ -68,15 +69,85 @@ function VisualElement:new(id, parent, basalt)
   return newInstance
 end
 
+-- Calls the pre-render function of the element. Can be overwritten to alter element pre-rendering.
+---@param self VisualElement
+function VisualElement:preRender()end
+
+--- Calls the render function of the element. Can be overwritten to alter element rendering. (This function is used to render the element.)
+---@param self VisualElement
+function VisualElement:render()
+  local w, h = self:getSize()
+  self:addTextBox(1, 1, w, h, " ")
+  self:addBackgroundBox(1, 1, w, h, self:getBackground())
+  self:addForegroundBox(1, 1, w, h, self:getForeground())
+end
+
+--- Calls the post-render function of the element. Can be overwritten to alter element post-rendering.
+---@param self VisualElement
+function VisualElement:postRender()end
+local log = require("log")
+-- Calls the pre-render, render and post-render functions of the element. Please do not overwrite this function.
 ---@protected
-function VisualElement.render(self)
-    for _,v in pairs(self.renderData)do
-      v(self)
+function VisualElement:processRender()
+  log(self:getType())
+  self:preRender()
+  for _,v in pairs(self:getPreRenderData())do
+    self["add"..v.cmd](self, unpack(v.args))
+  end
+  self:render()
+  for _,v in pairs(self:getPostRenderData())do
+    self["add"..v.cmd](self, unpack(v.args))
+  end
+  self:postRender()
+end
+
+local preF = "pre"
+for _=1,2 do
+  for _,v in pairs({"Text", "Bg", "Fg"})do
+    VisualElement[preF..v] = function(self, x, y, text)
+      local curData = self:getPreRenderData()
+      if(preF=="post")then curData = self:getPostRenderData() end 
+      table.insert(curData, {cmd=v, args={x, y, text}})
+      self:updateRender()
+      return self
     end
+  end
+  for _,v in pairs({"BackgroundBox", "TextBox", "ForegroundBox"})do
+    VisualElement[preF..v] = function(self, x, y, w, h, col)
+      local curData = self:getPreRenderData()
+      if(preF=="post")then curData = self:getPostRenderData() end 
+      table.insert(curData, {cmd=v, args={x, y, w, h, col}})
+      self:updateRender()
+      return self
+    end
+  end
+  VisualElement[preF.."Blit"] = function(self, x, y, t, f, b)
+    local curData = self:getPreRenderData()
+    if(preF=="post")then curData = self:getPostRenderData() end 
+    table.insert(curData, {cmd="Blit", args={x, y, t, f, b}})
+    self:updateRender()
+    return self
+  end
+  preF = "post"
+end
+
+--- Clears the pre-render data of the element.
+---@return VisualElement
+function VisualElement:clearPreRender()
+  self:setPreRenderData({})
+  self:updateRender()
+  return self
+end
+
+--- Clears the post-render data of the element.
+---@return VisualElement
+function VisualElement:clearPostRender()
+  self:setPostRenderData({})
+  self:updateRender()
+  return self
 end
 
 for _,v in pairs({"BackgroundBox", "TextBox", "ForegroundBox"})do
-  ---@protected
   VisualElement["add"..v] = function(self, x, y, w, h, col)
     local obj = self.parent or self
     local xPos,yPos = self:getPosition()
@@ -87,41 +158,6 @@ for _,v in pairs({"BackgroundBox", "TextBox", "ForegroundBox"})do
         yPos = ignOffset and yPos or yPos - yO
     end
     obj["draw"..v](obj, x+xPos-1, y+yPos-1, w, h, col)
-  end
-end
-
----@protected
-function VisualElement.blit(self, x, y, t, fg, bg)
-  local obj = self.parent or self
-  local xPos,yPos = self:getPosition()
-  local transparent = self:getTransparency()
-  if(self.parent~=nil)then
-      local xO, yO = self.parent:getOffset()
-      local ignOffset = self:getIgnoreOffset()
-      xPos = ignOffset and xPos or xPos - xO
-      yPos = ignOffset and yPos or yPos - yO
-  end
-  if not(transparent)then
-      obj:blit(x+xPos-1, y+yPos-1, t, fg, bg)
-      return
-  end
-  local _text = split(t, "\0")
-  local _fg = split(fg)
-  local _bg = split(bg)
-  for _,v in pairs(_text)do
-      if(v.value~="")or(v.value~="\0")then
-          obj:setText(x+v.x+xPos-2, y+yPos-1, v.value)
-      end
-  end
-  for _,v in pairs(_bg)do
-      if(v.value~="")or(v.value~=" ")then
-          obj:setBg(x+v.x+xPos-2, y+yPos-1, v.value)
-      end
-  end
-  for _,v in pairs(_fg)do
-      if(v.value~="")or(v.value~=" ")then
-          obj:setFg(x+v.x+xPos-2, y+yPos-1, v.value)
-      end
   end
 end
 
@@ -160,7 +196,7 @@ for _,v in pairs({"Text", "Bg", "Fg"})do
 end
 
 --- @protected
-function VisualElement.addBlit(self, x, y, t, f, b)
+function VisualElement:addBlit(x, y, t, f, b)
   local obj = self.parent or self
   local xPos,yPos = self:getPosition()
   local transparent = self:getTransparency()
@@ -194,17 +230,6 @@ function VisualElement.addBlit(self, x, y, t, f, b)
   end
 end
 
---- Adds a render function to the element which will be called when the element is rendered.
----@param func function -- The render function.
----@param index? number -- The index in the render table.
----@return self
-function VisualElement.addRender(self, func, index)
-  if(type(func) == "function")then
-    local renderRef = self:getRenderData()
-    table.insert(renderRef, index or #renderRef+1, func)
-  end
-  return self
-end
 
 --- Returns the relative position of the element or the given coordinates.
 ---@param x? number -- The x position.
@@ -219,8 +244,8 @@ function VisualElement:getRelativePosition(x, y)
   local newY = y - (yObj-1)
   if self:isType("Container") then
     local xO, yO = self:getOffset()
-    newX = newX - xO
-    newY = newY - yO
+    newX = newX + xO
+    newY = newY + yO
   end
   if self.parent ~= nil then
     newX, newY = self.parent:getRelativePosition(newX, newY)
@@ -231,7 +256,7 @@ end
 --- Returns the absolute position of the element or the given coordinates.
 ---@param x? number -- The x position.
 ---@param y? number -- The y position.
-function VisualElement.getAbsolutePosition(self, x, y)
+function VisualElement:getAbsolutePosition(x, y)
   if(x==nil)and(y==nil)then
     x, y = self:getPosition()
   end
@@ -249,22 +274,20 @@ function VisualElement.getAbsolutePosition(self, x, y)
   return newX, newY
 end
 
-local function isInside(self, x, y)
+--- Returns whether the given coordinates are inside the element.
+---@param x number -- The x position.
+---@param y number -- The y position.
+---@return boolean
+function VisualElement:isInside(x, y)
   local pX, pY = self:getPosition()
   local pW, pH = self:getSize()
   local visible, enabled = self:getVisible(), self:getEnabled()
   return x >= pX and x <= pX + pW-1 and y >= pY and y <= pY + pH-1 and visible and enabled
 end
 
---- Returns whether the given coordinates are inside the element.
----@param x number -- The x position.
----@param y number -- The y position.
----@return boolean
-VisualElement.isInside = isInside
-
 ---@protected
-function VisualElement.mouse_click(self, btn, x, y)
-  if isInside(self, x, y) then
+function VisualElement:mouse_click(btn, x, y)
+  if self:isInside(x, y) then
     self:setProperty("clicked", true)
     self:setProperty("dragging", true)
     self:updateRender()
@@ -274,7 +297,7 @@ function VisualElement.mouse_click(self, btn, x, y)
 end
 
 ---@protected
-function VisualElement.mouse_drag(self, btn, x, y)
+function VisualElement:mouse_drag(btn, x, y)
   if self:getProperty("dragging") then
     self:fireEvent("drag", btn, x, y)
     return true
@@ -282,8 +305,8 @@ function VisualElement.mouse_drag(self, btn, x, y)
 end
 
 ---@protected
-function VisualElement.mouse_up(self, btn, x, y)
-  if isInside(self, x, y) then
+function VisualElement:mouse_up(btn, x, y)
+  if self:isInside(x, y) then
     self:fireEvent("clickUp", btn, x, y)
     self:updateRender()
     return true
@@ -291,7 +314,7 @@ function VisualElement.mouse_up(self, btn, x, y)
 end
 
 ---@protected
-function VisualElement.mouse_release(self, btn, x, y)
+function VisualElement:mouse_release(btn, x, y)
   self:setProperty("dragging", false)
   self:setProperty("clicked", false)
   self:fireEvent("release", btn, x, y)
@@ -300,7 +323,7 @@ end
 
 ---@protected
 function VisualElement:mouse_scroll(direction, x, y)
-    if isInside(self, x, y) then
+    if self:isInside(x, y) then
       self:fireEvent("scroll")
       return true
     end
@@ -308,7 +331,7 @@ end
 
 ---@protected
 function VisualElement:mouse_move(_, x, y)
-  if isInside(self, x, y) then
+  if self:isInside(x, y) then
     self:setProperty("hovered", true)
     self:updateRender()
     self:fireEvent("hover", x, y)
@@ -320,6 +343,16 @@ function VisualElement:mouse_move(_, x, y)
     self:fireEvent("leave", x, y)
     return true
   end
+end
+
+---@protected
+function VisualElement:reposition(_, prop, value)
+  self:fireEvent("reposition", prop, value)
+end
+
+---@protected
+function VisualElement:resize(_, prop, value)
+  self:fireEvent("resize", prop, value)
 end
 
 ---@protected

@@ -173,8 +173,7 @@ end
 
 local Container = {}
 function Container.init(original, basalt)
-    local Element = require("basaltLoader").load("BasicElement")
-    Element:extend("Init", function(self)
+    original:extend("Init", function(self)
         if(original:getParent()==nil)then
             if(baseTemplate.colors~=nil)then
                 local FrameTerm = self:getTerm()

@@ -1,11 +1,11 @@
 local loader = require("basaltLoader")
-local Element = loader.load("BasicElement")
 local Container = loader.load("Container")
 
 --- @class BaseFrame : Container
 local BaseFrame = setmetatable({}, Container)
+BaseFrame.__index = BaseFrame
 
-Element:initialize("BaseFrame")
+BaseFrame:initialize("BaseFrame")
 
 --- Creates a new BaseFrame.
 ---@param id string The id of the object.

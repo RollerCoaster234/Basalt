@@ -1,14 +1,14 @@
 
 local loader = require("basaltLoader")
-local Element = loader.load("BasicElement")
 local VisualElement = loader.load("VisualElement")
 local getCenteredPosition = require("utils").getCenteredPosition
 
 --- @class Button : VisualElement
 local Button = setmetatable({}, VisualElement)
+Button.__index = Button
 
-Element:initialize("Button")
-Element:addProperty("text", "string", "Button")
+Button:initialize("Button")
+Button:addProperty("text", "string", "Button")
 
 --- Creates a new visual element.
 ---@param id string The id of the object.

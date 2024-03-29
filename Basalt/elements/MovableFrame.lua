@@ -3,6 +3,7 @@ local log = require("log")
 
 ---@class MovableFrame : Container
 local MovableFrame = setmetatable({}, Container)
+MovableFrame.__index = MovableFrame
 
 MovableFrame:initialize("MovableFrame")
 MovableFrame:addProperty("dragMap", "table", {
