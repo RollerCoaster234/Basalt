@@ -1,5 +1,5 @@
 local type,len,rep,sub = type,string.len,string.rep,string.sub
-local tHex = require("tHex")
+local tHex = require("utils").tHex
 
 local function MassiveMonitor(monitors)
     local globalX, globalY,monX,monY,w,h = 1,1,1,1,0,0

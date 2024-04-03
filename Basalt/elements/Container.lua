@@ -36,13 +36,13 @@ Container:addProperty("focusedChild", "table", nil, false, function(self, value)
   end
   return value
 end)
-Container:addProperty("XOffset", "number", 0, nil , function(self, value)
+Container:addProperty("xOffset", "number", 0, nil , function(self, value)
   self:forceVisibleChildrenUpdate()
 end)
-Container:addProperty("YOffset", "number", 0, nil , function(self, value)
+Container:addProperty("yOffset", "number", 0, nil , function(self, value)
   self:forceVisibleChildrenUpdate()
 end)
-Container:combineProperty("Offset", "XOffset", "YOffset")
+Container:combineProperty("Offset", "xOffset", "yOffset")
 
 local sub, max = string.sub, math.max
 
@@ -61,21 +61,20 @@ function Container:new(id, parent, basalt)
   return newInstance
 end
 
----@protected
-function Container:render()
+function Container:postRender()
   if(self:getTerm()==nil)then
     --return
   end
   local visibleChildren = self:getVisibleChildren()
   if self.parent == nil then
     if self.updateRendering then
-      VisualElement.render(self)
+      VisualElement.postRender(self)
         for _, element in pairs(visibleChildren) do
             element:processRender()
         end
     end
   else
-    VisualElement.render(self)
+    VisualElement.postRender(self)
     for _, element in pairs(visibleChildren) do
       element:processRender()
     end
@@ -399,7 +398,6 @@ function Container:event(event, ...)
 end
 
 for k,v in pairs({mouse_click=true,mouse_up=false,mouse_drag=false,mouse_scroll=true,mouse_move=false})do
-  ---@protected
   Container[k] = function(self, btn, x, y, ...)
       if(VisualElement[k]~=nil)then
           if(VisualElement[k](self, btn, x, y, ...))then
@@ -440,7 +438,6 @@ end
 
 
 for _,v in pairs({"key", "key_up", "char"})do
-  ---@protected
   Container[v] = function(self, ...)
       if(VisualElement[v]~=nil)then
           if(VisualElement[v](self, ...))then
@@ -459,7 +456,6 @@ for _,v in pairs({"key", "key_up", "char"})do
 end
 
 for k,_ in pairs(loader.getElementList())do
-  ---@protected
   local elementName = k:gsub("^%l", string.upper)
   Container["add"..elementName] = function(self, id, x, y, w, h, bg, fg)
     local uid = id

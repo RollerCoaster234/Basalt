@@ -7,7 +7,9 @@ local Checkbox = setmetatable({}, VisualElement)
 Checkbox.__index = Checkbox
 
 Checkbox:initialize("Checkbox")
-Checkbox:addProperty("checked", "boolean", false)
+Checkbox:addProperty("checked", "boolean", false, nil, function(self)
+    self:updateRender()
+end)
 Checkbox:addProperty("checkedSymbol", "string", "\42")
 Checkbox:addProperty("checkedColor", "color", colors.white)
 Checkbox:addProperty("checkedBgColor", "color", colors.black)
@@ -51,8 +53,8 @@ end)
 function Checkbox:mouse_click(button, x, y)
     if(VisualElement.mouse_click(self, button, x, y))then
         if(button == 1)then
-            self.checked = not self.checked
-            self:fireEvent("check", self.checked)
+            self:setChecked(not self:getChecked())
+            self:fireEvent("check", self:getChecked())
             self:updateRender()
         end
         return true

@@ -1,5 +1,5 @@
 local type,len,rep,sub = type,string.len,string.rep,string.sub
-local tHex = require("tHex")
+local tHex = require("utils").tHex
 
 local loader = require("basaltLoader")
 local Container = loader.load("Container")
@@ -20,12 +20,12 @@ Monitor:addProperty("Monitor", "any", nil, nil, function(self, value)
     return value
 end)
 Monitor:addProperty("Side", "string", nil, nil, function(self, value)
-    if(value==nil)then
-      return nil
-    end
     if(type(value)=="string")then
       if(peripheral.isPresent(value))then
         if(peripheral.getType(value)=="monitor")then
+          if(self:getMonitor()==nil)then
+            self:setMonitor(value)
+          end
           return value
         end
       end

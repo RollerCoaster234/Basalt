@@ -1,6 +1,5 @@
-local tHex = require("tHex")
+local tHex = require("utils").tHex
 local sub,rep,max,min,unpack = string.sub,string.rep,math.max,math.min,table.unpack
-local log = require("log")
 
 local subrenderData = {}
 local subrenderDataCount = 0
@@ -128,19 +127,28 @@ return function(drawTerm)
         end,
 
         drawBackgroundBox = function(x, y, width, height, bgCol)
-            local colorStr = rep(tHex[bgCol], width)
+            local colorStr = rep(type(bgCol)=="string" and bgCol or tHex[bgCol], width)
+            if(type(bgCol)=="string")and(#bgCol>1)then
+                colorStr = sub(colorStr, 1, width)
+            end
             for n = 1, height do
                 setCache(3, x, y + (n - 1), colorStr)
             end
         end,
         drawForegroundBox = function(x, y, width, height, fgCol)
-            local colorStr = rep(tHex[fgCol], width)
+            local colorStr = rep(type(fgCol)=="string" and fgCol or tHex[fgCol], width)
+            if(type(fgCol)=="string")and(#fgCol>1)then
+                colorStr = sub(colorStr, 1, width)
+            end
             for n = 1, height do
                 setCache(2, x, y + (n - 1), colorStr)
             end
         end,
         drawTextBox = function(x, y, width, height, symbol)
             local textStr = rep(symbol, width)
+            if(#symbol>1)then
+                textStr = sub(textStr, 1, width)
+            end
             for n = 1, height do
                 setCache(1, x, y + (n - 1), textStr)
             end

@@ -1,4 +1,4 @@
-local split = require("utils").splitString
+local split = require("utils").split
 local deepcopy = require("utils").deepcopy
 local uuid = require("utils").uuid
 

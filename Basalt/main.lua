@@ -153,6 +153,22 @@ local function updateEvent(event, ...)
     end
 end
 
+local function getFrame(id)
+    for _,v in pairs(frames)do
+        if(v:getId()==id)then
+            return v
+        end
+    end    
+end
+
+local function getMonitor(id)
+    for _,v in pairs(monFrames)do
+        if(v:getId()==id)then
+            return v
+        end
+    end
+end
+
 --- Checks if a key is currently pressed
 --- @param key number -- Use the key codes from the `keys` table, example: `keys.enter`
 --- @return boolean
@@ -168,11 +184,10 @@ function basalt.isMouseDown(button)
 end
 
 --- Returns the current main active main frame, if it doesn't exist it will create one
---- @param id? string -- The id of the frame
 --- @return BaseFrame
-function basalt.getMainFrame(id)
+function basalt.getMainFrame()
     if(mainFrame==nil)then
-        mainFrame = basalt.addFrame(id or "Basalt_Mainframe")
+        mainFrame = basalt.addFrame("mainFrame")
     end
     return mainFrame
 end
@@ -181,6 +196,7 @@ end
 --- @param id? string -- The id of the frame
 --- @return BaseFrame
 function basalt.addFrame(id)
+    if(mainFrame==nil)then id = id or "mainFrame" end
     id = id or utils.uuid()
     local frame = loader.load("BaseFrame"):new(id, nil, basalt)
     frame:init()
@@ -192,19 +208,31 @@ function basalt.addFrame(id)
 end
 
 --- Removes a frame from the frame list
---- @param frame BaseFrame -- The frame to removeEvent
+--- @param frame string|BaseFrame -- The frame to remove
+--- @return boolean
 function basalt.removeFrame(frame)
+    if(type(frame)=="string")then
+        frame = getFrame(id)
+    end
+    if(mainFrame==frame)then
+        mainFrame = nil
+        term.clear()
+    end
     for k,v in pairs(frames)do
         if(v==frame)then
             table.remove(frames, k)
-            return
+            return true
         end
     end
+    return false
 end
 
 --- Switches the main frame to a new frame
 --- @param frame BaseFrame -- The frame to switch to
 function basalt.switchFrame(frame)
+    if(type(frame)=="string")then
+        frame = getFrame(frame)
+    end
     if(frame:getType()~="BaseFrame")then
         error("Invalid frame type: "..frame:getType().." (expected: BaseFrame)")
     end
@@ -225,8 +253,11 @@ function basalt.addMonitor(id)
 end
 
 --- Removes a monitor/BigMonitor from the monitor list
---- @param frame Monitor|BigMonitor -- The monitor to remove
+--- @param frame string|Monitor|BigMonitor -- The monitor to remove
 function basalt.removeMonitor(frame)
+    if(type(frame)=="string")then
+        frame = getMonitor(frame)
+    end
     for k,v in pairs(monFrames)do
         if(v==frame)then
             table.remove(monFrames, k)
@@ -289,7 +320,7 @@ end
 
 --- Starts the update loop
 --- @param isActive? boolean -- If the update loop should be active
-function basalt.autoUpdate(isActive)
+function basalt.run(isActive)
     updaterActive = isActive
     if(isActive==nil)then updaterActive = true end
     local function f()
@@ -305,6 +336,7 @@ function basalt.autoUpdate(isActive)
         end
     end
 end
+basalt.autoUpdate = basalt.run
 
 --- Returns a list of all available elements in the current basalt installation
 --- @return table
@@ -350,16 +382,29 @@ end
 --- Starts a new thread which runs the function parallel to the main thread
 --- @param func function -- The function to run
 --- @vararg any? -- The arguments to pass to the function
+--- @return table
 function basalt.thread(func, ...)
     local threadData = {}
     threadData.thread = coroutine.create(func)
     local ok, filter = coroutine.resume(threadData.thread, ...)
     if(ok)then
+        threadData.stop = function()
+            for k,v in pairs(threads)do
+                if(v==threadData)then
+                    table.remove(threads, k)
+                end
+            end
+            threadData = nil
+        end
+        threadData.status = function()
+            return coroutine.status(threadData.thread)
+        end
         threadData.filter = filter
         table.insert(threads, threadData)
         return threadData
     end
     basalt.errorHandler(filter)
+    return threadData
 end
 
 --- Stops the update loop
@@ -373,6 +418,7 @@ function basalt.stop()
 end
 
 --- Returns the current term
+---@return term
 function basalt.getTerm()
     return baseTerm
 end

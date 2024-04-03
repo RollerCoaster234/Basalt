@@ -1,6 +1,6 @@
 local loader = require("basaltLoader")
 local VisualElement = loader.load("VisualElement")
-local tHex = require("tHex")
+local tHex = require("utils").tHex
 
 ---@class Input : VisualElement
 local Input = setmetatable({}, VisualElement)

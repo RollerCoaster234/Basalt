@@ -85,11 +85,10 @@ end
 --- Calls the post-render function of the element. Can be overwritten to alter element post-rendering.
 ---@param self VisualElement
 function VisualElement:postRender()end
-local log = require("log")
+
 -- Calls the pre-render, render and post-render functions of the element. Please do not overwrite this function.
 ---@protected
 function VisualElement:processRender()
-  log(self:getType())
   self:preRender()
   for _,v in pairs(self:getPreRenderData())do
     self["add"..v.cmd](self, unpack(v.args))
@@ -122,6 +121,7 @@ for _=1,2 do
     end
   end
   VisualElement[preF.."Blit"] = function(self, x, y, t, f, b)
+    if(#t~=#f)or(#t~=#b)then error("Text, Foreground and Background must have the same length!") end
     local curData = self:getPreRenderData()
     if(preF=="post")then curData = self:getPostRenderData() end 
     table.insert(curData, {cmd="Blit", args={x, y, t, f, b}})
@@ -291,7 +291,7 @@ function VisualElement:mouse_click(btn, x, y)
     self:setProperty("clicked", true)
     self:setProperty("dragging", true)
     self:updateRender()
-    self:fireEvent("click", btn, x, y)
+    self:fireEvent("click", btn, self:getRelativePosition(x, y))
     return true
   end
 end
@@ -299,7 +299,7 @@ end
 ---@protected
 function VisualElement:mouse_drag(btn, x, y)
   if self:getProperty("dragging") then
-    self:fireEvent("drag", btn, x, y)
+    self:fireEvent("drag", btn, self:getRelativePosition(x, y))
     return true
   end
 end
@@ -307,7 +307,7 @@ end
 ---@protected
 function VisualElement:mouse_up(btn, x, y)
   if self:isInside(x, y) then
-    self:fireEvent("clickUp", btn, x, y)
+    self:fireEvent("clickUp", btn, self:getRelativePosition(x, y))
     self:updateRender()
     return true
   end
@@ -317,14 +317,14 @@ end
 function VisualElement:mouse_release(btn, x, y)
   self:setProperty("dragging", false)
   self:setProperty("clicked", false)
-  self:fireEvent("release", btn, x, y)
+  self:fireEvent("release", btn, self:getRelativePosition(x, y))
   return true
 end
 
 ---@protected
 function VisualElement:mouse_scroll(direction, x, y)
     if self:isInside(x, y) then
-      self:fireEvent("scroll")
+      self:fireEvent("scroll", direction, self:getRelativePosition(x, y))
       return true
     end
 end
@@ -334,13 +334,13 @@ function VisualElement:mouse_move(_, x, y)
   if self:isInside(x, y) then
     self:setProperty("hovered", true)
     self:updateRender()
-    self:fireEvent("hover", x, y)
+    self:fireEvent("hover", self:getRelativePosition(x, y))
     return true
   end
   if(self:getProperty("hovered"))then
     self:setProperty("hovered", false)
     self:updateRender()
-    self:fireEvent("leave", x, y)
+    self:fireEvent("leave", self:getRelativePosition(x, y))
     return true
   end
 end

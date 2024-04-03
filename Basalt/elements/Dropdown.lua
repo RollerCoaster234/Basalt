@@ -2,7 +2,7 @@ local loader = require("basaltLoader")
 local Element = loader.load("BasicElement")
 local VisualElement = loader.load("VisualElement")
 local List = loader.load("List")
-local tHex = require("tHex")
+local tHex = require("utils").tHex
 
 ---@class Dropdown : List
 local Dropdown = setmetatable({}, List)

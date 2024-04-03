@@ -1,7 +1,7 @@
 
 local loader = require("basaltLoader")
 local VisualElement = loader.load("VisualElement")
-local tHex = require("tHex")
+local tHex = require("utils").tHex
 
 local newPackage = dofile("rom/modules/main/cc/require.lua").make
 local sub = string.sub

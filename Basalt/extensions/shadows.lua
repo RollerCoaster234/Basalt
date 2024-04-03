@@ -1,7 +1,6 @@
 
 local shadowExtension = {}
-local VisualElement
-local tHex = require("tHex")
+local tHex = require("utils").tHex
 
 function shadowExtension.extensionProperties(original)
     original:initialize("VisualElement")

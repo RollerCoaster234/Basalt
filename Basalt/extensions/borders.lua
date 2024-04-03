@@ -1,7 +1,7 @@
 
 ---@class VisualElement
 local borderExtension = {}
-local tHex = require("tHex")
+local tHex = require("utils").tHex
 
 
 ---@protected
