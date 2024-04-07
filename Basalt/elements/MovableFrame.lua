@@ -1,5 +1,5 @@
 local Container = require("basaltLoader").load("Container")
-local log = require("log")
+local expect = require("expect").expect
 
 ---@class MovableFrame : Container
 local MovableFrame = setmetatable({}, Container)
@@ -39,6 +39,9 @@ end)
 ---@param y number The y position.
 ---@return boolean
 function MovableFrame:isInDragMap(x, y)
+    expect(1, self, "table")
+    expect(2, x, "number")
+    expect(3, y, "number")
     local x, y = self:getRelativePosition(x, y)
     for _, v in pairs(self.dragMap)do
         local w, h = v.w-1, v.h-1
@@ -58,6 +61,11 @@ end
 ---@param w number The width.
 ---@param h number The height.
 function MovableFrame:addDragArea(x, y, w, h)
+    expect(1, self, "table")
+    expect(2, x, "number")
+    expect(3, y, "number")
+    expect(4, w, "number")
+    expect(5, h, "number")
     table.insert(self.dragMap, {x=x, y=y, w=w, h=h})
     return self
 end

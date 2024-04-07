@@ -6,6 +6,8 @@ local main = format:gsub("path", basaltPath)
 local eleFolder = format:gsub("path", basaltPath.."/elements")
 local extFolder = format:gsub("path", basaltPath.."/extensions")
 local libFolder = format:gsub("path", basaltPath.."/libraries")
+local expectLib = require("expect")
+local expect = expectLib.expect
 package.path = main..eleFolder..extFolder..libFolder..defaultPath
 
 local loader = require("basaltLoader")
@@ -14,7 +16,7 @@ local log = require("log")
 
 --- The Basalt Core API
 --- @class Basalt
-local basalt = {log=log, extensionExists = loader.extensionExists}
+local basalt = {traceback=true, log=log, extensionExists = loader.extensionExists}
 
 local threads = {}
 local updaterActive = false
@@ -23,6 +25,7 @@ local baseTerm = term.current()
 local registeredEvents = {}
 local keysDown,mouseDown = {}, {}
 loader.setBasalt(basalt)
+expectLib.basalt = basalt
 
 ---- Frame Rendering
 local function drawFrames()
@@ -173,6 +176,7 @@ end
 --- @param key number -- Use the key codes from the `keys` table, example: `keys.enter`
 --- @return boolean
 function basalt.isKeyDown(key)
+    expect(1, key, keys)
     return keysDown[key] or false
 end
 
@@ -180,6 +184,7 @@ end
 --- @param button number -- Use the button numbers: 1, 2, 3, 4 or 5
 --- @return boolean
 function basalt.isMouseDown(button)
+    expect(1, button, {1, 2, 3, 4})
     return mouseDown[button] or false
 end
 
@@ -196,6 +201,7 @@ end
 --- @param id? string -- The id of the frame
 --- @return BaseFrame
 function basalt.addFrame(id)
+    expect(1, id, "string", "nil")
     if(mainFrame==nil)then id = id or "mainFrame" end
     id = id or utils.uuid()
     local frame = loader.load("BaseFrame"):new(id, nil, basalt)
@@ -211,6 +217,7 @@ end
 --- @param frame string|BaseFrame -- The frame to remove
 --- @return boolean
 function basalt.removeFrame(frame)
+    expect(1, frame, "string", "BaseFrame")
     if(type(frame)=="string")then
         frame = getFrame(id)
     end
@@ -230,11 +237,9 @@ end
 --- Switches the main frame to a new frame
 --- @param frame BaseFrame -- The frame to switch to
 function basalt.switchFrame(frame)
+    expect(1, frame, "string", "BaseFrame")
     if(type(frame)=="string")then
         frame = getFrame(frame)
-    end
-    if(frame:getType()~="BaseFrame")then
-        error("Invalid frame type: "..frame:getType().." (expected: BaseFrame)")
     end
     mainFrame = frame
     frame:forceRender()
@@ -245,6 +250,7 @@ end
 --- @param id? string -- The id of the monitor
 --- @return Monitor
 function basalt.addMonitor(id)
+    expect(1, id, "string", "Monitor")
     id = id or utils.uuid()
     local frame = loader.load("Monitor"):new(id, nil, basalt)
     frame:init()
@@ -255,6 +261,7 @@ end
 --- Removes a monitor/BigMonitor from the monitor list
 --- @param frame string|Monitor|BigMonitor -- The monitor to remove
 function basalt.removeMonitor(frame)
+    expect(1, frame, "string", "Monitor", "BigMonitor")
     if(type(frame)=="string")then
         frame = getMonitor(frame)
     end
@@ -270,6 +277,7 @@ end
 --- @param id? string -- The id of the big monitor
 --- @return BigMonitor
 function basalt.addBigMonitor(id)
+    expect(1, id, "string", "BigMonitor")
     id = id or utils.uuid()
     local frame = loader.load("BigMonitor"):new(id, nil, basalt)
     frame:init()
@@ -284,6 +292,10 @@ end
 --- @param defaultProperties? table -- The default properties of the element
 --- @return BasicElement
 function basalt.create(id, parent, typ, defaultProperties)
+    expect(1, id, "string")
+    expect(2, parent, "nil", "Container")
+    expect(3, typ, "string")
+    expect(4, defaultProperties, "table", "nil")
     local l = loader.load(typ)
     if(type(l)=="string")then
         l = load(l, nil, "t", _ENV)()
@@ -302,25 +314,96 @@ function basalt.create(id, parent, typ, defaultProperties)
     return element
 end
 
+local function coloredPrint(message, color)
+    term.setTextColor(color)
+    print(message)
+    term.setTextColor(colors.white)
+end
+
 --- The error Handler which is used by basalt when errors happen. Can be overwritten
 --- @param errMsg string -- The error message
 function basalt.errorHandler(errMsg)
     basalt.stop()
-    baseTerm.clear()
-    baseTerm.setCursorPos(1,1)
-    baseTerm.setBackgroundColor(colors.black)
-    baseTerm.setTextColor(colors.red)
-    if(basalt.logging)then
-        log(errMsg, "Error")
-    end
-    print(errMsg)
-    baseTerm.setTextColor(colors.white)
-end
+    term.setBackgroundColor(colors.black)
 
+    term.clear()
+    term.setCursorPos(1, 1)
+
+    coloredPrint("Basalt Runtime Error:", colors.red)
+    print()
+
+    local fileName, lineNumber, errorMessage = string.match(errMsg, "(.-):(%d+):%s(.*)")
+
+        if(basalt.traceback)then
+            local stackTrace = string.match(errMsg, "stack traceback:(.*)")
+            if stackTrace then
+                coloredPrint("Stack traceback:", colors.gray)
+                for line in stackTrace:gmatch("[^\n]+") do
+                    local fileNameInTraceback, lineNumberInTraceback = line:match("([^:]+):(%d+):")
+                    if fileNameInTraceback and lineNumberInTraceback then
+                        term.setTextColor(colors.lightGray)
+                        term.write(fileNameInTraceback)
+                        term.setTextColor(colors.gray)
+                        term.write(":")
+                        term.setTextColor(colors.lightBlue)
+                        term.write(lineNumberInTraceback)
+                        term.setTextColor(colors.gray)
+                        line = line:gsub(fileNameInTraceback .. ":" .. lineNumberInTraceback, "")
+                    end
+                    coloredPrint(line, colors.gray)
+                end
+                print()
+            end
+        end
+
+    if fileName and lineNumber then
+        term.setTextColor(colors.red)
+        term.write("Error in ")
+        term.setTextColor(colors.white)
+        term.write(fileName:gsub("/", ""))
+        term.setTextColor(colors.red)
+        term.write(":")
+        term.setTextColor(colors.lightBlue)
+        term.write(lineNumber)
+        term.setTextColor(colors.red)
+        term.write(": ")
+
+
+        if errorMessage then
+            errorMessage = string.gsub(errorMessage, "stack traceback:.*", "")
+            if errorMessage ~= "" then
+                coloredPrint(errorMessage, colors.red)
+            else
+                coloredPrint("Error message not available", colors.gray)
+            end
+        else
+            coloredPrint("Error message not available", colors.gray)
+        end
+
+        local file = fs.open(fileName, "r")
+        if file then
+            local lineContent = ""
+            local currentLineNumber = 1
+            repeat
+                lineContent = file.readLine()
+                if currentLineNumber == tonumber(lineNumber) then
+                    coloredPrint("\149Line " .. lineNumber, colors.cyan)
+                    coloredPrint(lineContent, colors.lightGray)
+                    break
+                end
+                currentLineNumber = currentLineNumber + 1
+            until not lineContent
+            file.close()
+        end
+    end
+
+    term.setBackgroundColor(colors.black)
+end
 
 --- Starts the update loop
 --- @param isActive? boolean -- If the update loop should be active
 function basalt.run(isActive)
+    expect(1, isActive, "boolean", "nil")
     updaterActive = isActive
     if(isActive==nil)then updaterActive = true end
     local function f()
@@ -348,6 +431,8 @@ end
 --- @param event string -- The event to listen for
 --- @param func function -- The function to call when the event is triggered
 function basalt.onEvent(event, func)
+    expect(1, event, "string")
+    expect(2, func, "function")
     if(registeredEvents[event]==nil)then
         registeredEvents[event] = {}
     end
@@ -358,6 +443,8 @@ end
 --- @param event string -- The event to remove the listener from
 --- @param func function -- The function to remove
 function basalt.removeEvent(event, func)
+    expect(event, "string")
+    expect(func, "function")
     if(registeredEvents[event]==nil)then return end
     for k,v in pairs(registeredEvents[event])do
         if(v==func)then
@@ -369,6 +456,7 @@ end
 --- Sets the focused frame
 --- @param frame BaseFrame|Monitor|BigMonitor -- The frame to focus
 function basalt.setFocusedFrame(frame)
+    expect(1, frame, "BaseFrame", "Monitor", "BigMonitor")
     if(focusedFrame~=nil)then
         focusedFrame:lose_focus()
     end
@@ -384,6 +472,7 @@ end
 --- @vararg any? -- The arguments to pass to the function
 --- @return table
 function basalt.thread(func, ...)
+    expect(1, func, "function")
     local threadData = {}
     threadData.thread = coroutine.create(func)
     local ok, filter = coroutine.resume(threadData.thread, ...)

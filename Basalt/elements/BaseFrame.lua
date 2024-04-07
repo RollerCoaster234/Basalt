@@ -45,6 +45,7 @@ function BaseFrame:getPosition()
 end
 
 --- Forces the base frame to update all visible children
+--- @param self BaseFrame
 function BaseFrame:forceRender()
   self.updateRendering = true
   self:forceVisibleChildrenUpdate()

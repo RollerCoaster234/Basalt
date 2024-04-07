@@ -2,6 +2,7 @@ local loader = require("basaltLoader")
 local VisualElement = loader.load("VisualElement")
 local uuid = require("utils").uuid
 local subText = require("utils").subText
+local expect = require("expect").expect
 
 --- @class Container : VisualElement
 local Container = setmetatable({}, VisualElement)
@@ -96,6 +97,7 @@ end
 --- @param self Container
 --- @return table
 function Container:getVisibleChildren()
+  expect(1, self, "table")
   if(self.isVisibleChildrenUpdated)then
     return self.visibleChildren
   end
@@ -116,6 +118,8 @@ end
 --- @param child table The child to check.
 --- @return boolean 
 function Container:isChildVisible(child)
+  expect(1, self, "table")
+  expect(2, child, "table")
   local childX, childY = child:getPosition()
   local childWidth, childHeight = child:getSize()
   local containerWidth, containerHeight = self:getSize()
@@ -131,6 +135,7 @@ end
 
 --- Forces to render all visible childrens.
 function Container:forceVisibleChildrenUpdate()
+  expect(1, self, "table")
   self.isVisibleChildrenUpdated = false
   for k,v in pairs(self.isVisibleChildrenEventsUpdated)do
     self.isVisibleChildrenEventsUpdated[k] = false
@@ -141,9 +146,8 @@ end
 --- @param self Container
 --- @param name string The name of the child.
 function Container:getChild(name)
-  if(type(name)=="table")then
-    name = name:getName()
-  end
+  expect(1, self, "table")
+  expect(2, name, "string")
   for _, childObj in ipairs(self.children) do
     if childObj:getName() == name then
       return childObj
@@ -157,6 +161,9 @@ end
 --- @param childZ? number The z index of the child.
 --- @return table
 function Container:addChild(child, childZ)
+  expect(1, self, "table")
+  expect(2, child, "table")
+  expect(3, childZ, "number", "nil")
   if(self:getChild(child) ~= nil) then
     return
   end
@@ -186,6 +193,8 @@ end
 --- @param self Container
 --- @param childName string The name of the child.
 function Container:removeChild(childName)
+  expect(1, self, "table")
+  expect(2, childName, "string", "table")
   if(type(childName)=="table")then
     childName = childName:getName()
   end
@@ -201,7 +210,12 @@ end
 --- Checks if a certain event is registered for a child.
 --- @param self Container
 --- @param event string The event to check.
+--- @param child table The child to check.
+--- @return boolean
 function Container:isEventRegistered(event, child)
+  expect(1, self, "table")
+  expect(2, event, "string")
+  expect(3, child, "table")
   if(self.childrenEvents[event]==nil)then
     return false
   end
@@ -218,6 +232,9 @@ end
 --- @param event string The event to add.
 --- @param child table The child to add the event to.
 function Container:addEvent(event, child)
+  expect(1, self, "table")
+  expect(2, event, "string")
+  expect(3, child, "table")
   self.childrenEvents[event] = self.childrenEvents[event] or {}
   if(self:isEventRegistered(event, child))then
     return
@@ -245,6 +262,9 @@ end
 --- @param event string The event to remove.
 --- @param child table The child to remove the event from.
 function Container:removeEvent(event, child)
+  expect(1, self, "table")
+  expect(2, event, "string")
+  expect(3, child, "table")
   if(self.childrenEvents[event]==nil)then
     return false
   end
@@ -268,6 +288,8 @@ end
 --- @param event string The event to get the children for.
 --- @return table
 function Container:getVisibleChildrenEvents(event)
+  expect(1, self, "table")
+  expect(2, event, "string")
   if(self.isVisibleChildrenEventsUpdated[event])then
     return self.visibleChildrenEvents[event]
   end
@@ -290,6 +312,8 @@ end
 --- @param self Container
 --- @param child table The child to update.
 function Container:updateChild(child)
+  expect(1, self, "table")
+  expect(2, child, "table")
   if not child or type(child) ~= "table" then
     return
   end
@@ -313,6 +337,11 @@ end
 --- @param color? color The color of the cursor.
 --- @return self
 function Container:setCursor(blink, cursorX, cursorY, color)
+  expect(1, self, "table")
+  expect(2, blink, "boolean")
+  expect(3, cursorX, "number", "nil")
+  expect(4, cursorY, "number", "nil")
+  expect(5, color, "color", "nil")
   if(self.parent~=nil) then
     local obx, oby = self:getPosition()
     local xO, yO = self:getOffset()

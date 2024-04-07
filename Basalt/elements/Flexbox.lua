@@ -1,6 +1,7 @@
 local loader = require("basaltLoader")
 local Container = require("basaltLoader").load("Container")
 local uuid = require("utils").uuid
+local expect = require("expect").expect
 
 ---@class Flexbox : Container
 local Flexbox = setmetatable({}, Container)
@@ -371,6 +372,7 @@ end
 ---@param self Flexbox The element itself
 ---@return Flexbox
 function Flexbox:addLineBreak()
+  expect(1, self, "table")
   self:addChild(lineBreakElement)
   return self
 end

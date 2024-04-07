@@ -43,7 +43,6 @@ Slider:extend("Load", function(self)
     self:listenEvent("mouse_scroll")
 end)
 
----@protected
 local function calculateKnobPosition(self, x, y)
     local xPos, yPos = self:getPosition()
     local width, height = self:getSize()

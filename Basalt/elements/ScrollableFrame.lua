@@ -1,4 +1,5 @@
 local Container = require("basaltLoader").load("Container")
+local expect = require("expect").expect
 
 ---@class ScrollableFrame : Container
 local ScrollableFrame = setmetatable({}, Container)
@@ -51,6 +52,8 @@ end
 ---@param amount number The amount to scroll
 ---@return ScrollableFrame
 function ScrollableFrame:scrollVertical(amount)
+    expect(1, self, "table")
+    expect(2, amount, "number")
     local autoScroll = self:getAutoScroll()
     local maxScrollAmount = 0
     local currentScroll = self:getYOffset()
@@ -79,6 +82,7 @@ end
 ---@param self ScrollableFrame The element itself
 ---@return number
 function ScrollableFrame:getAllowedScrollAmount()
+    expect(1, self, "table")
     local scrollDirection = self:getScrollDirection()
     if not(self:getAutoScroll())then
         return self:getScrollAmount()
@@ -95,6 +99,8 @@ end
 ---@param amount number The amount to scroll
 ---@return ScrollableFrame
 function ScrollableFrame:scrollHorizontal(amount)
+    expect(1, self, "table")
+    expect(2, amount, "number")
     local autoScroll = self:getAutoScroll()
     local maxScrollAmount = 0
     local currentScroll = self:getXOffset()

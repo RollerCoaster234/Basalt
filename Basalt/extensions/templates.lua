@@ -1,3 +1,5 @@
+local expect = require("expect").expect
+
 local function copy(t)
     local new = {}
     for k,v in pairs(t)do
@@ -119,6 +121,7 @@ end
 ---@param element? string
 ---@return table The template of the element.
 function Basalt.getTemplate(element)
+    expect(1, element, "string", "nil")
     if(element==nil)then
         return baseTemplate
     end
@@ -128,6 +131,7 @@ end
 --- Adds additional template configurations.
 ---@param newTemplate table The new template to add.
 function Basalt.addTemplate(newTemplate)
+    expect(1, newTemplate, "table")
     if(type(newTemplate)=="table")then
         for k,v in pairs(newTemplate)do
             baseTemplate[k] = v
@@ -138,12 +142,14 @@ end
 --- Sets a new template.
 ---@param newTemplate table The new base template.
 function Basalt.setTemplate(newTemplate)
+    expect(1, newTemplate, "table")
     baseTemplate = newTemplate
 end
 
 --- Loads a template from a json formatted file.
 ---@param newTemplate string The path to the template file.
 function Basalt.loadTemplate(newTemplate)
+    expect(1, newTemplate, "string")
     local file = fs.open(newTemplate, "r")
     if(file~=nil)then
         local data = file.readAll()
@@ -157,6 +163,7 @@ end
 --- Sets the colors of the terminal.
 ---@param colorList table The new colors to set.
 function Basalt.setColors(colorList)
+    expect(1, colorList, "table")
     for k,v in pairs(colorList)do
         term.setPaletteColour(colors[k], v)
     end

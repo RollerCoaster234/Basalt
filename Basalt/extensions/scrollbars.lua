@@ -1,4 +1,6 @@
 
+local expect = require("expect").expect
+
 ---@class Scrollbar
 local Scrollbar = {}
 Scrollbar.__index = Scrollbar
@@ -30,6 +32,7 @@ end
 ---@param self Scrollbar
 ---@return Scrollbar
 function Scrollbar:enable()
+    expect(1, self, "table")
     self.element.render = function() return self.render(self) end
     self.element.mouse_click = function(_, btn, x, y)  return self.mouse_click(self, btn, x, y) end
     self.element.mouse_drag = function(_, btn, x, y)  return self.mouse_drag(self, btn, x, y) end
@@ -43,6 +46,7 @@ function Scrollbar:enable()
 end
 
 function Scrollbar:disable()
+    expect(1, self, "table")
     self.element.render = self.baseRender
     self.element.mouse_click = self.baseMouseClick
     self.element.mouse_drag = self.baseMouseDrag
@@ -52,6 +56,7 @@ function Scrollbar:disable()
 end
 
 function Scrollbar:getKnobSize()
+    expect(1, self, "table")
     local element = self.element
     local scrollAmount = element:getYOffset()
     local allowedScrollAmount = element:getAllowedScrollAmount()

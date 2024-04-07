@@ -1,5 +1,6 @@
 local type,len,rep,sub = type,string.len,string.rep,string.sub
 local tHex = require("utils").tHex
+local expect = require("expect").expect
 
 local function MassiveMonitor(monitors)
     local globalX, globalY,monX,monY,w,h = 1,1,1,1,0,0
@@ -221,6 +222,8 @@ end
 ---@param group table The group of monitors.
 ---@return BigMonitor
 function BigMonitor:setGroup(group)
+    expect(1, self, "table")
+    expect(2, group, "table")
     if(type(group)~="table")then
         error("Expected table, got "..type(group))
     end
@@ -252,6 +255,7 @@ end
 ---@param self BigMonitor The element itself
 ---@return table The group of monitors.
 function BigMonitor:getGroup()
+    expect(1, self, "table")
     return self.monitors
 end
 

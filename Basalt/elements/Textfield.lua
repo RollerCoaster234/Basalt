@@ -1,5 +1,6 @@
 local loader = require("basaltLoader")
 local VisualElement = loader.load("VisualElement")
+local expect = require("expect").expect
 
 ---@class Textfield : VisualElement
 local TextField = setmetatable({}, VisualElement)
@@ -75,6 +76,7 @@ end
 
 --- Updates the cursor position.
 function TextField:updateCursor()
+  expect(1, self, "table")
   if self.cursorIndex >= self.scrollIndexX and self.cursorIndex < self.scrollIndexX + self.width
       and self.lineIndex >= self.scrollIndexY and self.lineIndex < self.scrollIndexY + self.height then
     self.parent:setCursor(true, self.x + self.cursorIndex - self.scrollIndexX, self.y + self.lineIndex - self.scrollIndexY, self:getForeground())
@@ -88,6 +90,8 @@ end
 ---@param line string The line to add.
 ---@return Textfield
 function TextField:addLine(line)
+  expect(1, self, "table")
+  expect(2, line, "string")
   table.insert(self.lines, line)
   return self
 end
@@ -97,6 +101,8 @@ end
 ---@param index number The index of the line to remove.
 ---@return Textfield
 function TextField:removeLine(index)
+  expect(1, self, "table")
+  expect(2, index, "number")
   table.remove(self.lines, index)
   return self
 end
@@ -105,6 +111,7 @@ end
 ---@param self Textfield
 ---@return Textfield
 function TextField:clear()
+  expect(1, self, "table")
   self.lines = {}
   return self
 end
@@ -113,6 +120,8 @@ end
 ---@param self Textfield
 ---@param index number The index of the line to get.
 function TextField:getLine(index)
+  expect(1, self, "table")
+  expect(2, index, "number")
   return self.lines[index]
 end
 
@@ -120,6 +129,9 @@ end
 ---@param self Textfield
 ---@param index number The index of the line to set.
 function TextField:setLine(index, line)
+  expect(1, self, "table")
+  expect(2, index, "number")
+  expect(3, line, "string")
   self.lines[index] = line
   return self
 end

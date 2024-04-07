@@ -1,5 +1,4 @@
 local type,len,rep,sub = type,string.len,string.rep,string.sub
-local tHex = require("utils").tHex
 
 local loader = require("basaltLoader")
 local Container = loader.load("Container")

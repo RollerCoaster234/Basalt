@@ -211,6 +211,8 @@ local lerp = {
     easeInOutBounce=easeInOutBounce,
 }
 
+local expect = require("expect").expect
+
 --- @class Animation
 local CustomAnimation = {}
 CustomAnimation.__index = CustomAnimation
@@ -236,6 +238,8 @@ end
 ---@param ease string The easing of the animation.
 ---@return Animation
 function CustomAnimation.setEase(self, ease)
+    expect(1, self, "table")
+    expect(2, ease, "string")
     if(lerp[ease]==nil)then
         error("Ease "..ease.." does not exist")
     end
@@ -248,6 +252,8 @@ end
 ---@param increment number The increment of the animation.
 ---@return Animation
 function CustomAnimation.setIncrement(self, increment)
+    expect(1, self, "table")
+    expect(2, increment, "number")
     self.timeIncrement = math.max(increment, 0.05)
     return self
 end
@@ -257,6 +263,8 @@ end
 ---@param time number The time to set the duration to.
 ---@return Animation
 function CustomAnimation.on(self, time)
+    expect(1, self, "table")
+    expect(2, time, "number")
     time = floor(time * 20) / 20
     self.duration = time
     return self
@@ -267,6 +275,8 @@ end
 ---@param func function The function to run.
 ---@return Animation
 function CustomAnimation.run(self, func)
+    expect(1, self, "table")
+    expect(2, func, "function")
     local inserted = false
     for k,v in pairs(self._animations)do
         if(v.time==self.duration)then
@@ -286,6 +296,8 @@ end
 ---@param time number The time to wait.
 ---@return Animation
 function CustomAnimation.wait(self, time)
+    expect(1, self, "table")
+    expect(2, time, "number")
     time = floor(time * 20) / 20
     self.duration = self.duration + time
     return self
@@ -293,6 +305,8 @@ end
 
 ---@private
 function CustomAnimation.update(self, timerId)
+    expect(1, self, "table")
+    expect(2, timerId, "number")
     if(timerId==self.timerId)then
         self.curTime = self.curTime + self.timeIncrement
         if(self.curTime>=self.duration)then
@@ -320,6 +334,7 @@ end
 --- Plays the animation
 ---@param self Animation The animation object.
 function CustomAnimation.play(self)
+    expect(1, self, "table")
     self.curTime = 0
     self.timerId = os.startTimer(self.timeIncrement)
     for k,v in pairs(self._animations)do
@@ -333,12 +348,15 @@ end
 --- Stops the animation
 ---@param self Animation The animation object.
 function CustomAnimation.stop(self)
+    expect(1, self, "table")
     os.cancelTimer(self.timerId)
 end
 
 --- Adds a function to run when the animation is done
 ---@param self Animation The animation object.
 function CustomAnimation.onDone(self, func)
+    expect(1, self, "table")
+    expect(2, func, "function")
     table.insert(self.onDoneHandler, func)
     return self
 end
@@ -383,6 +401,12 @@ end
 ---@param offset? number The offset of the animation.
 ---@param ease? string The easing of the animation.
 function Animation:animatePosition(x, y, duration, offset, ease)
+    expect(1, self, "table")
+    expect(2, x, "number")
+    expect(3, y, "number")
+    expect(4, duration, "number", "nil")
+    expect(5, offset, "number", "nil")
+    expect(6, ease, "string", "nil")
     return animationMoveHelper(self, x, y, duration, offset, ease, self.getPosition, self.setPosition)
 end
 
@@ -394,6 +418,12 @@ end
 ---@param offset? number The offset of the animation.
 ---@param ease? string The easing of the animation.
 function Animation:animateSize(self, width, height, duration, offset, ease)
+    expect(1, self, "table")
+    expect(2, width, "number")
+    expect(3, height, "number")
+    expect(4, duration, "number", "nil")
+    expect(5, offset, "number", "nil")
+    expect(6, ease, "string", "nil")
     return animationMoveHelper(self, width, height, duration, offset, ease, self.getSize, self.setSize)
 end
 
@@ -402,6 +432,12 @@ end
 ---@param x number The x offset.
 ---@param y number The y offset.
 function Animation:animateOffset(self, x, y, duration, offset, ease)
+    expect(1, self, "table")
+    expect(2, x, "number")
+    expect(3, y, "number")
+    expect(4, duration, "number", "nil")
+    expect(5, offset, "number", "nil")
+    expect(6, ease, "string", "nil")
     if(self.getOffset==nil or self.setOffset==nil)then
         error("Element "..self:getType().." does not have offset")
     end
@@ -410,6 +446,7 @@ end
 
 --- Creates a new animation object attached to the element.
 function Animation:newAnimation(self)
+    expect(1, self, "table")
     return CustomAnimation:new()
 end
 

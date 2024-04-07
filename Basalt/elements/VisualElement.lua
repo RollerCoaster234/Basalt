@@ -1,6 +1,7 @@
 local Element = require("basaltLoader").load("BasicElement")
 local split = require("utils").splitString
 local subText = require("utils").subText
+local expect = require("expect").expect
 
 --- @class VisualElement: BasicElement
 local VisualElement = setmetatable({}, Element)
@@ -134,6 +135,7 @@ end
 --- Clears the pre-render data of the element.
 ---@return VisualElement
 function VisualElement:clearPreRender()
+  expect(1, self, "table")
   self:setPreRenderData({})
   self:updateRender()
   return self
@@ -142,6 +144,7 @@ end
 --- Clears the post-render data of the element.
 ---@return VisualElement
 function VisualElement:clearPostRender()
+  expect(1, self, "table")
   self:setPostRenderData({})
   self:updateRender()
   return self
@@ -236,6 +239,9 @@ end
 ---@param y? number -- The y position.
 ---@return number, number
 function VisualElement:getRelativePosition(x, y)
+  expect(1, self, "table")
+  expect(2, x, "number", "nil")
+  expect(3, y, "number", "nil")
   if(x==nil)and(y==nil)then
     x, y = self:getPosition()
   end
@@ -257,6 +263,9 @@ end
 ---@param x? number -- The x position.
 ---@param y? number -- The y position.
 function VisualElement:getAbsolutePosition(x, y)
+  expect(1, self, "table")
+  expect(2, x, "number", "nil")
+  expect(3, y, "number", "nil")
   if(x==nil)and(y==nil)then
     x, y = self:getPosition()
   end
@@ -279,6 +288,9 @@ end
 ---@param y number -- The y position.
 ---@return boolean
 function VisualElement:isInside(x, y)
+  expect(1, self, "table")
+  expect(2, x, "number")
+  expect(3, y, "number")
   local pX, pY = self:getPosition()
   local pW, pH = self:getSize()
   local visible, enabled = self:getVisible(), self:getEnabled()
@@ -366,7 +378,6 @@ function VisualElement.lose_focus(self)
 end
 
 for _,v in pairs({"key", "key_up", "char"})do
-  ---@protected
   VisualElement[v] = function(self, ...)
     if(self.enabled)and(self.visible)then
       if(self.parent==nil)or(self:getFocused())then

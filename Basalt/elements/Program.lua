@@ -2,6 +2,7 @@
 local loader = require("basaltLoader")
 local VisualElement = loader.load("VisualElement")
 local tHex = require("utils").tHex
+local expect = require("expect").expect
 
 local newPackage = dofile("rom/modules/main/cc/require.lua").make
 local sub = string.sub
@@ -404,6 +405,8 @@ end
 ---@param path string|function The path to the program or the function to run.
 ---@param customEnv? table The custom environment for the program.
 function Program:start(path, customEnv, ...)
+    expect(1, self, "table")
+    expect(2, path, "string", "function")
   self.program.start(path, customEnv, ...)
 end
 
@@ -411,6 +414,7 @@ end
 ---@param self Program
 ---@return Program
 function Program:stop()
+  expect(1, self, "table")
   self.program.stop()
   return self
 end

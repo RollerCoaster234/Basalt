@@ -1,6 +1,7 @@
 local loader = require("basaltLoader")
 local VisualElement = loader.load("VisualElement")
 local tHex = require("utils").tHex
+local expect = require("expect").expect
 
 ---@class List : VisualElement
 local List = setmetatable({}, VisualElement)
@@ -107,6 +108,8 @@ end
 ---@param index number The index of the item.
 ---@return boolean
 function List:getSelectionState(index)
+  expect(1, self, "table")
+  expect(2, index, "number")
   if(self:getMultiSelection())then
     local selectedIndex = self:getSelectedIndex()
     for i, v in ipairs(selectedIndex) do
@@ -128,6 +131,10 @@ end
 ---@param bg? integer The background color of the item.
 ---@param fg? integer The foreground color of the item.
 function List:addItem(item, bg, fg)
+  expect(1, self, "table")
+  expect(2, item, "string")
+  expect(3, bg, "number", "nil")
+  expect(4, fg, "number", "nil")
     table.insert(self.items, item)
     if(bg~=nil)then
       table.insert(self.itemsBackground, bg or self:getBackground())
@@ -147,9 +154,13 @@ end
 --- Updates the color of the item at the given index.
 ---@param self List The element itself
 ---@param index number The index of the item.
----@param bg? integer The background color of the item.
 ---@param fg? integer The foreground color of the item.
-function List:updateColor(index, bg, fg)
+---@param bg? integer The background color of the item.
+function List:updateColor(index, fg, bg)
+    expect(1, self, "table")
+    expect(2, index, "number")
+    expect(3, fg, "number", "nil")
+    expect(4, bg, "number", "nil")
     self.itemsBackground[index] = bg or self:getBackground()
     self.itemsForeground[index] = fg or self:getForeground()
     self:updateRender()
@@ -161,6 +172,8 @@ end
 ---@param item string The item to remove.
 ---@return List
 function List:removeItem(item)
+  expect(1, self, "table")
+  expect(2, item, "string")
     for i, v in ipairs(self.items) do
         if v == item then
             table.remove(self.items, i)
@@ -183,6 +196,8 @@ end
 ---@param index number The index of the item.
 ---@return List
 function List:removeItemByIndex(index)
+  expect(1, self, "table")
+  expect(2, index, "number")
     table.remove(self.items, index)
     self:updateRender()
     return self
@@ -192,6 +207,7 @@ end
 ---@param self List The element itself
 ---@return List
 function List:clear()
+  expect(1, self, "table")
     self.items = {}
     self:updateRender()
     return self
@@ -202,6 +218,8 @@ end
 ---@param item string The item to select.
 ---@return List
 function List:selectItem(item)
+  expect(1, self, "table")
+  expect(2, item, "string")
     for i, v in ipairs(self:getItems()) do
         if v == item then
             self:setSelectedIndex(i)
@@ -218,6 +236,8 @@ end
 ---@param index number The index of the item.
 ---@return List
 function List:selectItemByIndex(index)
+  expect(1, self, "table")
+  expect(2, index, "number")
     self:setSelectedIndex(index)
     self:fireEvent("change", self:getItems()[index])
     return self
@@ -227,6 +247,7 @@ end
 ---@param self List The element itself
 ---@return table
 function List:getSelectedItems()
+  expect(1, self, "table")
   if(self:getMultiSelection())then
     local items = self:getItems()
     local selectedItems = {}

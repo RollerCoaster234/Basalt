@@ -108,6 +108,8 @@ local XML = {
 
 -- Everything below is made for basalt only
 
+local expect = require("expect").expect
+
 local BasicXmlExtension = {}
 local ContainerXmlExtension = {}
 
@@ -184,12 +186,18 @@ function BasicXmlExtension.generateElementFromXML(self, properties, env)
 end
 
 function BasicXmlExtension.loadXML(self, xml, env)
+    expect(1, self, "table")
+    expect(2, xml, "string")
+    expect(3, env, "table", "nil")
     local doc = XML.parse(xml)
     self:generateElementFromXML(doc, env)
     return self
 end
 
 function BasicXmlExtension.loadXMLFile(self, file, env)
+    expect(1, self, "table")
+    expect(2, file, "string")
+    expect(3, env, "table", "nil")
     local doc, err = XML.parseFile(file)
     if doc then
         self:generateElementFromXML(doc, env)
