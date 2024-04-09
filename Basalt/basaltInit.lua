@@ -1,4 +1,3 @@
-local curDir = fs.getDir(table.pack(...)[2]) or ""
 local basaltPath = ".basalt"
 
 local defaultPath = package.path
