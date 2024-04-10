@@ -18,16 +18,18 @@ local _EXTENSIONS = {}
 local extensionNames = {}
 local basalt
 
-for _,v in pairs(fs.list(fs.combine(dir, "elements")))do
-    if(fs.isDir(fs.combine(fs.combine(dir, "elements"), v)))then
-        availableElements[v] = true
-    else
-        local obj = v:gsub(".lua", "")
-        availableElements[obj] = true
+if(fs.exists(fs.combine(dir, "elements")))then
+    for _,v in pairs(fs.list(fs.combine(dir, "elements")))do
+        if(fs.isDir(fs.combine(fs.combine(dir, "elements"), v)))then
+            availableElements[v] = true
+        else
+            local obj = v:gsub(".lua", "")
+            availableElements[obj] = true
+        end
     end
 end
 
-for k,v in pairs(package.loaded)do
+for k,v in pairs(package.preload)do
     if(string.find(k, "elements/"))then
         local name = k:gsub("elements/", "")
         availableElements[name] = true
@@ -49,26 +51,37 @@ for k,v in pairs(package.loaded)do
     end
 end
 
+local allExt = {}
 if(fs.exists(fs.combine(dir, "extensions")))then
-    for _,v in pairs(fs.list(fs.combine(dir, "extensions")))do
-        local newExtension
-        if(fs.isDir(fs.combine(fs.combine(dir, "extensions"), v)))then
-            table.insert(extensionNames, fs.combine(fs.combine(dir, "extensions"), v))
-            newExtension = require(v.."/init")
-        else
-            table.insert(extensionNames, v)
-            newExtension = require(v:gsub(".lua", ""))
-        end
-        if(type(newExtension)=="table")then
-            for a,b in pairs(newExtension)do
-                if(type(a)=="string")then
-                    if(_EXTENSIONS[a]==nil)then _EXTENSIONS[a] = {} end
-                    table.insert(_EXTENSIONS[a], b)
-                end
+    for k,v in pairs(fs.list(fs.combine(dir, "extensions")))do
+        table.insert(allExt, v)
+    end
+end
+for a,b in pairs(package.preload)do
+    if(string.find(a, "extensions/"))then
+        table.insert(allExt, a:gsub("extensions/", ""))
+    end
+end
+
+for _,v in pairs(allExt)do
+    local newExtension
+    if(fs.isDir(fs.combine(fs.combine(dir, "extensions"), v)))then
+        table.insert(extensionNames, fs.combine(fs.combine(dir, "extensions"), v))
+        newExtension = require(v.."/init")
+    else
+        table.insert(extensionNames, v)
+        newExtension = require(v:gsub(".lua", ""))
+    end
+    if(type(newExtension)=="table")then
+        for a,b in pairs(newExtension)do
+            if(type(a)=="string")then
+                if(_EXTENSIONS[a]==nil)then _EXTENSIONS[a] = {} end
+                table.insert(_EXTENSIONS[a], b)
             end
         end
     end
 end
+
 
 function basaltLoader.load(elementName)
     if _ELEMENTS[elementName] then
