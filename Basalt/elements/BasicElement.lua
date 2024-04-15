@@ -145,7 +145,7 @@ end
 function Element:removePropertyObserver(propertyName, index)
     expect(1, self, "table")
     expect(2, propertyName, "string")
-    expect(3, index, "number")
+    expect(3, index, "number", "function")
     if not self.propertyObservers[propertyName] then
         return self
     end
@@ -189,9 +189,6 @@ function Element:setProperty(name, value, rule)
     expect(1, self, "table")
     expect(2, name, "string")
     expect(4, rule, "function", "nil")
-    if(name==nil)then
-        error(self:getType()..": Property name cannot be nil!")
-    end
     if(rule~=nil)then
         value = rule(self, name, value)
     end
@@ -300,7 +297,7 @@ end
 ---@param setLogic? function -- The logic to set the property (gets called when setting the property)
 ---@param getLogic? function -- The logic to get the property (gets called when getting the property)
 ---@protected
-function Element:addProperty(name, typ, defaultValue, readonly, setLogic, getLogic)
+function Element:addProperty(name, typ, defaultValue, readonly, setLogic, getLogic, ignRenderUpdate)
     if(typ==nil)then typ = "any" end
     if(readonly==nil)then readonly = false end
 
@@ -316,9 +313,8 @@ function Element:addProperty(name, typ, defaultValue, readonly, setLogic, getLog
     propertyTypes[activeType][name] = typ
 
     if not(readonly)then
-        self["set"..fName] = function(self, value, ignRenderUpdate, ...)
+        self["set"..fName] = function(self, value, ...)
             expect(1, self, "table")
-            expect(3, ignRenderUpdate, "boolean", "nil")
             if(setLogic~=nil)then
                 local modifiedVal = setLogic(self, value, ...)
                 if(modifiedVal~=nil)then
@@ -329,7 +325,7 @@ function Element:addProperty(name, typ, defaultValue, readonly, setLogic, getLog
                 self:updateRender()
             end
             if(typ~=nil)then
-                expect(2, value, unpack(split(typ, "|")))
+                expect(2, value, "function", "dynValue", unpack(split(typ, "|")))
             end
             self:setProperty(name, value)
             return self
@@ -354,6 +350,7 @@ function Element:combineProperty(name, ...)
     name = name:gsub("^%l", string.upper)
     local args = {...}
     self["get" .. name] = function(self)
+        expect(1, self, "table")
         local result = {}
         for _,v in pairs(args)do
             result[#result+1] = self["get" .. v:gsub("^%l", string.upper)](self)
@@ -366,7 +363,7 @@ function Element:combineProperty(name, ...)
         for k,v in pairs(args)do
             local propertyType = self:getPropertyType(v)
             if(propertyType~=nil)then
-                expect(k+1, values[k], self:getPropertyType(v))
+                expect(k+1, values[k], self:getPropertyType(v), "function", "dynValue")
             end
             self["set" .. v:gsub("^%l", string.upper)](self, values[k])
         end
@@ -388,9 +385,6 @@ function Element:create(typ)
         for k,v in pairs(properties[typ])do
             if(type(v)=="table")then
                 self[k] = deepcopy(v)
-                if(k=="dynValues")then
-                    --log(v, self[k])
-                end
             else
                 self[k] = v
             end

@@ -147,7 +147,7 @@ end
 --- @param name string The name of the child.
 function Container:getChild(name)
   expect(1, self, "table")
-  expect(2, name, "string")
+  expect(2, name, "string", "table")
   for _, childObj in ipairs(self.children) do
     if childObj:getName() == name then
       return childObj

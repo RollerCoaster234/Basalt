@@ -1,4 +1,5 @@
-local basaltPath = ".basalt"
+local args = {...}
+local basaltPath = args[1] or ".basalt"
 
 local defaultPath = package.path
 local format = "path;/path/?.lua;/path/?/init.lua;"
@@ -170,6 +171,20 @@ local function getMonitor(id)
             return v
         end
     end
+end
+
+--- Tells basalt to require a specific element, if not found it will download it from github
+--- @param element string -- The element name to require
+function basalt.requiredElement(element)
+    expect(1, element, "string")
+    loader.require("element", element)
+end
+
+--- Tells basalt to require a specific extension, if not found it will download it from github
+--- @param extension string -- The extension name to require
+function basalt.requiredExtension(extension)
+    expect(1, extension, "string")
+    loader.require("extension", extension)
 end
 
 --- Checks if a key is currently pressed

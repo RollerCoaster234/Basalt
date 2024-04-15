@@ -118,10 +118,10 @@ function Basalt.init(basalt)
 end
 
 --- Returns the template of the element or the base template.
----@param element? string
+---@param element? table
 ---@return table The template of the element.
 function Basalt.getTemplate(element)
-    expect(1, element, "string", "nil")
+    expect(1, element, "table", "nil")
     if(element==nil)then
         return baseTemplate
     end

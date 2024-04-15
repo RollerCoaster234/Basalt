@@ -29,11 +29,19 @@ local function _expect(argument, ...)
                     break
                 end
             elseif(type(argument)=="number")then
-                for k,v in pairs(colors)do
+                for _,v in pairs(colors)do
                     if(v==argument)then
                         valid = true
                         break
                     end
+                end
+            end
+        end
+        if(expectedType=="dynValue")then
+            if(type(argument)=="string")then
+                if(argument:sub(1,1)=="{")and(argument:sub(-1)=="}")then
+                    valid = true
+                    break
                 end
             end
         end
@@ -84,7 +92,7 @@ local function _expect(argument, ...)
             location = "Unknown location"
             lineNumber = "Unknown line"
         end
-        return location, lineNumber, functionName
+        return location, lineNumber, functionName, traceback
     end
      return true
 end
@@ -93,13 +101,14 @@ function expect.expect(position, argument, ...)
     if(position==nil)then position = 1 end
     if(argument==nil)then return end
     local types = {...}
-    local location, lineNumber, functionName = _expect(argument, ...)
+    local location, lineNumber, functionName, traceback = _expect(argument, ...)
     if(location~=true)then
         local fileName = location:gsub("^%s+", "")
         if(expect.basalt~=nil)then
             expect.basalt.stop()
         end
         coloredPrint("Basalt Initialization Error:", colors.red)
+        print(traceback)
         print()
         if(location:sub(1,1)=="/")then
             fileName = location:sub(2)
@@ -132,6 +141,7 @@ function expect.expect(position, argument, ...)
             until not lineContent
             file.close()
         end
+        error()
         return false
     end
     return true

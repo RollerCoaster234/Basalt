@@ -2,6 +2,7 @@ local loader = require("basaltLoader")
 local VisualElement = loader.load("VisualElement")
 local tHex = require("utils").tHex
 local expect = require("expect").expect
+local log = require("log")
 
 ---@class List : VisualElement
 local List = setmetatable({}, VisualElement)
@@ -11,10 +12,13 @@ List:initialize("List")
 List:addProperty("items", "table", {})
 List:addProperty("itemsBackground", "table", {})
 List:addProperty("itemsForeground", "table", {})
+List:addProperty("connectedLists", "table", {})
 List:addProperty("selection", "boolean", true)
+List:addProperty("alignment", "string", "left")
 List:addProperty("multiSelection", "boolean", false)
 List:addProperty("autoScroll", "boolean", false)
-List:addProperty("selectedIndex", "table", {}, nil, function(self, value)
+List:addProperty("spacing", "number", 0)
+List:addProperty("selectedIndex", "table", {}, nil, function(self, value, sendToOthers)
   local newValue = self.selectedIndex
   if(self:getMultiSelection())then
     if(type(value)=="table")then
@@ -24,15 +28,17 @@ List:addProperty("selectedIndex", "table", {}, nil, function(self, value)
         for i, v in ipairs(newValue) do
           if v == value then
             table.remove(newValue, i)
-            return newValue
+            break
           end
         end
       else
         table.insert(newValue, value)
       end
     end
+    if(sendToOthers~=false)then for _,v in pairs(self:getConnectedLists())do v:setSelectedIndex(newValue, false) end end
     return newValue
   else
+    if(sendToOthers~=false)then for _,v in pairs(self:getConnectedLists())do v:setSelectedIndex(value, false) end end
     return {value}
   end
 end, function(self, value)
@@ -45,7 +51,9 @@ end)
 List:addProperty("selectionBackground", "color", colors.black)
 List:addProperty("selectionForeground", "color", colors.cyan)
 List:combineProperty("selectionColor", "selectionBackground", "selectionForeground")
-List:addProperty("scrollIndex", "number", 1)
+List:addProperty("scrollIndex", "number", 1, nil, function(self, value, sendToOthers)
+  if(sendToOthers~=false)then for _,v in pairs(self:getConnectedLists())do v:setScrollIndex(value, false) end end
+end)
 
 List:addListener("change", "changed_value")
 
@@ -81,12 +89,19 @@ function List:render()
   local selectedIndex = self:getSelectedIndex()
   local selectionBg, selectionFg = self:getSelectionColor()
   local selection = self:getSelection()
+  local spacing = self:getSpacing()
 
   for i = 1, h do
     local index = i + scrollIndex - 1
     local item = items[index]
     if item then
-      self:addText(1, i, item)
+      if(self:getAlignment()=="right")then
+        self:addText(w - #item + 1 - spacing, i, item)
+      elseif(self:getAlignment()=="center")then
+        self:addText(math.floor((w - #item) / 2) + 1, i, item)
+      else
+        self:addText(1 + spacing, i, item)
+      end
       if(itemsBg[index])then
         self:addBg(1, i, tHex[itemsBg[index]]:rep(w))
       end
@@ -101,6 +116,57 @@ function List:render()
       end
     end
   end
+end
+
+--- Connects the list to another list.
+---@param self List The element itself
+---@param list List The list to connect.
+---@param ignSettings? boolean Whether to ignore to synchronize the settings between the lists.
+---@param sendToOthers? boolean Mainly used for internal purposes to prevent infinite loops.
+function List:connect(list, ignSettings, sendToOthers)
+  expect(1, self, "table")
+  expect(2, list, "table")
+  expect(3, ignSettings, "boolean", "nil")
+  expect(4, sendToOthers, "boolean", "nil")
+
+  table.insert(self.connectedLists, list)
+  if(sendToOthers~=false)then
+    for _, v in ipairs(self.connectedLists) do
+      if(v~=list)then
+        v:connect(list, true, false)
+        list:connect(v, true, false)
+      end
+    end
+    list:connect(self, true, false)
+  end
+  if not(ignSettings)then
+    list:setSelection(self:getSelection())
+    list:setMultiSelection(self:getMultiSelection())
+    list:setAutoScroll(self:getAutoScroll())
+    list:setSelectedIndex(self:getSelectedIndex(), false)
+    list:setScrollIndex(self:getScrollIndex(), false)
+  end
+  return self
+end
+
+--- Disconnects the list from another list.
+---@param self List The element itself
+---@param list List The list to disconnect.
+---@param sendToOthers? boolean Mainly used for internal purposes to prevent infinite loops.
+function List:disconnect(list, sendToOthers)
+  expect(1, self, "table")
+  expect(2, list, "table")
+  expect(3, sendToOthers, "boolean", "nil")
+  for i, v in ipairs(self.connectedLists) do
+    if v == list then
+      table.remove(self.connectedLists, i)
+      if(sendToOthers~=false)then
+        list:disconnect(self, false)
+      end
+      return self
+    end
+  end
+  return self
 end
 
 --- Returns the selection state of the item at the given index.
