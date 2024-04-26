@@ -16,6 +16,11 @@ Container:addProperty("term", "table", nil, false, function(self, value)
     value.__noCopy = true
   end
   self.renderSystem = renderSystem(value)
+end, function(self)
+  if(self:getParent()~=nil)then
+    return self:getParent():getTerm()
+  end
+  return self.term
 end)
 Container:addProperty("children", "table", {})
 Container:addProperty("childrenEvents", "table", {})
