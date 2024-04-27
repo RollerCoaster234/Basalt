@@ -5,11 +5,6 @@ if(dir==nil)then
 end
 
 --- @class BasaltLoader
---- @field load fun(elementName: string): table
---- @field getElementList fun(): table
---- @field extensionExists fun(name: string): boolean
---- @field getExtension fun(extensionName: string): table
---- @field setBasalt fun(basaltInstance: table)
 local basaltLoader = {}
 
 local _ELEMENTS = {}
@@ -18,6 +13,7 @@ local _EXTENSIONS = {}
 local extensionNames = {}
 local basalt
 local config
+
 
 if(fs.exists(fs.combine(dir, "elements")))then
     for _,v in pairs(fs.list(fs.combine(dir, "elements")))do
@@ -61,7 +57,6 @@ function basaltLoader.load(elementName)
     if _ELEMENTS[elementName] then
         return _ELEMENTS[elementName]
     end
-
     local defaultPath = package.path
     local format = "path;/path/?.lua;/path/?/init.lua;"
     local main = format:gsub("path", dir)
@@ -122,7 +117,7 @@ end
 
 function basaltLoader.getConfig()
     if(config==nil)then
-        local github = settings.get("basalt.github")
+        local github = settings.get("basalt.github") or "https://raw.githubusercontent.com/Pyroxenium/Basalt/basalt2/"
         if(github~=nil)then
             local url = github.."config.json"
             local response = http.get(url)
@@ -136,6 +131,7 @@ function basaltLoader.getConfig()
             error("Couldn't find the github path in the settings basalt.github!")
         end
     end
+    return config
 end
 
 local function downloadElement(name)
@@ -210,7 +206,7 @@ local function downloadExtension(name)
 end
 
 local function requireExtension(name)
-    if(_EXTENSIONS[name]==nil)then
+    if not(basaltLoader.extensionExists(name))then
         print("Loading extension "..name.." from github...")
         local data = downloadExtension(name)
         if(data==nil)then
@@ -224,15 +220,30 @@ local function requireExtension(name)
         local func = load(data, nil, "t", _ENV)
         local extension = func()
         if(type(extension)=="table")then
-            for a,b in pairs(extension)do
-                if(type(a)=="string")then
-                    _EXTENSIONS[name][a] = b
+            for elementName,fList in pairs(extension)do
+                if(_EXTENSIONS[elementName]==nil)then _EXTENSIONS[elementName] = {} end
+                table.insert(_EXTENSIONS[elementName], fList)
+                if(_ELEMENTS[elementName]~=nil)then
+                    if(fList.extensionProperties~=nil)then
+                        fList.extensionProperties(_ELEMENTS[elementName])
+                    end
+                    fList.extensionProperties = nil
+                    if(fList.init~=nil)then
+                        fList.init(_ELEMENTS[elementName], basalt)
+                    end
+                    fList.init = nil
+                    for fName,f in pairs(fList)do
+                        if(type(fName)=="string")then
+                            _ELEMENTS[elementName][fName] = f
+                        end
+                    end
                 end
             end
         end
-        return extension
+        table.insert(extensionNames, name)
+    else
+        error("Extension "..name.." already exists!")
     end
-    return nil
 end
 
 function basaltLoader.require(typ, name)

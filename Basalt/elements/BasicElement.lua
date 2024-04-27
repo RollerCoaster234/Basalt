@@ -296,6 +296,7 @@ end
 ---@param readonly? boolean -- If the property is readonly
 ---@param setLogic? function -- The logic to set the property (gets called when setting the property)
 ---@param getLogic? function -- The logic to get the property (gets called when getting the property)
+---@param ignRenderUpdate? boolean -- If the render update should be ignored
 ---@protected
 function Element:addProperty(name, typ, defaultValue, readonly, setLogic, getLogic, ignRenderUpdate)
     if(typ==nil)then typ = "any" end

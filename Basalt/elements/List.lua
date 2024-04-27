@@ -14,7 +14,7 @@ List:addProperty("itemsBackground", "table", {})
 List:addProperty("itemsForeground", "table", {})
 List:addProperty("connectedLists", "table", {})
 List:addProperty("selection", "boolean", true)
-List:addProperty("alignment", "string", "left")
+List:addProperty("align", "string", "left")
 List:addProperty("multiSelection", "boolean", false)
 List:addProperty("autoScroll", "boolean", false)
 List:addProperty("spacing", "number", 0)
@@ -86,18 +86,18 @@ function List:render()
   local itemsBg = self:getItemsBackground()
   local itemsFg = self:getItemsForeground()
   local scrollIndex = self:getScrollIndex()
-  local selectedIndex = self:getSelectedIndex()
   local selectionBg, selectionFg = self:getSelectionColor()
   local selection = self:getSelection()
   local spacing = self:getSpacing()
+  local align = self:getAlign()
 
   for i = 1, h do
     local index = i + scrollIndex - 1
     local item = items[index]
     if item then
-      if(self:getAlignment()=="right")then
+      if(align=="right")then
         self:addText(w - #item + 1 - spacing, i, item)
-      elseif(self:getAlignment()=="center")then
+      elseif(align=="center")then
         self:addText(math.floor((w - #item) / 2) + 1, i, item)
       else
         self:addText(1 + spacing, i, item)
@@ -333,7 +333,6 @@ function List:mouse_click(button, x, y)
         local xPos, yPos = self:getPosition()
         local scrollIndex = self:getScrollIndex()
         local items = self:getItems()
-        local selectedIndex = self:getSelectedIndex()
         local clickedIndex = y - yPos + scrollIndex
         if clickedIndex >= 1 and clickedIndex <= #items then
           self:setSelectedIndex(clickedIndex)
@@ -347,11 +346,9 @@ function List:mouse_click(button, x, y)
   ---@protected
 function List:mouse_scroll(direction, x, y)
   if(VisualElement.mouse_scroll(self, direction, x, y)) then
-    local xPos, yPos = self:getPosition()
     local w, h = self:getSize()
     local scrollIndex = self:getScrollIndex()
     local items = self:getItems()
-    local selectedIndex = self:getSelectedIndex()
     if direction == 1 and scrollIndex < #items - h + 1 then
       scrollIndex = scrollIndex + 1
     elseif direction == -1 and scrollIndex > 1 then
