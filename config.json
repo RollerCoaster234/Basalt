@@ -38,7 +38,7 @@
             "expect": [1, "https://raw.githubusercontent.com/Pyroxenium/Basalt/basalt2/Basalt/libraries/expect.lua"],
             "utils": [1, "https://raw.githubusercontent.com/Pyroxenium/Basalt/basalt2/Basalt/libraries/utils.lua"]
         },
-        "basaltInit": [1, "https://raw.githubusercontent.com/Pyroxenium/Basalt/basalt2/Basalt/basaltInit.lua"],
+        "init": [1, "https://raw.githubusercontent.com/Pyroxenium/Basalt/basalt2/Basalt/init.lua"],
         "main": [1, "https://raw.githubusercontent.com/Pyroxenium/Basalt/basalt2/Basalt/main.lua"],
         "renderSystem": [1, "https://raw.githubusercontent.com/Pyroxenium/Basalt/basalt2/Basalt/renderSystem.lua"],
         "basaltLoader": [1, "https://raw.githubusercontent.com/Pyroxenium/Basalt/basalt2/Basalt/basaltLoader.lua"]
@@ -47,7 +47,7 @@
         "elements": ["BaseFrame", "BasicElement", "Button", "Checkbox", "Container", "Frame", "Input", "Label", "VisualElement"],
         "extensions": ["dynamicValues", "templates", "xml"],
         "libraries": ["log", "expect", "utils"],
-        "core": ["basaltInit", "main", "renderSystem", "basaltLoader"]
+        "core": ["init", "main", "renderSystem", "basaltLoader"]
     },
 
     "defaultSettings": {
