@@ -52,6 +52,31 @@ Container:combineProperty("Offset", "xOffset", "yOffset")
 
 local sub, max = string.sub, math.max
 
+local function addElement(self, key)
+  if(key:sub(1,3)=="add")and(Container[key]==nil)then
+    local elementName = key:sub(4)
+    if(loader.getElementList()[elementName])then
+      return function(self, id, x, y, w, h, bg, fg)
+        local uid = id
+        if(type(id)=="table")then
+          uid = id.name
+          id.name = nil
+        end
+        local element = self.basalt.create(uid or uuid(), self, elementName, type(id)=="table" and id or nil)
+        self:addChild(element, element:getZ())
+        if(x~=nil)then element:setX(x) end
+        if(y~=nil)then element:setY(y) end
+        if(w~=nil)then element:setWidth(w) end
+        if(h~=nil)then element:setHeight(h) end
+        if(bg~=nil)then element:setBackground(bg) end
+        if(fg~=nil)then element:setForeground(fg) end
+        return element
+      end
+    end
+  end
+  return Container[key]
+end
+
 --- Creates a new container.
 ---@param id string The id of the object.
 ---@param parent? Container The parent of the object.
@@ -61,7 +86,7 @@ local sub, max = string.sub, math.max
 function Container:new(id, parent, basalt)
   local newInstance = VisualElement:new(id, parent, basalt)
   setmetatable(newInstance, self)
-  self.__index = self
+  self.__index = addElement
   newInstance:create("Container")
   newInstance:setType("Container")
   return newInstance
@@ -486,26 +511,6 @@ for _,v in pairs({"key", "key_up", "char"})do
             return true
           end
       end
-  end
-end
-
-for k,_ in pairs(loader.getElementList())do
-  local elementName = k:gsub("^%l", string.upper)
-  Container["add"..elementName] = function(self, id, x, y, w, h, bg, fg)
-    local uid = id
-    if(type(id)=="table")then
-      uid = id.name
-      id.name = nil
-    end
-    local element = self.basalt.create(uid or uuid(), self, k, type(id)=="table" and id or nil)
-    self:addChild(element, element:getZ())
-    if(x~=nil)then element:setX(x) end
-    if(y~=nil)then element:setY(y) end
-    if(w~=nil)then element:setWidth(w) end
-    if(h~=nil)then element:setHeight(h) end
-    if(bg~=nil)then element:setBackground(bg) end
-    if(fg~=nil)then element:setForeground(fg) end
-    return element
   end
 end
 
