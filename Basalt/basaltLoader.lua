@@ -221,18 +221,31 @@ local function requireExtension(name)
             for elementName,fList in pairs(extension)do
                 if(_EXTENSIONS[elementName]==nil)then _EXTENSIONS[elementName] = {} end
                 table.insert(_EXTENSIONS[elementName], fList)
-                if(_ELEMENTS[elementName]~=nil)then
-                    if(fList.extensionProperties~=nil)then
-                        fList.extensionProperties(_ELEMENTS[elementName])
-                    end
-                    fList.extensionProperties = nil
-                    if(fList.init~=nil)then
-                        fList.init(_ELEMENTS[elementName], basalt)
-                    end
-                    fList.init = nil
+                if(elementName=="basalt")then
+                    fList.basalt = basalt
                     for fName,f in pairs(fList)do
                         if(type(fName)=="string")then
-                            _ELEMENTS[elementName][fName] = f
+                            if(fName=="init")then
+                                f(basalt)
+                            else
+                                basalt[fName] = f
+                            end
+                        end
+                    end
+                else
+                    if(_ELEMENTS[elementName]~=nil)then
+                        if(fList.extensionProperties~=nil)then
+                            fList.extensionProperties(_ELEMENTS[elementName])
+                        end
+                        fList.extensionProperties = nil
+                        if(fList.init~=nil)then
+                            fList.init(_ELEMENTS[elementName], basalt)
+                        end
+                        fList.init = nil
+                        for fName,f in pairs(fList)do
+                            if(type(fName)=="string")then
+                                _ELEMENTS[elementName][fName] = f
+                            end
                         end
                     end
                 end

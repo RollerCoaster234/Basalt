@@ -527,7 +527,7 @@ function basalt.stop()
     updaterActive = false
 end
 
---- Returns the current term
+--- Returns the base term object
 ---@return term
 function basalt.getTerm()
     return baseTerm
