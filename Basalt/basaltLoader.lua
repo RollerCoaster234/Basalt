@@ -124,6 +124,10 @@ function basaltLoader.getConfig()
             if(response==nil)then
                 error("Couldn't get the config file from github!")
             end
+            if(config~=nil)then
+                response.close()
+                return config
+            end
             config = textutils.unserializeJSON(response.readAll())
             response.close()
             return config

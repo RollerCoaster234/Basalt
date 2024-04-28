@@ -179,8 +179,8 @@ function basalt.requiredElement(...)
     local elements = {...}
     expect(1, elements[1], "string")
     local parallelAcccess = {}
-    for k,v in pairs(elements)do
-        table.insert(parallelAcccess, function ()            
+    for _,v in pairs(elements)do
+        table.insert(parallelAcccess, function ()
             loader.require("element", v)
         end)
     end
@@ -193,8 +193,8 @@ function basalt.requiredExtension(...)
     local extensions = {...}
     expect(1, extensions[1], "string")
     local parallelAcccess = {}
-    for k,v in pairs(extensions)do
-        table.insert(parallelAcccess, function ()            
+    for _,v in pairs(extensions)do
+        table.insert(parallelAcccess, function ()
             loader.require("extension", v)
         end)
     end
