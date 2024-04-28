@@ -51,46 +51,42 @@ local function getConfig()
 end
 
 local files = getConfig().versions
+local webAccess = {}
 for k,v in pairs(files)do
     if(k~="basaltLoader")then
         if(k~="elements")and(k~="libraries")and(k~="extensions")then
-            local url = v[2]
-            local response = http.get(url)
-            if(response==nil)then
-                error("Couldn't get the file "..k.." from github!")
-            end
-            local webData = response.readAll()
-            print("Loaded "..k.." from github!")
-            data[k] = webData
+            webAccess[k] = v[2]
         end
         if(k=="libraries")then
             for k,v in pairs(v)do
-                local url = v[2]
-                local response = http.get(url)
-                if(response==nil)then
-                    error("Couldn't get the library "..k.." from github!")
-                end
-                local webData = response.readAll()
-                print("Loaded "..k.." from github!")
-                data["libraries/"..k] = webData
+                webAccess["libraries/"..k] = v[2]
             end
         end
         if(k=="elements")then
             for k,v in pairs(v)do
                 if(k=="BasicElement")or(k=="VisualElement")or(k=="Container")or(k=="BaseFrame")then
-                    local url = v[2]
-                    local response = http.get(url)
-                    if(response==nil)then
-                        error("Couldn't get the element "..k.." from github!")
-                    end
-                    local webData = response.readAll()
-                    print("Loaded "..k.." from github!")
-                    data["elements/"..k] = webData
+                    webAccess["elements/"..k] = v[2]
                 end
             end
         end
     end
 end
+
+print("Loading the core files from github...")
+local parallelAccess = {}
+for k,v in pairs(webAccess)do
+    table.insert(parallelAccess, function()
+    local url = v
+    local response = http.get(url)
+    if(response==nil)then
+        error("Couldn't get the file "..k.." from github!")
+    end
+    local webData = response.readAll()
+    print("Loaded "..k.."!")
+    data[k] = webData
+    end)
+end
+parallel.waitForAll(unpack(parallelAccess))
 
 data["basaltLoader"] = fs.open("basalt/basaltLoader.lua", "r").readAll()
 basalt = load(data["main"], nil, "t", _ENV)()
