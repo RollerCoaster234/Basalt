@@ -221,7 +221,7 @@ local function requireExtension(name)
             for elementName,fList in pairs(extension)do
                 if(_EXTENSIONS[elementName]==nil)then _EXTENSIONS[elementName] = {} end
                 table.insert(_EXTENSIONS[elementName], fList)
-                if(elementName=="basalt")then
+                if(elementName=="Basalt")then
                     fList.basalt = basalt
                     for fName,f in pairs(fList)do
                         if(type(fName)=="string")then
