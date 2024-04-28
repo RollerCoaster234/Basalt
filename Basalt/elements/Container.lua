@@ -55,8 +55,6 @@ local sub, max = string.sub, math.max
 local function addElement(self, key)
   if(key:sub(1,3)=="add")and(Container[key]==nil)then
     local elementName = key:sub(4)
-    print(loader.getElementList()[elementName])
-    sleep(1)
     if(loader.getElementList()[elementName])then
       return function(self, id, x, y, w, h, bg, fg)
         local uid = id
@@ -450,7 +448,9 @@ end
 
 ---@protected
 function Container:event(event, ...)
-  VisualElement.event(self, event, ...)
+  if(VisualElement.event~=nil)then
+    VisualElement.event(self, event, ...)
+  end
   for _, child in ipairs(self.children) do
       if child.event then
         child:event(event, ...)

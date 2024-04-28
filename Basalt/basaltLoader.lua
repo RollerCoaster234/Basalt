@@ -150,6 +150,7 @@ local function downloadElement(name)
 end
 
 local function requireElement(name)
+    name = name:gsub("^%l", string.upper)
     if(availableElements[name]==nil)then
         print("Loading element "..name.." from github...")
         local data = downloadElement(name)
