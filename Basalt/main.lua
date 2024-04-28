@@ -174,17 +174,23 @@ local function getMonitor(id)
 end
 
 --- Tells basalt to require a specific element, if not found it will download it from github
---- @param element string -- The element name to require
-function basalt.requiredElement(element)
-    expect(1, element, "string")
-    loader.require("element", element)
+--- @param ... string -- The element name to require
+function basalt.requiredElement(...)
+    local elements = {...}
+    expect(1, elements[1], "string")
+    for k,v in pairs(elements)do
+        loader.require("element", v)
+    end
 end
 
 --- Tells basalt to require a specific extension, if not found it will download it from github
---- @param extension string -- The extension name to require
-function basalt.requiredExtension(extension)
-    expect(1, extension, "string")
-    loader.require("extension", extension)
+--- @param ... string -- The extension name to require
+function basalt.requiredExtension(...)
+    local extensions = {...}
+    expect(1, extensions[1], "string")
+    for k,v in pairs(extensions)do
+        loader.require("extension", v)
+    end
 end
 
 --- Checks if a key is currently pressed

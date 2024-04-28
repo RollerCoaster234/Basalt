@@ -161,8 +161,7 @@ local function requireElement(name)
             file.write(data)
             file.close()
         end
-        local func = load(data, nil, "t", _ENV)
-        local element = func()
+        local element = load(data, nil, "t", _ENV)()
         _ELEMENTS[name] = element
 
         if(_EXTENSIONS[name]~=nil)then
@@ -183,11 +182,9 @@ local function requireElement(name)
                 end
             end
         end
-
         availableElements[name] = true
         return element
     end
-    return nil
 end
 
 local function downloadExtension(name)
@@ -241,8 +238,6 @@ local function requireExtension(name)
             end
         end
         table.insert(extensionNames, name)
-    else
-        error("Extension "..name.." already exists!")
     end
 end
 
