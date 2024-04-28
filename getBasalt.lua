@@ -53,20 +53,18 @@ end
 local files = getConfig().versions
 local webAccess = {}
 for k,v in pairs(files)do
-    if(k~="basaltLoader")then
-        if(k~="elements")and(k~="libraries")and(k~="extensions")then
-            webAccess[k] = v[2]
+    if(k~="elements")and(k~="libraries")and(k~="extensions")then
+        webAccess[k] = v[2]
+    end
+    if(k=="libraries")then
+        for k,v in pairs(v)do
+            webAccess["libraries/"..k] = v[2]
         end
-        if(k=="libraries")then
-            for k,v in pairs(v)do
-                webAccess["libraries/"..k] = v[2]
-            end
-        end
-        if(k=="elements")then
-            for k,v in pairs(v)do
-                if(k=="BasicElement")or(k=="VisualElement")or(k=="Container")or(k=="BaseFrame")then
-                    webAccess["elements/"..k] = v[2]
-                end
+    end
+    if(k=="elements")then
+        for k,v in pairs(v)do
+            if(k=="BasicElement")or(k=="VisualElement")or(k=="Container")or(k=="BaseFrame")then
+                webAccess["elements/"..k] = v[2]
             end
         end
     end
@@ -88,7 +86,6 @@ for k,v in pairs(webAccess)do
 end
 parallel.waitForAll(unpack(parallelAccess))
 
-data["basaltLoader"] = fs.open("basalt/basaltLoader.lua", "r").readAll()
 basalt = load(data["main"], nil, "t", _ENV)()
 
 return basalt

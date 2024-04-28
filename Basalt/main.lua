@@ -179,10 +179,14 @@ function basalt.requiredElement(...)
     local elements = {...}
     expect(1, elements[1], "string")
     local parallelAcccess = {}
+    local slTimer = 0
     for _,v in pairs(elements)do
         table.insert(parallelAcccess, function ()
+            local delay = slTimer
+            sleep(delay)
             loader.require("element", v)
         end)
+        slTimer = slTimer + 0.05
     end
     parallel.waitForAll(unpack(parallelAcccess))
 end
@@ -193,10 +197,14 @@ function basalt.requiredExtension(...)
     local extensions = {...}
     expect(1, extensions[1], "string")
     local parallelAcccess = {}
+    local slTimer = 0
     for _,v in pairs(extensions)do
         table.insert(parallelAcccess, function ()
+            local delay = slTimer
+            sleep(delay)
             loader.require("extension", v)
         end)
+        slTimer = slTimer + 0.05
     end
     parallel.waitForAll(unpack(parallelAcccess))
 end
