@@ -13,8 +13,7 @@ function installer.getConfig(key)
     if(config~=nil)then
         return config[key]
     end
-    --local file = http.gets(githubPath.."config.json")
-    local file = fs.open("config.json", "r") -- for testing reasons
+    local file = http.get(githubPath.."config.json")
     if(file == nil) then
         error("Failed to download the Basalt config file")
     end
