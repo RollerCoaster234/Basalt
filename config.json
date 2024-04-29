@@ -55,7 +55,7 @@
         "path": {
             "description": "Basalt's default path",
             "type": "string",
-            "default": "basaltInstallTest"
+            "default": "basalt"
         },
         "cacheGlobally": {
             "description": "Cache the Basalt API globally",
