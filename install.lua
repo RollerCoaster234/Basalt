@@ -210,7 +210,7 @@ local hintFrames = {}
 local hintLabels = {}
 local function drawHint(frame, text)
     if(hintFrames[frame]==nil)then
-        hintFrames[frame] = frame:addScrollableFrame():setPosition(5, 5):setSize("{parent.w - 8}", "{parent.h - 12}"):setVisible(false):setBackground(colors.white):setForeground(colors.black):setBorder(true):setBorderColor(colors.black)
+        hintFrames[frame] = frame:addScrollableFrame():setPosition(5, 6):setSize("{parent.w - 8}", "{parent.h - 12}"):setVisible(false):setBackground(colors.white):setForeground(colors.black):setBorder(true):setBorderColor(colors.black)
         hintFrames[frame]:onClick(function(self)
             self:setVisible(false)
         end)
