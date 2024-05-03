@@ -14,39 +14,57 @@ local extensionNames = {}
 local basalt
 local config
 
-
-if(fs.exists(fs.combine(dir, "elements")))then
-    for _,v in pairs(fs.list(fs.combine(dir, "elements")))do
-        if(fs.isDir(fs.combine(fs.combine(dir, "elements"), v)))then
-            availableElements[v] = true
-        else
-            local obj = v:gsub(".lua", "")
-            availableElements[obj] = true
+if not(bundled)then
+    if(fs.exists(fs.combine(dir, "elements")))then
+        for _,v in pairs(fs.list(fs.combine(dir, "elements")))do
+            if(fs.isDir(fs.combine(fs.combine(dir, "elements"), v)))then
+                availableElements[v] = true
+            else
+                local obj = v:gsub(".lua", "")
+                availableElements[obj] = true
+            end
         end
     end
-end
 
-local allExt = {}
-if(fs.exists(fs.combine(dir, "extensions")))then
-    for k,v in pairs(fs.list(fs.combine(dir, "extensions")))do
-        table.insert(allExt, v)
+    local allExt = {}
+    if(fs.exists(fs.combine(dir, "extensions")))then
+        for _,v in pairs(fs.list(fs.combine(dir, "extensions")))do
+            table.insert(allExt, v)
+        end
     end
-end
 
-for _,v in pairs(allExt)do
-    local newExtension
-    if(fs.isDir(fs.combine(fs.combine(dir, "extensions"), v)))then
-        table.insert(extensionNames, fs.combine(fs.combine(dir, "extensions"), v))
-        newExtension = require(v.."/init")
-    else
+    for _,v in pairs(allExt)do
+        local newExtension
+        if(fs.isDir(fs.combine(fs.combine(dir, "extensions"), v)))then
+            table.insert(extensionNames, fs.combine(fs.combine(dir, "extensions"), v))
+            newExtension = require(v.."/init")
+        else
+            table.insert(extensionNames, v)
+            newExtension = require(v:gsub(".lua", ""))
+        end
+        if(type(newExtension)=="table")then
+            for a,b in pairs(newExtension)do
+                if(type(a)=="string")then
+                    if(_EXTENSIONS[a]==nil)then _EXTENSIONS[a] = {} end
+                    table.insert(_EXTENSIONS[a], b)
+                end
+            end
+        end
+    end
+else
+    for _,v in pairs(bundled_availableFiles["basalt/elements"])do
+        availableElements[v:gsub(".lua", "")] = true
+    end
+
+    for _,v in pairs(bundled_availableFiles["basalt/extensions"])do
         table.insert(extensionNames, v)
-        newExtension = require(v:gsub(".lua", ""))
-    end
-    if(type(newExtension)=="table")then
-        for a,b in pairs(newExtension)do
-            if(type(a)=="string")then
-                if(_EXTENSIONS[a]==nil)then _EXTENSIONS[a] = {} end
-                table.insert(_EXTENSIONS[a], b)
+        local newExtension = require(v:gsub(".lua", ""))
+        if(type(newExtension)=="table")then
+            for a,b in pairs(newExtension)do
+                if(type(a)=="string")then
+                    if(_EXTENSIONS[a]==nil)then _EXTENSIONS[a] = {} end
+                    table.insert(_EXTENSIONS[a], b)
+                end
             end
         end
     end

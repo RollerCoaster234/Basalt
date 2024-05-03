@@ -140,8 +140,10 @@ function expect.expect(position, argument, ...)
                 currentLineNumber = currentLineNumber + 1
             until not lineContent
             file.close()
+        else
+            error("Unable to open file "..location:gsub("^%s+", "")..".")
         end
-        error()
+        --error()
         return false
     end
     return true

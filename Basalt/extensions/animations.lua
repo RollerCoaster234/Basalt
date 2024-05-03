@@ -377,7 +377,7 @@ local function animationMoveHelper(element, v3, v4, duration, offset, ease, get,
             local pct = lerp[self.ease](i/duration)
             local newV1 = math.floor(lerp.lerp(v1, v3, pct)+0.5)
             local newV2 = math.floor(lerp.lerp(v2, v4, pct)+0.5)
-            element:setPosition(newV1, newV2)
+            set(element, newV1, newV2)
         end):wait(0.05)
     end
     animation:onDone(function()
@@ -417,7 +417,7 @@ end
 ---@param duration? number The duration of the animation.
 ---@param offset? number The offset of the animation.
 ---@param ease? string The easing of the animation.
-function Animation:animateSize(self, width, height, duration, offset, ease)
+function Animation:animateSize(width, height, duration, offset, ease)
     expect(1, self, "table")
     expect(2, width, "number")
     expect(3, height, "number")
@@ -431,7 +431,7 @@ end
 ---@param self VisualElement The element to animate.
 ---@param x number The x offset.
 ---@param y number The y offset.
-function Animation:animateOffset(self, x, y, duration, offset, ease)
+function Animation:animateOffset(x, y, duration, offset, ease)
     expect(1, self, "table")
     expect(2, x, "number")
     expect(3, y, "number")
@@ -439,7 +439,7 @@ function Animation:animateOffset(self, x, y, duration, offset, ease)
     expect(5, offset, "number", "nil")
     expect(6, ease, "string", "nil")
     if(self.getOffset==nil or self.setOffset==nil)then
-        error("Element "..self:getType().." does not have offset")
+        error("Element "..self:getType().." does not have offset!")
     end
     return animationMoveHelper(self, x, y, duration, offset, ease, self.getOffset, self.setOffset)
 end
