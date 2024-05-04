@@ -186,7 +186,7 @@ function basalt.requiredElement(...)
             sleep(delay)
             loader.require("element", v)
         end)
-        slTimer = slTimer + 0.1
+        slTimer = slTimer + 0.2
     end
     parallel.waitForAll(unpack(parallelAcccess))
 end
@@ -204,7 +204,7 @@ function basalt.requiredExtension(...)
             sleep(delay)
             loader.require("extension", v)
         end)
-        slTimer = slTimer + 0.1
+        slTimer = slTimer + 0.2
     end
     parallel.waitForAll(unpack(parallelAcccess))
 end
