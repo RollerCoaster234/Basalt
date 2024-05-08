@@ -9,21 +9,25 @@ Monitor.__index = Monitor
 
 Monitor:initialize("Monitor")
 
-Monitor:addProperty("Monitor", "any", nil, nil, function(self, value)
+Monitor:addProperty("Monitor", "any", nil, nil, function(self, value, callSide)
     if(type(value=="string"))then
        value = peripheral.wrap(value)
     end
-    self:setSide(peripheral.getName(value))
+    if(callSide~=false)then
+      self:setSide(peripheral.getName(value), false)
+    end
     self:setSize(value.getSize())
     self:setTerm(value)
     return value
 end)
-Monitor:addProperty("Side", "string", nil, nil, function(self, value)
+Monitor:addProperty("Side", "string", nil, nil, function(self, value, callMon)
     if(type(value)=="string")then
       if(peripheral.isPresent(value))then
         if(peripheral.getType(value)=="monitor")then
           if(self:getMonitor()==nil)then
-            self:setMonitor(value)
+            if(callMon~=false)then
+              self:setMonitor(value, false)
+            end
           end
           return value
         end

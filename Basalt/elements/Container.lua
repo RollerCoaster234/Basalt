@@ -409,7 +409,9 @@ for _, v in pairs({"setBg", "setFg", "setText"}) do
           if self.parent then
               self.parent[v](self.parent, obx + x - 1, oby + y - 1, "" .. str)
           else
+            if(self.renderSystem~=nil)then
               self.renderSystem[v](x, y, "" .. str)
+            end
           end
         end
       end
@@ -427,7 +429,9 @@ for _,v in pairs({"drawBackgroundBox", "drawForegroundBox", "drawTextBox"})do
       if self.parent then
           self.parent[v](self.parent, pos, max(y + (oby - 1), oby), width, height, symbol)
       else
-        self.renderSystem[v](pos, max(y + (oby - 1), oby), width, height, symbol)
+        if(self.renderSystem~=nil)then
+          self.renderSystem[v](pos, max(y + (oby - 1), oby), width, height, symbol)
+        end
       end
   end
 end
@@ -441,7 +445,9 @@ function Container:blit(x, y, t, f, b)
       if self.parent then
           self.parent.blit(pos, oby + y - 1, t, f, b)
       else
-        self.renderSystem.blit(pos, oby + y - 1, t, f, b, x, w)
+        if(self.renderSystem~=nil)then
+          self.renderSystem.blit(pos, oby + y - 1, t, f, b, x, w)
+        end
       end
   end
 end
