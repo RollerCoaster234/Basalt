@@ -45,7 +45,8 @@ end
 --- Opens the debug panel
 ---@param bool? boolean
 debug.openDebugPanel = function(bool)
-    openDebugPanel():setVisible(bool or true)
+    if(bool==nil)then bool = true end
+    openDebugPanel():setVisible(bool==true and true or false)
 end
 
 return {

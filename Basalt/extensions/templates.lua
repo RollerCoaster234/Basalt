@@ -52,9 +52,22 @@ local baseTemplate = {
 local TempExtension = {}
 
 function TempExtension.init(original, basalt)
+    local setProp = original.setProperty
+    original.setProperty = function(self, name, value, rule)
+        if(self._templateValues~=nil)then
+            if(self._templateValues[name])then
+                self._templateValues[name] = false
+            end
+        end
+        setProp(self, name, value, rule)
+    end
+
     original:extend("Init", function(self)
         local template = basalt.getTemplate(self)
         local elements = basalt.getElements()
+        if(self._templateValues==nil)then
+            self._templateValues = {}
+        end
         if(template~=nil)then
             for k,v in pairs(template)do
                 if(elements[k]==nil)then
@@ -63,11 +76,30 @@ function TempExtension.init(original, basalt)
                     else
                         self:setProperty(k, v)
                     end
+                    self._templateValues[k] = true
                 end
             end
         end
-        return self
     end)
+end
+
+function TempExtension.updateTemplate(self)
+    local template = self.basalt.getTemplate(self)
+    local elements = self.basalt.getElements()
+    if(template~=nil)then
+        for k,v in pairs(template)do
+            if(self._templateValues[k])then
+                if(elements[k]==nil)then
+                    if(colors[v]~=nil)then
+                        self:setProperty(k, colors[v])
+                    else
+                        self:setProperty(k, v)
+                    end
+                    self._templateValues[k] = true
+                end
+            end
+        end
+    end
 end
 
 function TempExtension.__getElementPathTypes(self, types)
@@ -111,10 +143,12 @@ end
 local Basalt = {}
 local oldStop
 local changedColors = {}
+local basaltLink = basalt
 
 ---@private
 function Basalt.init(basalt)
     oldStop = basalt.stop
+    basaltLink = basalt
 end
 
 --- Returns the template of the element or the base template.
@@ -137,6 +171,10 @@ function Basalt.addTemplate(newTemplate)
             baseTemplate[k] = v
         end
     end
+    local frames = basaltLink.getFrames()
+    for k,v in pairs(frames)do
+        v:updateTemplateColors()
+    end
 end
 
 --- Sets a new template.
@@ -144,6 +182,10 @@ end
 function Basalt.setTemplate(newTemplate)
     expect(1, newTemplate, "table")
     baseTemplate = newTemplate
+    local frames = basaltLink.getFrames()
+    for k,v in pairs(frames)do
+        v:updateTemplateColors()
+    end
 end
 
 --- Loads a template from a json formatted file.
@@ -157,6 +199,10 @@ function Basalt.loadTemplate(newTemplate)
         baseTemplate = textutils.unserializeJSON(data)
     else
         error("Could not open template file "..newTemplate)
+    end
+    local frames = basaltLink.getFrames()
+    for k,v in pairs(frames)do
+        v:updateTemplateColors()
     end
 end
 
@@ -201,6 +247,19 @@ function Container.init(original, basalt)
         end
         return self
     end)
+end
+
+function Container:updateTemplateColors()
+    local elements = self:getChildren()
+    self:updateTemplate()
+    for k,v in pairs(elements)do
+        if(v.updateTemplate~=nil)then
+            v:updateTemplate()
+            if(v:isType("Container"))then
+                v:updateTemplateColors()
+            end
+        end
+    end
 end
 
 return {

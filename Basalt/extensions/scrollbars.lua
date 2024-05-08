@@ -118,7 +118,6 @@ function Scrollbar:mouse_click(btn, x, y)
             if(self.direction=="vertical")then
                 if(x == width)then
                     self.isDragging = true
-                    self.initYMouse = y
                     if(yOffset<=allowedScrollAmount)then
                         if(y == height)then -- Arrow Up
                             element:setYOffset(min(yOffset+1, allowedScrollAmount))
@@ -157,7 +156,7 @@ function Scrollbar:mouse_drag(btn, x, y)
         y = y - yPos + 1
         if(self.direction=="vertical")then
             if(yOffset<=allowedScrollAmount)then
-                local scrollAmount = (y - self.initYMouse) / (height - knobSize) * allowedScrollAmount
+                local scrollAmount = (y) / (height - knobSize) * allowedScrollAmount
                 scrollAmount = min(max(scrollAmount, 0), allowedScrollAmount)
                 element:setYOffset(floor(scrollAmount+0.5))
             end
@@ -167,14 +166,36 @@ function Scrollbar:mouse_drag(btn, x, y)
     return self.baseMouseDrag(self.element, btn, x, y)
 end
 
-local Container = {}
+---@class ScrollableFrame
+local ScrollableFrame = {}
 ---@protected
-function Container.extensionProperties(original)
-    original:initialize("Container")
+function ScrollableFrame.extensionProperties(original)
+    original:initialize("ScrollableFrame")
     original:addProperty("scrollbar", "table", nil)
 end
 
-function Container.init(original)
+--- Enable the scrollbar for the ScrollableFrame
+---@param self ScrollableFrame
+---@return ScrollableFrame
+function ScrollableFrame.enableScrollbar(self)
+    if(self:getScrollbar() == nil)then
+        self:setScrollbar(Scrollbar.new(self))
+    end
+    self:getScrollbar():enable()
+    return self
+end
+
+--- Disable the scrollbar for the ScrollableFrame
+---@param self ScrollableFrame
+---@return ScrollableFrame
+function ScrollableFrame.disableScrollbar(self)
+    if(self:getScrollbar() ~= nil)then
+        self:getScrollbar():disable()
+    end
+    return self
+end
+
+function ScrollableFrame.init(original)
     original:extend("Load", function(self)
         if(self:getScrollbar() == nil)then
             self:setScrollbar(Scrollbar.new(self))
@@ -184,5 +205,5 @@ function Container.init(original)
 end
 
 return {
-    Container = Container,
+    ScrollableFrame = ScrollableFrame,
 }

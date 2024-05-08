@@ -186,7 +186,7 @@ function basalt.requiredElement(...)
             sleep(delay)
             loader.require("element", v)
         end)
-        slTimer = slTimer + 0.2
+        slTimer = slTimer + 0.1
     end
     parallel.waitForAll(unpack(parallelAcccess))
 end
@@ -204,9 +204,15 @@ function basalt.requiredExtension(...)
             sleep(delay)
             loader.require("extension", v)
         end)
-        slTimer = slTimer + 0.2
+        slTimer = slTimer + 0.1
     end
     parallel.waitForAll(unpack(parallelAcccess))
+end
+
+--- Returns a list of all frames
+--- @return table
+function basalt.getFrames()
+    return frames
 end
 
 --- Checks if a key is currently pressed
@@ -397,7 +403,7 @@ function basalt.errorHandler(errMsg)
         term.setTextColor(colors.red)
         term.write("Error in ")
         term.setTextColor(colors.white)
-        term.write(fileName:gsub("/", ""))
+        term.write(fileName)
         term.setTextColor(colors.red)
         term.write(":")
         term.setTextColor(colors.lightBlue)
