@@ -150,16 +150,25 @@ function VisualElement:clearPostRender()
   return self
 end
 
+--- Calculates the position of the element (including parent's offset).
+---@return number, number
+function VisualElement:calculatePosition()
+  local x, y = self:getPosition()
+  local ignoreOffset = self:getIgnoreOffset()
+  if not(ignoreOffset)then
+    if self.parent ~= nil then
+      local xO, yO = self.parent:getOffset()
+      x = x - xO
+      y = y - yO
+    end
+  end
+  return x, y
+end
+
 for _,v in pairs({"BackgroundBox", "TextBox", "ForegroundBox"})do
   VisualElement["add"..v] = function(self, x, y, w, h, col)
     local obj = self.parent or self
-    local xPos,yPos = self:getPosition()
-    if(self.parent~=nil)then
-        local xO, yO = self.parent:getOffset()
-        local ignOffset = self:getIgnoreOffset()
-        xPos = ignOffset and xPos or xPos - xO
-        yPos = ignOffset and yPos or yPos - yO
-    end
+    local xPos,yPos = self:calculatePosition()
     obj["draw"..v](obj, x+xPos-1, y+yPos-1, w, h, col)
   end
 end
@@ -167,15 +176,9 @@ end
 for _,v in pairs({"Text", "Bg", "Fg"})do
     VisualElement["add"..v] = function(self, x, y, str, ignoreElementSize)
       local obj = self.parent or self
-      local xPos,yPos = self:getPosition()
+      local xPos,yPos = self:calculatePosition()
       local w, h = self:getSize()
       local transparent = self:getTransparency()
-      if(self.parent~=nil)then
-          local xO, yO = self.parent:getOffset()
-          local ignOffset = self:getIgnoreOffset()
-          xPos = ignOffset and xPos or xPos - xO
-          yPos = ignOffset and yPos or yPos - yO
-      end
       if not(ignoreElementSize)then
         str, x = subText(str, x, w)
       end
@@ -201,14 +204,8 @@ end
 --- @protected
 function VisualElement:addBlit(x, y, t, f, b)
   local obj = self.parent or self
-  local xPos,yPos = self:getPosition()
+  local xPos,yPos = self:calculatePosition()
   local transparent = self:getTransparency()
-  if(self.parent~=nil)then
-      local xO, yO = self.parent:getOffset()
-      local ignOffset = self:getIgnoreOffset()
-      xPos = ignOffset and xPos or xPos - xO
-      yPos = ignOffset and yPos or yPos - yO
-  end
   if not(transparent)then
       obj:blit(x+xPos-1, y+yPos-1, t, f, b)
       return
@@ -233,7 +230,6 @@ function VisualElement:addBlit(x, y, t, f, b)
   end
 end
 
-
 --- Returns the relative position of the element or the given coordinates.
 ---@param x? number -- The x position.
 ---@param y? number -- The y position.
@@ -243,19 +239,11 @@ function VisualElement:getRelativePosition(x, y)
   expect(2, x, "number", "nil")
   expect(3, y, "number", "nil")
   if(x==nil)and(y==nil)then
-    x, y = self:getPosition()
+    x, y = self:calculatePosition()
   end
-  local xObj, yObj = self:getPosition()
+  local xObj, yObj = self:calculatePosition()
   local newX = x - (xObj-1)
   local newY = y - (yObj-1)
-  if self:isType("Container") then
-    local xO, yO = self:getOffset()
-    newX = newX + xO
-    newY = newY + yO
-  end
-  if self.parent ~= nil then
-    newX, newY = self.parent:getRelativePosition(newX, newY)
-  end
   return newX, newY
 end
 
@@ -267,9 +255,9 @@ function VisualElement:getAbsolutePosition(x, y)
   expect(2, x, "number", "nil")
   expect(3, y, "number", "nil")
   if(x==nil)and(y==nil)then
-    x, y = self:getPosition()
+    x, y = self:calculatePosition()
   end
-  local xObj, yObj = self:getPosition()
+  local xObj, yObj = self:calculatePosition()
   local newX = x + (xObj-1)
   local newY = y + (yObj-1)
   if self:isType("Container") then
@@ -291,7 +279,7 @@ function VisualElement:isInside(x, y)
   expect(1, self, "table")
   expect(2, x, "number")
   expect(3, y, "number")
-  local pX, pY = self:getPosition()
+  local pX, pY = self:calculatePosition()
   local pW, pH = self:getSize()
   local visible, enabled = self:getVisible(), self:getEnabled()
   return x >= pX and x <= pX + pW-1 and y >= pY and y <= pY + pH-1 and visible and enabled

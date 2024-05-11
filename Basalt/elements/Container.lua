@@ -401,7 +401,7 @@ end
 for _, v in pairs({"setBg", "setFg", "setText"}) do
   ---@protected
   Container[v] = function(self, x, y, str)
-      local obx, oby = self:getPosition()
+      local obx, oby = self:calculatePosition()
       local w, h = self:getSize()
       if y >= 1 and y <= h then
         str, x = subText(str, x, w)
@@ -421,7 +421,7 @@ end
 for _,v in pairs({"drawBackgroundBox", "drawForegroundBox", "drawTextBox"})do
     ---@protected
   Container[v] = function(self, x, y, width, height, symbol)
-      local obx, oby = self:getPosition()
+      local obx, oby = self:calculatePosition()
       local w, h = self:getSize()
       height = (y < 1 and (height + y > h and h or height + y - 1) or (height + y > h and h - y + 1 or height))
       width = (x < 1 and (width + x > w and w or width + x - 1) or (width + x > w and w - x + 1 or width))
@@ -438,7 +438,7 @@ end
 
 function Container:blit(x, y, t, f, b)
   ---@protected
-  local obx, oby = self:getPosition()
+  local obx, oby = self:calculatePosition()
   local w, h = self:getSize()
   if y >= 1 and y <= h then
       local pos = max(x + (obx - 1), obx)
@@ -491,7 +491,7 @@ end
 function Container.mouse_release(self, btn, x, y, ...)
   if(VisualElement.mouse_release~=nil)then
       if(VisualElement.mouse_release(self, btn, x, y, ...))then
-        local visibleChildren = self:getVisibleChildren("mouse_click")
+        local visibleChildren = self:getVisibleChildren()
         for _,child in pairs(visibleChildren)do
           if(child and child.mouse_release~=nil)then
             local relX, relY = self:getRelativePosition(x, y)
