@@ -9,54 +9,51 @@ end
 local function _expect(argument, ...)
     local types = {...}
     local valid = false
-    for _, expectedType in ipairs(types) do
-        if(type(expectedType)=="table")then
-            for _,v in ipairs(expectedType)do
-                if argument == v then
-                    valid = true
-                    break
-                end
-            end
-        end
-        if type(argument) == expectedType then
+
+    local function checkType(arg, expected)
+        if type(arg) == expected then
             valid = true
-            break
-        end
-        if(expectedType=="color")then
-            if(type(argument)=="string")then
-                if(colors[argument])then
-                    valid = true
-                    break
-                end
-            elseif(type(argument)=="number")then
-                for _,v in pairs(colors)do
-                    if(v==argument)then
+            return true
+        elseif expected == "color" then
+            if type(arg) == "string" and colors[arg] then
+                valid = true
+                return true
+            elseif type(arg) == "number" then
+                for _, v in pairs(colors) do
+                    if v == arg then
                         valid = true
-                        break
+                        return true
                     end
                 end
             end
-        end
-        if(expectedType=="dynValue")then
-            if(type(argument)=="string")then
-                if(argument:sub(1,1)=="{")and(argument:sub(-1)=="}")then
-                    valid = true
-                    break
-                end
+        elseif expected == "dynValue" then
+            if type(arg) == "string" and arg:sub(1,1) == "{" and arg:sub(-1) == "}" then
+                valid = true
+                return true
             end
-        end
-    end
-    if(type(argument)=="table")then
-        if argument.isType then
+        elseif type(arg)=="table" and arg.isType~=nil then
             for _, expectedType in ipairs(types) do
-                if argument:isType(expectedType) then
+                if arg:isType(expectedType) then
                     valid = true
-                    break
+                    return true
                 end
             end
         end
+        return false
     end
 
+    for _, expectedType in ipairs(types) do
+        if type(expectedType) == "table" then
+            for _, v in ipairs(expectedType) do
+                if checkType(argument, v) then
+                    break
+                end
+            end
+        elseif checkType(argument, expectedType) then
+            break
+        end
+    end
+    
     if not valid then
         local traceback = debug.traceback()
         local location, lineNumber, functionName
@@ -94,7 +91,7 @@ local function _expect(argument, ...)
         end
         return location, lineNumber, functionName, traceback
     end
-     return true
+    return true
 end
 
 function expect.expect(position, argument, ...)

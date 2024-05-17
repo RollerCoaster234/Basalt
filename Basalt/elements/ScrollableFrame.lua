@@ -1,4 +1,6 @@
+local VisualElement = require("basaltLoader").load("VisualElement")
 local Container = require("basaltLoader").load("Container")
+
 local expect = require("expect").expect
 
 ---@class ScrollableFrame : Container
@@ -128,13 +130,24 @@ end
 
 ---@protected
 function ScrollableFrame:mouse_scroll(direction, x, y)
-    if(Container.mouse_scroll(self, direction, x, y))then
+    if(VisualElement.mouse_scroll(self, direction, x, y))then
+        local visibleChildren = self:getVisibleChildrenEvents("mouse_scroll")
+        for _,child in pairs(visibleChildren)do
+        if(child and child.mouse_scroll~=nil)then
+            local relX, relY = self:getRelativePosition(x, y)
+            if(child.mouse_scroll(child, direction, relX, relY))then
+            self:setFocusedChild(child, true)
+            return true
+            end
+        end
+        end
         local scrollDirection = self:getScrollDirection()
         if(scrollDirection == "vertical")then
             self:scrollVertical(direction)
         else
             self:scrollHorizontal(direction)
         end
+        self:setFocusedChild(nil, true)
         return true
     end
 end

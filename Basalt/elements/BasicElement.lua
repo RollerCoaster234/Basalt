@@ -130,8 +130,12 @@ end
 ---@param name string
 ---@return any
 function Element:getProperty(name)
-    expect(1, self, "table")
-    expect(2, name, "string")
+    if(type(self)~="table")then
+        error("getProperty called on non-table value")
+    end
+    if(type(name)~="string")then
+        error("getProperty called with non-string value")
+    end
     local prop = self[name]
     if(type(prop)=="function")then
         return prop()
@@ -268,7 +272,6 @@ function Element:combineProperty(name, ...)
     name = name:gsub("^%l", string.upper)
     local args = {...}
     self["get" .. name] = function(self)
-        expect(1, self, "table")
         local result = {}
         for _,v in pairs(args)do
             result[#result+1] = self["get" .. v:gsub("^%l", string.upper)](self)

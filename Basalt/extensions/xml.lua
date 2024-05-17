@@ -154,7 +154,11 @@ function BasicXmlExtension.generateElementFromXML(self, properties, env)
             if(self[k]~=nil)then
                 local fName = "set"..k:gsub("^%l", string.upper)
                 if(self[fName]~=nil)then
-                    self[fName](self, v)
+                    if(tonumber(v)~=nil)then
+                        self[fName](self, tonumber(v))
+                    else
+                        self[fName](self, v)
+                    end
                 end
             end
         end
@@ -168,13 +172,17 @@ function BasicXmlExtension.generateElementFromXML(self, properties, env)
                         local items = getChildrenItems(v.children)
                         self[propName](self, items)
                     else
-                        self[propName](self, v.children[1].text)
+                        if(tonumber(v.children[1].text)~=nil)then
+                            self[propName](self, tonumber(v.children[1].text))
+                        else
+                            self[propName](self, v.children[1].text)
+                        end
                     end
                 elseif(self[v.tag]~=nil)then
                     self[v.tag](self, function(...)
                         env.event = ... or nil
                         env.self = self
-                        load("return "..v.children[1].text, nil, "t", env)() 
+                        load(v.children[1].text, nil, "t", env)() 
                     end)
                 else
                     error("No property or event found for "..v.tag.." in ("..self:getType()..") "..self:getName())
