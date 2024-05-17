@@ -75,8 +75,12 @@ end
 function Input:mouse_up(button, x, y)
     if(VisualElement.mouse_up(self, button, x, y))then
         if(button == 1)then
-            self.cursorIndex = math.min(x - self.x + self.scrollIndex, self.value:len() + 1)
-            self.parent:setCursor(true, self.x + self.cursorIndex - self.scrollIndex, self.y, self:getForeground())
+            local xPos, yPos = self:getPosition()
+            local cursorIndex = self:getCursorIndex()
+            local scrollIndex = self:getScrollIndex()
+            local value = self:getValue()
+            self:setCursorIndex(math.min(x - xPos + scrollIndex, value:len() + 1))
+            self.parent:setCursor(true, xPos + cursorIndex - scrollIndex, yPos, self:getForeground())
         end
         return true
     end
@@ -85,27 +89,31 @@ end
 ---@protected
 function Input:key(key)
     if(VisualElement.key(self, key))then
-        if key == keys.backspace and self.value ~= "" and self.cursorIndex > 1 then
-            local before = self.value:sub(1, self.cursorIndex-2)
-            local after = self.value:sub(self.cursorIndex, -1)
-            self.value = before .. after
-            self.cursorIndex = self.cursorIndex - 1
+        local xPos, yPos = self:getPosition()
+        local cursorIndex = self:getCursorIndex()
+        local value = self:getValue()
+        if key == keys.backspace and value ~= "" and cursorIndex > 1 then
+            local before = value:sub(1, cursorIndex-2)
+            local after = value:sub(cursorIndex, -1)
+            self:setValue(before .. after)
+            self:setCursorIndex(cursorIndex - 1)
             self:updateRender()
         elseif key == keys.left then
-            self.cursorIndex = math.max(1, self.cursorIndex - 1)
+            self:setCursorIndex(math.max(1, cursorIndex - 1))
             self:updateRender()
         elseif key == keys.right then
-            self.cursorIndex = math.min(self.value:len() + 1, self.cursorIndex + 1)
+            self:setCursorIndex(math.min(value:len() + 1, cursorIndex + 1))
             self:updateRender()
         elseif key == keys.enter then
-            self:fireEvent("enter", self.value)
+            self:fireEvent("enter", self:getValue())
             self:setFocused(false)
             self:adjustScrollIndex()
             self:updateRender()
             return
         end
         self:adjustScrollIndex()
-        self.parent:setCursor(true, self.x + self.cursorIndex - self.scrollIndex, self.y, self:getForeground())
+        local scrollIndex = self:getScrollIndex()
+        self.parent:setCursor(true, xPos + cursorIndex - scrollIndex, yPos, self:getForeground())
         return true
     end
 end
@@ -113,24 +121,29 @@ end
 ---@protected
 function Input:char(char)
     if(VisualElement.char(self, char))then
-        if self.inputLimit and self.value:len() >= self.inputLimit then
+        local xPos, yPos = self:getPosition()
+        local cursorIndex = self:getCursorIndex()
+        local inputType = self:getInputType()
+        local value = self:getValue()
+        local inputLimit = self:getInputLimit()
+        if inputLimit and value:len() >= inputLimit then
             return true
         end
-        if self.inputType == "number" and not tonumber(char) then
-            if (char == "," or char == ".") and self.value:find("[.,]") then
+        if inputType == "number" and not tonumber(char) then
+            if (char == "," or char == ".") and value:find("[.,]") then
                 return true
             elseif char ~= "," and char ~= "." then
                 return true
             end
         end
-        local before = self.value:sub(1, self.cursorIndex-1)
-        local after = self.value:sub(self.cursorIndex, -1)
-        self.value = before .. char .. after
-        self.cursorIndex = self.cursorIndex + 1
-        self:fireEvent("change", self.value)
+        local before = value:sub(1, cursorIndex-1)
+        local after = value:sub(cursorIndex, -1)
+        self:setValue(before .. char .. after)
+        self:setCursorIndex(cursorIndex + 1)
+        self:fireEvent("change", self:getValue())
         self:adjustScrollIndex()
         self:updateRender()
-        self.parent:setCursor(true, self.x + self.cursorIndex - self.scrollIndex, self.y, self:getForeground())
+        self.parent:setCursor(true, xPos + cursorIndex - self:getScrollIndex(), yPos, self:getForeground())
         return true
     end
 end
