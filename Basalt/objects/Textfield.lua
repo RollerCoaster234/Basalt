@@ -722,12 +722,12 @@ return function(name, basalt)
                         text = lines[n + hIndex - 1]
                         fg = fgLines[n + hIndex - 1]
                         bg = bgLines[n + hIndex - 1]
+                    else
+                        text = sub(text, wIndex, w + wIndex - 1)
+                        bg = rep(bgColor, w)
+                        fg = rep(fgColor, w)
                     end
-        
-                    text = sub(text, wIndex, w + wIndex - 1)
-                    bg = rep(bgColor, w)
-                    fg = rep(fgColor, w)
-        
+
                     self:addText(1, n, text)
                     self:addBG(1, n, bg)
                     self:addFG(1, n, fg)
